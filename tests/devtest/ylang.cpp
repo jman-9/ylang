@@ -1,4 +1,4 @@
-﻿// ylang.cpp : Defines the entry point for the application.
+// ylang.cpp : Defines the entry point for the application.
 //
 
 #include "ylang.h"
