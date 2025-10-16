@@ -15,27 +15,37 @@ minus -> -
 star -> *
 slash -> /
 percent -> %
-plusplus -> ++
-minusminus -> --
+ampersand -> &
+pipe -> |
+caret -> ^
+not -> !
+assign -> =
+underscore -> _
 greater -> >
 less -> <
+
+plusplus -> ++
+minusminus -> --
+and -> &&
+or -> ||
 greater_equal -> >=
 less_equal -> <=
 equal -> ==
 notequal -> !=
-ampersand -> &
-pipe -> |
-caret -> ^
 left_shift -> <<
 right_shift -> >>
-not -> !
-assign -> =
 plus_assign -> +=
 minus_assign -> -=
 mul_assign -> *=
 div_assign -> /=
 mod_assign -> %=
-underscore -> _
+and_assign -> &=
+or_assign -> |=
+xor_assign -> ^=
+
+lshift_assign -> <<=
+rshift_assign -> >>=
+
 letter -> [a-zA-Z]
 letter_ -> (letter | underscore)
 digit -> [0-9]

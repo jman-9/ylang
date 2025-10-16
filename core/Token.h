@@ -4,6 +4,11 @@
 
 enum class EToken
 {
+	None,
+
+	Space,
+	Tab,
+
 	Comma,
 	Semicolon,
 	Colon,
@@ -23,6 +28,8 @@ enum class EToken
 	Percent,
 	PlusPlus,
 	MinusMinus,
+	And,
+	Or,
 	Greater,
 	Less,
 	GreaterEqual,
@@ -31,14 +38,21 @@ enum class EToken
 	NotEqual,
 	Amp,
 	Pipe,
+	Caret,
 	LShift,
-	Rshift,
+	RShift,
 	Not,
 	Assign,
 	PlusAssign,
 	MinusAssign,
 	MulAssign,
+	DivAssign,
 	ModAssign,
+	AndAssign,
+	OrAssign,
+	XorAssign,
+	LShiftAssign,
+	RShiftAssign,
 	Id,
 	Num,
 };
@@ -54,6 +68,8 @@ struct Token
 	uint32_t col;
 	std::string val;
 
-protected:
 
+	static bool IsWhiteSpace(EToken tok);
+
+protected:
 };

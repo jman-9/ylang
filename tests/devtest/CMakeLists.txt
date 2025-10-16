@@ -1,4 +1,4 @@
-﻿# Enable Hot Reload for MSVC compilers if supported.
+# Enable Hot Reload for MSVC compilers if supported.
 if (POLICY CMP0141)
   cmake_policy(SET CMP0141 NEW)
   set(CMAKE_MSVC_DEBUG_INFORMATION_FORMAT "$<IF:$<AND:$<C_COMPILER_ID:MSVC>,$<CXX_COMPILER_ID:MSVC>>,$<$<CONFIG:Debug,RelWithDebInfo>:EditAndContinue>,$<$<CONFIG:Debug,RelWithDebInfo>:ProgramDatabase>>")
@@ -10,5 +10,15 @@ project ("devtest")
 add_executable (ylang "ylang.cpp" "ylang.h")
 
 if (CMAKE_VERSION VERSION_GREATER 3.12)
-  set_property(TARGET ylang PROPERTY CXX_STANDARD 20)
+	set_property(TARGET ylang PROPERTY CXX_STANDARD 20)
 endif()
+
+
+target_link_libraries(ylang
+	PRIVATE ylang_core
+)
+
+target_include_directories(ylang
+	PRIVATE ${CMAKE_SOURCE_DIR}
+	PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}
+)

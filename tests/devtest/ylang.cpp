@@ -1,12 +1,12 @@
-// ylang.cpp : Defines the entry point for the application.
-//
-
 #include "ylang.h"
+#include "core/Scanner.h"
 
 using namespace std;
 
 int main()
 {
-	cout << "Hello CMake." << endl;
+	Scanner s;
+	s.Scan("++ -- += & % ! !=");
+
 	return 0;
 }
