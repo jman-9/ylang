@@ -13,8 +13,6 @@ enum class EToken
 	Semicolon,
 	Colon,
 	Dot,
-	Quot,
-	DblQuot,
 	LParen,
 	RParen,
 	LBrace,
@@ -55,20 +53,20 @@ enum class EToken
 	RShiftAssign,
 	Id,
 	Num,
+	Str,
+	RawStr,
 };
 
 
 struct Token
 {
-	Token();
-	virtual ~Token();
+	EToken type		= EToken::None;
+	uint32_t line	= 0;
+	std::string val	= "";
 
-	EToken type;
-	uint32_t line;
-	uint32_t col;
-	std::string val;
+	bool IsNull() const;
 
-
+	static const Token& Null();
 	static bool IsWhiteSpace(EToken tok);
 
 protected:

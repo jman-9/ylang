@@ -50,7 +50,9 @@ letter -> [a-zA-Z]
 letter_ -> (letter | underscore)
 digit -> [0-9]
 identifier -> letter_ (letter_ | digit)*
-number -> digit+ ( dot digit+ )?
+decimal -> digit+ ( dot digit+ )?
+hexadecimal  = 0 [xX] [0-9a-fA-F]+
+octal  = 0 [0-7]+
 
 
 string -> "..." | '...'

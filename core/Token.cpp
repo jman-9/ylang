@@ -1,12 +1,16 @@
 #include "Token.h"
+using namespace std;
 
 
-Token::Token()
+bool Token::IsNull() const
 {
+	return type == EToken::None;
 }
 
-Token::~Token()
+const Token& Token::Null()
 {
+	static Token s_nullTok = { EToken::None, 0, string("") };
+	return s_nullTok;
 }
 
 bool Token::IsWhiteSpace(EToken tok)

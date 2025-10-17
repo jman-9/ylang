@@ -3,6 +3,7 @@
 #include <stdint.h>
 #include <string>
 #include <map>
+#include <vector>
 
 
 class Scanner
@@ -12,6 +13,8 @@ public:
 	virtual ~Scanner();
 
 	bool Scan(const std::string& code);
+
+	std::vector<Token> _tokens;
 
 protected:
 	struct TransTbl
@@ -26,5 +29,10 @@ protected:
 	void Init();
 	void RemoveComments(std::string& retCode);
 
-	bool AdvanceNewLine(const std::string& code, int& inoutPos);
+	uint32_t AdvanceNewLine(const std::string& code, int pos);
+
+	uint32_t AdvanceRawString(const std::string& code, int start, int& retLines);
+	uint32_t AdvanceString(const std::string& code, int start);
+	uint32_t AdvanceNumber(const std::string& code, int start);
+	uint32_t AdvanceId(const std::string& code, int start);
 };
