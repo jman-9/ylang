@@ -1,5 +1,6 @@
 #pragma once
 #include "Token.h"
+#include "Error.h"
 #include <stdint.h>
 #include <string>
 #include <map>
@@ -15,6 +16,7 @@ public:
 	bool Scan(const std::string& code);
 
 	std::vector<Token> _tokens;
+	std::vector<Error> _errors;
 
 protected:
 	struct TransTbl
@@ -31,8 +33,8 @@ protected:
 
 	uint32_t AdvanceNewLine(const std::string& code, int pos);
 
-	uint32_t AdvanceRawString(const std::string& code, int start, int& retLines);
-	uint32_t AdvanceString(const std::string& code, int start);
-	uint32_t AdvanceNumber(const std::string& code, int start);
-	uint32_t AdvanceId(const std::string& code, int start);
+	uint32_t AdvanceRawString(const std::string& code, int start, int& retLines, Error& retError);
+	uint32_t AdvanceString(const std::string& code, int start, Error& retError);
+	uint32_t AdvanceNumber(const std::string& code, int start, Error& retError);
+	uint32_t AdvanceId(const std::string& code, int start, Error& retError);
 };

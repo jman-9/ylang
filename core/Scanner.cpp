@@ -70,7 +70,7 @@ bool Scanner::Scan(const string& orgCode)
 	string code = orgCode;
 	RemoveComments(code);
 
-	uint32_t lineNum = 0;
+	uint32_t lineNum = 1;
 	int i = 0;
 	uint32_t sz;
 	const TransTbl* accepted = &_transTbl;
@@ -99,34 +99,35 @@ bool Scanner::Scan(const string& orgCode)
 		}
 		else if(accepted->tok == EToken::None)
 		{// string, num, id
-			int lines;
-			if(sz = AdvanceRawString(code, i, lines))
+			Error err;
+			EToken tok;
+			int lines = 0;
+			sz = 0;
+
+			if(!sz && err.IsNoError()) { tok = EToken::RawStr; sz = AdvanceRawString(code, i, lines, err); }
+			if(!sz && err.IsNoError()) { tok = EToken::Str; sz = AdvanceString(code, i, err); }
+			if(!sz && err.IsNoError()) { tok = EToken::Num; sz = AdvanceNumber(code, i, err); }
+			if(!sz && err.IsNoError()) { tok = EToken::Id; sz = AdvanceId(code, i, err); }
+
+			if(sz && err.IsNoError())
 			{
-				_tokens.push_back({ EToken::RawStr, lineNum, code.substr(i, sz) });
+				_tokens.push_back({ tok, lineNum, code.substr(i, sz) });
 				i += sz;
 				lineNum += lines;
 			}
-			else if(sz = AdvanceString(code, i))
+			else if(!err.IsNoError())
 			{
-				_tokens.push_back({ EToken::Str, lineNum, code.substr(i, sz) });
-				i += sz;
-			}
-			else if(sz = AdvanceNumber(code, i))
-			{
-				_tokens.push_back({ EToken::Num, lineNum, code.substr(i, sz) });
-				i += sz;
-			}
-			else if(sz = AdvanceId(code, i))
-			{
-				_tokens.push_back({ EToken::Id, lineNum, code.substr(i, sz) });
-				i += sz;
+				cerr << err.msg << endl;
+				err.line = lineNum + lines;
+				_errors.push_back(err);
+				return false;
 			}
 			else
 			{
-				cerr << "string/num/id parse error" << endl;
+				cerr << "unknown character error" << endl;
+				_errors.push_back( ErrorBuilder::UnknownCharacter(lineNum, cur) );
 				return false;
 			}
-
 		}
 		else
 		{
@@ -160,8 +161,10 @@ uint32_t Scanner::AdvanceNewLine(const std::string& code, int pos)
 	return 0;
 }
 
-uint32_t Scanner::AdvanceRawString(const std::string& code, int start, int& retLines)
+uint32_t Scanner::AdvanceRawString(const std::string& code, int start, int& retLines, Error& retError)
 {
+	retError = ErrorBuilder::NoError();
+
 	if(start >= code.size()) return 0;
 
 	string delim;
@@ -199,7 +202,10 @@ uint32_t Scanner::AdvanceRawString(const std::string& code, int start, int& retL
 		}
 	}
 	if(i >= code.size())
+	{
+		retError = ErrorBuilder::UnexpectedEof(0);
 		return 0;
+	}
 
 	end = i + (int)delim.size();
 
@@ -207,8 +213,10 @@ uint32_t Scanner::AdvanceRawString(const std::string& code, int start, int& retL
 	return end - start;
 }
 
-uint32_t Scanner::AdvanceString(const std::string& code, int start)
+uint32_t Scanner::AdvanceString(const std::string& code, int start, Error& retError)
 {
+	retError = ErrorBuilder::NoError();
+
 	if(start >= code.size()) return 0;
 
 	char delim = code[start];
@@ -221,7 +229,10 @@ uint32_t Scanner::AdvanceString(const std::string& code, int start)
 	for( ; i < code.size(); i++)
 	{
 		if(AdvanceNewLine(code, i))
+		{
+			retError = ErrorBuilder::NewLineInString(0);
 			return 0;
+		}
 
 		if(code[i] == '\\')
 		{
@@ -233,7 +244,10 @@ uint32_t Scanner::AdvanceString(const std::string& code, int start)
 			break;
 	}
 	if(i >= code.size())
+	{
+		retError = ErrorBuilder::UnexpectedEof(0);
 		return 0;
+	}
 
 	end = i;
 
@@ -241,8 +255,10 @@ uint32_t Scanner::AdvanceString(const std::string& code, int start)
 	return end - start + 1;
 }
 
-uint32_t Scanner::AdvanceNumber(const std::string& code, int start)
+uint32_t Scanner::AdvanceNumber(const std::string& code, int start, Error& retError)
 {
+	retError = ErrorBuilder::NoError();
+
 	if(start >= code.size()) return 0;
 
 	char first = code[start];
@@ -265,7 +281,11 @@ uint32_t Scanner::AdvanceNumber(const std::string& code, int start)
 				if('a' <= code[i] && code[i] <= 'f') continue;
 				if('0' <= code[i] && code[i] <= '9') continue;
 
-				if(isalnum(code[i]) || code[i] == '_') return 0;
+				if(isalnum(code[i]) || code[i] == '_')
+				{
+					retError = ErrorBuilder::UnexpectedCharacter(0, code[i]);
+					return 0;
+				}
 
 				break;
 			}
@@ -277,7 +297,11 @@ uint32_t Scanner::AdvanceNumber(const std::string& code, int start)
 			{
 				if('0' <= code[i] && code[i] <= '7') continue;
 
-				if(isalnum(code[i]) || code[i] == '_') return 0;
+				if(isalnum(code[i]) || code[i] == '_')
+				{
+					retError = ErrorBuilder::UnexpectedCharacter(0, code[i]);
+					return 0;
+				}
 
 				break;
 			}
@@ -289,7 +313,11 @@ uint32_t Scanner::AdvanceNumber(const std::string& code, int start)
 		{
 			if(isdigit(code[i])) continue;
 
-			if(isalpha(code[i]) || code[i] == '_') return 0;
+			if(isalpha(code[i]) || code[i] == '_')
+			{
+				retError = ErrorBuilder::UnexpectedCharacter(0, code[i]);
+				return 0;
+			}
 
 			break;
 		}
@@ -301,8 +329,10 @@ uint32_t Scanner::AdvanceNumber(const std::string& code, int start)
 	return end - start;
 }
 
-uint32_t Scanner::AdvanceId(const std::string& code, int start)
+uint32_t Scanner::AdvanceId(const std::string& code, int start, Error& retError)
 {
+	retError = ErrorBuilder::NoError();
+
 	if(start >= code.size()) return 0;
 
 	char first = code[start];
