@@ -10,7 +10,7 @@ R"TEST(
 ++ -- += & % ! != hahaha	// i'm comment
 _3hjssdj 0x192
 037 890
-'sdokfosdkfoskdfokfsd' "sdofksdokfsdfofksdfk'erokdfgoixcjvojksdj;'sdflkcxvik4m12hbjh\"\ckjr\"\n\r\\\\sodpfpsdlfpl\""
+'sdokfosdkfoskdfokfsd' "sdofksdokfsdfofksdfk'erokdfgoixcjvojksdj;'sdflkcxvik4m12hbjh\"\\ckjr\"\n\r\\\\sodpfpsdlfpl\""
 
 /*
 block
@@ -26,8 +26,6 @@ vcitimdmnxc
      spdflpsdlfpsldf
 """
 
-/*
-uncompleted comment
 )TEST";
 
 
@@ -35,6 +33,13 @@ int main()
 {
 	Scanner s;
 	s.Scan(testcode);
+
+	for(auto t : s._tokens)
+	{
+		string ts = format("line:{},kind:{},val:{}", t.line, (int)t.kind, t.val);
+		cout << ts << endl;
+	}
+
 	if(!s._errors.empty())
 	{
 		for(auto e : s._errors)

@@ -60,7 +60,7 @@ enum class EToken
 
 struct Token
 {
-	EToken type		= EToken::None;
+	EToken kind		= EToken::None;
 	uint32_t line	= 0;
 	std::string val	= "";
 

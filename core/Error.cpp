@@ -33,5 +33,13 @@ Error UnexpectedEof(uint32_t line)
 {
 	return { line, EErr::UnexpectedEof, "unexpected EOF" };
 }
+Error UnrecognizedCharacterEscapeSequence(uint32_t line, char c)
+{
+	return { line, EErr::UnrecognizedCharacterEscapeSequence, format("'{}': unrecognized character escape sequence", c) };
+}
+Error UnsupportedCharacterEscapeSequence(uint32_t line, char c)
+{
+	return { line, EErr::UnsupportedCharacterEscapeSequence, format("'{}': unsupported character escape sequence", c) };
+}
 
 }

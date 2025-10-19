@@ -8,6 +8,8 @@ enum class EErr
 	UnexpectedCharacter,
 	NewLineInString,
 	UnexpectedEof,
+	UnrecognizedCharacterEscapeSequence,
+	UnsupportedCharacterEscapeSequence,
 };
 
 struct Error
@@ -27,4 +29,6 @@ namespace ErrorBuilder
 	Error UnexpectedCharacter(uint32_t line, char c);
 	Error NewLineInString(uint32_t line);
 	Error UnexpectedEof(uint32_t line);
+	Error UnrecognizedCharacterEscapeSequence(uint32_t line, char c);
+	Error UnsupportedCharacterEscapeSequence(uint32_t line, char c);
 }

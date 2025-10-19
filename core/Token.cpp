@@ -4,7 +4,7 @@ using namespace std;
 
 bool Token::IsNull() const
 {
-	return type == EToken::None;
+	return kind == EToken::None;
 }
 
 const Token& Token::Null()

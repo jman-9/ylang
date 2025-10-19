@@ -3,6 +3,9 @@
 using namespace std;
 
 
+#define DEBUG_OUT
+
+
 Scanner::Scanner()
 {
 	Init();
@@ -65,6 +68,92 @@ void Scanner::Init()
 	_transTbl.next['>'].next['>'].next['='] = { ">>=", EToken::RShiftAssign, };
 }
 
+
+bool Scanner::ProcessStringTokens()
+{
+	for(auto& t : _tokens)
+	{
+		if(t.kind != EToken::Str) continue;
+
+		string after = "";
+		for(int i = 0; i < t.val.size(); )
+		{
+			char c = t.val[i];
+			if(c == '\\')
+			{
+				if(++i >= t.val.size())
+				{
+					_errors.push_back(ErrorBuilder::UnexpectedEof(t.line));
+					return false;
+				}
+				c = t.val[i];
+				if(c == '\'' || c == '"' || c == '?' || c == '\\')
+				{//noop
+				}
+				else if(c == 'a')
+				{
+					c = 0x07;
+				}
+				else if(c == 'b')
+				{
+					c = 0x08;
+				}
+				else if(c == 'f')
+				{
+					c = 0x0C;
+				}
+				else if(c == 'n')
+				{
+					c = 0x0A;
+				}
+				else if(c == 'r')
+				{
+					c = 0x0D;
+				}
+				else if(c == 't')
+				{
+					c = 0x09;
+				}
+				else if(c == 'v')
+				{
+					c = 0x0B;
+				}
+				else if(c == 'x')
+				{//hexa
+					_errors.push_back(ErrorBuilder::UnsupportedCharacterEscapeSequence(t.line, c));
+					return false;
+				}
+				else if('0' <= c && c <= '7')
+				{//octa
+					_errors.push_back(ErrorBuilder::UnsupportedCharacterEscapeSequence(t.line, c));
+					return false;
+				}
+				else if(c == 'u' || c == 'U')
+				{//unicode
+					_errors.push_back(ErrorBuilder::UnsupportedCharacterEscapeSequence(t.line, c));
+					return false;
+				}
+				else
+				{
+					_errors.push_back(ErrorBuilder::UnrecognizedCharacterEscapeSequence(t.line, c));
+					return false;
+				}
+			}
+
+			after.push_back(c);
+			i++;
+		}
+		#ifdef DEBUG_OUT
+			cout << "before: " << t.val << endl;
+			cout << "after: " << after << endl;
+		#endif
+		t.val = after;
+	}
+
+	return true;
+}
+
+
 bool Scanner::Scan(const string& orgCode)
 {
 	string code = orgCode;
@@ -89,7 +178,9 @@ bool Scanner::Scan(const string& orgCode)
 		{
 			if(!err.IsNoError())
 			{
-				cerr << err.msg << endl;
+				#ifdef DEBUG_OUT
+					cerr << err.msg << endl;
+				#endif
 				err.line = lineNum + lines;
 				_errors.push_back(err);
 				return false;
@@ -115,42 +206,51 @@ bool Scanner::Scan(const string& orgCode)
 		else if(accepted->tok == EToken::None)
 		{// string, num, id
 			EToken tok;
+			string parsed = "";
 
-			if(!sz && err.IsNoError()) { tok = EToken::RawStr; sz = AdvanceRawString(code, i, lines, err); }
-			if(!sz && err.IsNoError()) { tok = EToken::Str; sz = AdvanceString(code, i, err); }
+			if(!sz && err.IsNoError()) { tok = EToken::RawStr; sz = AdvanceRawString(code, i, parsed, lines, err); }
+			if(!sz && err.IsNoError()) { tok = EToken::Str; sz = AdvanceString(code, i, parsed, err); }
 			if(!sz && err.IsNoError()) { tok = EToken::Num; sz = AdvanceNumber(code, i, err); }
 			if(!sz && err.IsNoError()) { tok = EToken::Id; sz = AdvanceId(code, i, err); }
 
 			if(sz && err.IsNoError())
 			{
-				_tokens.push_back({ tok, lineNum, code.substr(i, sz) });
+				if(parsed.empty()) parsed = code.substr(i, sz);
+				_tokens.push_back({ tok, lineNum, parsed });
+
 				i += sz;
 				lineNum += lines;
 			}
 			else if(!err.IsNoError())
 			{
-				cerr << err.msg << endl;
+				#ifdef DEBUG_OUT
+					cerr << err.msg << endl;
+				#endif
 				err.line = lineNum + lines;
 				_errors.push_back(err);
 				return false;
 			}
 			else
 			{
-				cerr << "unknown character error" << endl;
+				#ifdef DEBUG_OUT
+					cerr << "unknown character error" << endl;
+				#endif
 				_errors.push_back( ErrorBuilder::UnknownCharacter(lineNum, cur) );
 				return false;
 			}
 		}
 		else
 		{
-			cout << "token : " << accepted->tokStr << endl;
+			#ifdef DEBUG_OUT
+				cout << "token : " << accepted->tokStr << endl;
+			#endif
 			_tokens.push_back({ accepted->tok, lineNum, accepted->tokStr });
 		}
 
 		accepted = &_transTbl;
 	}
 
-	return true;
+	return ProcessStringTokens();
 }
 
 
@@ -238,12 +338,14 @@ uint32_t Scanner::AdvanceComment(const std::string& code, int start, uint32_t& r
 		}
 	}
 
-	cout << "comment: " << code.substr(start, end - start) << endl;
+	#ifdef DEBUG_OUT
+		cout << "comment: " << code.substr(start, end - start) << endl;
+	#endif
 	return end - start;
 }
 
 
-uint32_t Scanner::AdvanceRawString(const std::string& code, int start, uint32_t& retLines, Error& retError)
+uint32_t Scanner::AdvanceRawString(const std::string& code, int start, std::string& retStr, uint32_t& retLines, Error& retError)
 {
 	retError = ErrorBuilder::NoError();
 
@@ -289,13 +391,16 @@ uint32_t Scanner::AdvanceRawString(const std::string& code, int start, uint32_t&
 		return 0;
 	}
 
+	retStr = code.substr(start+delim.size(), i - (start+delim.size()));
 	end = i + (int)delim.size();
 
-	cout << "raw: " << code.substr(start, end - start) << endl;
+	#ifdef DEBUG_OUT
+		cout << "raw: " << retStr << endl;
+	#endif
 	return end - start;
 }
 
-uint32_t Scanner::AdvanceString(const std::string& code, int start, Error& retError)
+uint32_t Scanner::AdvanceString(const std::string& code, int start, std::string& retStr, Error& retError)
 {
 	retError = ErrorBuilder::NoError();
 
@@ -305,35 +410,35 @@ uint32_t Scanner::AdvanceString(const std::string& code, int start, Error& retEr
 	if(delim != '"' && delim != '\'')
 		return 0;
 
-	int i = start + 1;
-	int end = -1;
-
-	for( ; i < code.size(); i++)
+	int end = start + 1;
+	for( ; end < code.size(); end++)
 	{
-		if(AdvanceNewLine(code, i))
+		if(AdvanceNewLine(code, end))
 		{
 			retError = ErrorBuilder::NewLineInString(0);
 			return 0;
 		}
 
-		if(code[i] == '\\')
+		if(code[end] == '\\')
 		{
-			i++;
+			end++;
 			continue;
 		}
 
-		if(code[i] == delim)
+		if(code[end] == delim)
 			break;
 	}
-	if(i >= code.size())
+	if(end >= code.size())
 	{
 		retError = ErrorBuilder::UnexpectedEof(0);
 		return 0;
 	}
 
-	end = i;
+	retStr = code.substr(start+1, end - (start+1));
 
-	cout << "str: " << code.substr(start, end - start + 1) << endl;
+	#ifdef DEBUG_OUT
+		cout << "str: " << retStr << endl;
+	#endif
 	return end - start + 1;
 }
 
@@ -407,7 +512,9 @@ uint32_t Scanner::AdvanceNumber(const std::string& code, int start, Error& retEr
 
 	end = i;
 
-	cout << "num: " << code.substr(start, end - start) << endl;
+	#ifdef DEBUG_OUT
+		cout << "num: " << code.substr(start, end - start) << endl;
+	#endif
 	return end - start;
 }
 
@@ -434,6 +541,8 @@ uint32_t Scanner::AdvanceId(const std::string& code, int start, Error& retError)
 
 	end = i;
 
-	cout << "id: " << code.substr(start, end - start) << endl;
+	#ifdef DEBUG_OUT
+		cout << "id: " << code.substr(start, end - start) << endl;
+	#endif
 	return end - start;
 }
