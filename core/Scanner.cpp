@@ -153,6 +153,20 @@ bool Scanner::ProcessStringTokens()
 	return true;
 }
 
+void Scanner::ProcessIdKeywords()
+{
+	for(auto& t : _tokens)
+	{
+		if(t.kind != EToken::Id) continue;
+
+		if(0) {}
+		else if(t.val == "if") t.kind = EToken::If;
+		else if(t.val == "else") t.kind = EToken::Else;
+		else if(t.val == "for") t.kind = EToken::For;
+		else if(t.val == "func") t.kind = EToken::Func;
+	}
+}
+
 
 bool Scanner::Scan(const string& orgCode)
 {
@@ -250,6 +264,7 @@ bool Scanner::Scan(const string& orgCode)
 		accepted = &_transTbl;
 	}
 
+	ProcessIdKeywords();
 	return ProcessStringTokens();
 }
 

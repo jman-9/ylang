@@ -55,6 +55,11 @@ enum class EToken
 	Num,
 	Str,
 	RawStr,
+
+	If,
+	Else,
+	For,
+	Func,
 };
 
 

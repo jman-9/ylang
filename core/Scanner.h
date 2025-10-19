@@ -30,6 +30,7 @@ protected:
 
 	void Init();
 
+	void ProcessIdKeywords();
 	bool ProcessStringTokens();
 
 	uint32_t AdvanceNewLine(const std::string& code, int pos);

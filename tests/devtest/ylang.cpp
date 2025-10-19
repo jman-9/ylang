@@ -6,11 +6,15 @@ using namespace std;
 const char* testcode =
 R"TEST(
 
+func
+if
 
 ++ -- += & % ! != hahaha	// i'm comment
 _3hjssdj 0x192
 037 890
 'sdokfosdkfoskdfokfsd' "sdofksdokfsdfofksdfk'erokdfgoixcjvojksdj;'sdflkcxvik4m12hbjh\"\\ckjr\"\n\r\\\\sodpfpsdlfpl\""
+
+else
 
 /*
 block
@@ -21,10 +25,14 @@ comment
 spsdlfpsldfpl
 vcitimdmnxc
 
+for
+
 ,
 .ddp fdfssdfpcc
      spdflpsdlfpsldf
 """
+
+for
 
 )TEST";
 
