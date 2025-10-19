@@ -68,19 +68,34 @@ void Scanner::Init()
 bool Scanner::Scan(const string& orgCode)
 {
 	string code = orgCode;
-	RemoveComments(code);
 
 	uint32_t lineNum = 1;
 	int i = 0;
-	uint32_t sz;
 	const TransTbl* accepted = &_transTbl;
-	bool found = false;
 
 	for( ; i<code.size(); )
 	{
+		uint32_t sz = 0;
+		uint32_t lines = 0;
+		Error err;
+
 		if(sz = AdvanceNewLine(code, i))
 		{
 			lineNum++;
+			i += sz;
+			continue;
+		}
+		if(sz = AdvanceComment(code, i, lines, err))
+		{
+			if(!err.IsNoError())
+			{
+				cerr << err.msg << endl;
+				err.line = lineNum + lines;
+				_errors.push_back(err);
+				return false;
+			}
+
+			lineNum += lines;
 			i += sz;
 			continue;
 		}
@@ -99,10 +114,7 @@ bool Scanner::Scan(const string& orgCode)
 		}
 		else if(accepted->tok == EToken::None)
 		{// string, num, id
-			Error err;
 			EToken tok;
-			int lines = 0;
-			sz = 0;
 
 			if(!sz && err.IsNoError()) { tok = EToken::RawStr; sz = AdvanceRawString(code, i, lines, err); }
 			if(!sz && err.IsNoError()) { tok = EToken::Str; sz = AdvanceString(code, i, err); }
@@ -141,9 +153,6 @@ bool Scanner::Scan(const string& orgCode)
 	return true;
 }
 
-void Scanner::RemoveComments(std::string& retCode)
-{
-}
 
 uint32_t Scanner::AdvanceNewLine(const std::string& code, int pos)
 {
@@ -161,18 +170,91 @@ uint32_t Scanner::AdvanceNewLine(const std::string& code, int pos)
 	return 0;
 }
 
-uint32_t Scanner::AdvanceRawString(const std::string& code, int start, int& retLines, Error& retError)
+uint32_t Scanner::AdvanceComment(const std::string& code, int start, uint32_t& retLines, Error& retError)
+{
+	retError = ErrorBuilder::NoError();
+
+	if(start >= code.size() - 1) return 0;
+
+	static const string commentToken = "//";
+	static const string commentBlockStartToken = "/*";
+	static const string commentBlockEndToken = "*/";
+
+	bool commentBlock;
+
+	if(code.compare(start, commentBlockStartToken.size(), commentBlockStartToken) == 0)
+	{
+		commentBlock = true;
+	}
+	else if(code.compare(start, commentToken.size(), commentToken) == 0)
+	{
+		commentBlock = false;
+	}
+	else
+	{
+		return 0;
+	}
+
+	uint32_t end = 0;
+	uint32_t len;
+	retLines = 0;
+	if(!commentBlock)
+	{
+		end = start + (uint32_t)commentToken.size();
+		for( ; end<code.size(); end++)
+		{
+			if(len = AdvanceNewLine(code, end))
+			{
+				end += len;
+				retLines = 1;
+				break;
+			}
+		}
+	}
+	else
+	{
+		end = start + (uint32_t)commentBlockStartToken.size();
+		for( ; end<code.size(); )
+		{
+			if(len = AdvanceNewLine(code, end))
+			{
+				end += len;
+				retLines++;
+				continue;
+			}
+			else if(code.compare(end, commentBlockEndToken.size(), commentBlockEndToken) == 0)
+			{
+				end += (int)commentBlockEndToken.size();
+				break;
+			}
+			else
+			{
+				end++;
+			}
+		}
+		if(end >= code.size())
+		{
+			retError = ErrorBuilder::UnexpectedEof(0);
+		}
+	}
+
+	cout << "comment: " << code.substr(start, end - start) << endl;
+	return end - start;
+}
+
+
+uint32_t Scanner::AdvanceRawString(const std::string& code, int start, uint32_t& retLines, Error& retError)
 {
 	retError = ErrorBuilder::NoError();
 
 	if(start >= code.size()) return 0;
 
 	string delim;
-	if (code.compare(start, 3, "'''", 3) == 0)
+	if(code.compare(start, 3, "'''") == 0)
 	{
 		delim = "'''";
 	}
-	else if (code.compare(start, 3, "\"\"\"", 3) == 0)
+	else if(code.compare(start, 3, "\"\"\"") == 0)
 	{
 		delim = "\"\"\"";
 	}

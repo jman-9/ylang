@@ -29,11 +29,11 @@ protected:
 	TransTbl _transTbl;
 
 	void Init();
-	void RemoveComments(std::string& retCode);
 
 	uint32_t AdvanceNewLine(const std::string& code, int pos);
+	uint32_t AdvanceComment(const std::string& code, int start, uint32_t& retLines, Error& retError);
 
-	uint32_t AdvanceRawString(const std::string& code, int start, int& retLines, Error& retError);
+	uint32_t AdvanceRawString(const std::string& code, int start, uint32_t& retLines, Error& retError);
 	uint32_t AdvanceString(const std::string& code, int start, Error& retError);
 	uint32_t AdvanceNumber(const std::string& code, int start, Error& retError);
 	uint32_t AdvanceId(const std::string& code, int start, Error& retError);

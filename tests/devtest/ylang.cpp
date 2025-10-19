@@ -7,10 +7,15 @@ const char* testcode =
 R"TEST(
 
 
-++ -- += & % ! != hahaha
+++ -- += & % ! != hahaha	// i'm comment
 _3hjssdj 0x192
 037 890
 'sdokfosdkfoskdfokfsd' "sdofksdokfsdfofksdfk'erokdfgoixcjvojksdj;'sdflkcxvik4m12hbjh\"\ckjr\"\n\r\\\\sodpfpsdlfpl\""
+
+/*
+block
+comment
+*/
 
 """
 spsdlfpsldfpl
@@ -20,6 +25,9 @@ vcitimdmnxc
 .ddp fdfssdfpcc
      spdflpsdlfpsldf
 """
+
+/*
+uncompleted comment
 )TEST";
 
 
