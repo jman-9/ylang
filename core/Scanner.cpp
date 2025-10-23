@@ -40,6 +40,7 @@ void Scanner::Init()
 	_transTbl.next['%'] = { "%", EToken::Percent, };
 	_transTbl.next['&'] = { "&", EToken::Amp, };
 	_transTbl.next['|'] = { "|", EToken::Pipe, };
+	_transTbl.next['~'] = { "~", EToken::Tilde, };
 	_transTbl.next['^'] = { "^", EToken::Caret, };
 	_transTbl.next['!'] = { "!", EToken::Not, };
 	_transTbl.next['='] = { "=", EToken::Assign, };

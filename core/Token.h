@@ -36,6 +36,7 @@ enum class EToken
 	NotEqual,
 	Amp,
 	Pipe,
+	Tilde,
 	Caret,
 	LShift,
 	RShift,
@@ -60,6 +61,9 @@ enum class EToken
 	Else,
 	For,
 	Func,
+
+	UnaryPlus,
+	UnaryMinus,
 };
 
 
@@ -70,9 +74,17 @@ struct Token
 	std::string val	= "";
 
 	bool IsNull() const;
+	bool IsWhiteSpace() const;
+	bool IsLiteral() const;
+	bool IsPrefixUnary() const;
 
 	static const Token& Null();
 	static bool IsWhiteSpace(EToken tok);
+	static bool IsLiteral(EToken tok);
+	static bool IsPrefixUnary(EToken tok);
+	static bool IsWhiteSpace(const Token& tok);
+	static bool IsLiteral(const Token& tok);
+	static bool IsPrefixUnary(const Token& tok);
 
 protected:
 };

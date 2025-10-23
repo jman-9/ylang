@@ -1,0 +1,18 @@
+LValue -> Id | PostfixExp '.' Id | PostfixExp '[' Exp ']'
+AssignOp -> '=' | '+=' | '-=' | '*=' | '/=' | '%=' | '<<=' | '>>=' | '&=' | '|=' | '^='
+Exp -> AssignExp
+AssignExp -> OrExp | LValue AssignOp AssignExp
+OrExp -> AndExp | OrExp '||' AndExp
+AndExp   -> BitOrExp | AndExp '&&' BitOrExp
+BitOrExp -> BitXorExp | BitOrExp '|' BitXorExp
+BitXorExp-> BitAndExp | BitXorExp '^' BitAndExp
+BitAndExp-> EqualExp | BitAndExp '&' EqualExp
+EqualExp -> RelExp | EqualExp ('==' | '!=') RelExp
+RelExp   -> ShiftExp | RelExp ('<' | '<=' | '>' | '>=') ShiftExp
+ShiftExp -> AddExp | ShiftExp ('<<' | '>>') AddExp
+AddExp   -> MulExp | AddExp ('+' | '-') MulExp
+MulExp   -> UnaryExp | MulExp ('*' | '/' | '%') UnaryExp
+PrefixExp -> ('!' | '~' | '+' | '-') PrefixExp | PostfixExp
+PostfixExp → PrimaryExp | PostfixExp '(' [ Args ] ')' | PostfixExp '[' Exp ']' | PostfixExp '.' Id
+Args -> Exp { ',' Exp }
+PrimaryExp -> '(' Exp ')' | Id | Literal
