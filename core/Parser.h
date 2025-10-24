@@ -41,6 +41,7 @@ protected:
 	TreeNode* ParseCompoundStmt();
 	TreeNode* ParseStmt();
 	TreeNode* ParseIf();
+	TreeNode* ParseFor();
 
 	bool MoveNext();
 	bool MovePrev();

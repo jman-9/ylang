@@ -22,3 +22,4 @@ Code -> {Stmt}
 Stmt -> Exp | CompoundStmt | IfStmt | ForStmt
 CompoundStmt -> '{' {Stmt} '}'
 IfStmt -> 'if' '(' Exp ')' Stmt ['else' Stmt]
+ForStmt -> 'for' '(' [Exp] ';' [Exp] ';' [Exp] ')' Stmt

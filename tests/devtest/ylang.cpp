@@ -59,6 +59,15 @@ c = 1
 
 )TEST";
 
+const char* fortestcode =
+R"TEST(
+
+for( ; ; ) {}
+
+for(i=1; i<10; i+=1) {}
+
+)TEST";
+
 
 int main()
 {
@@ -84,7 +93,8 @@ int main()
 
 	Scanner s2;
 	//s2.Scan(exptestcode);
-	s2.Scan(iftestcode);
+	//s2.Scan(iftestcode);
+	s2.Scan(fortestcode);
 
 	for(auto t : s2._tokens)
 	{

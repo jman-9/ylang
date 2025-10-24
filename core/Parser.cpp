@@ -355,6 +355,7 @@ TreeNode* Parser::ParseStmt()
 	if(ast = ParseCompoundStmt()) return ast;
 
 	if(ast = ParseIf()) return ast;
+	if(ast = ParseFor()) return ast;
 
 	return nullptr;
 }
@@ -415,6 +416,82 @@ TreeNode* Parser::ParseIf()
 
 	return ifNode;
 }
+
+TreeNode* Parser::ParseFor()
+{
+	if(GetCur().kind != EToken::For)
+	{
+		return nullptr;
+	}
+
+	Token _for = GetCur();
+	MoveNext();
+
+	if(GetCur().kind != EToken::LParen)
+	{
+		throw 'n';
+	}
+	MoveNext();
+
+	//TODO 메모리 릭
+	TreeNode* init = ParseExpLoop(EToken::Semicolon);
+	if(!init)
+	{
+		init = new TreeNode();
+		init->self = { EToken::Num, _for.line, "1" };
+	}
+	if(GetCur().kind != EToken::Semicolon)
+	{
+		throw 'n';
+	}
+	MoveNext();
+
+	//TODO 메모리 릭
+	TreeNode* cond = ParseExpLoop(EToken::Semicolon);
+	if(!cond)
+	{
+		cond = new TreeNode();
+		cond->self = { EToken::Num, _for.line, "1" };
+	}
+	if(GetCur().kind != EToken::Semicolon)
+	{
+		throw 'n';
+	}
+	MoveNext();
+
+	//TODO 메모리 릭
+	TreeNode* update = ParseExpLoop(EToken::RParen);
+	if(!update)
+	{
+		update = new TreeNode();
+		update->self = { EToken::Num, _for.line, "1" };
+	}
+	if(GetCur().kind != EToken::RParen)
+	{
+		throw 'n';
+	}
+	MoveNext();
+
+	TreeNode* forNode = new TreeNode;
+	forNode->self = _for;
+	forNode->childs.push_back(init);
+	forNode->childs.push_back(cond);
+	forNode->childs.push_back(update);
+	init->parent = forNode;
+	cond->parent = forNode;
+	update->parent = forNode;
+
+	TreeNode* loop = ParseStmt();
+	if(!loop)
+	{
+		throw 'n';
+	}
+
+	forNode->childs.push_back(loop);
+	loop->parent = forNode;
+	return forNode;
+}
+
 
 TreeNode* Parser::Parse()
 {
