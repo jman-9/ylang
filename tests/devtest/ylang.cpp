@@ -40,7 +40,8 @@ for
 const char* exptestcode =
 R"TEST(
 
-!!!a + b
+!!!a + b;
+c + b;
 
 )TEST";
 
@@ -73,8 +74,22 @@ R"TEST(
 
 fn test(a, b, c) {
   d = a + b + c
-  return
+  return d
 }
+
+test(1, 2, 3)
+
+)TEST";
+
+const char* postfixtestcode =
+R"TEST(
+
+fn test(a, b, c) {
+  d = a + b + c;
+  return d;
+}
+
+p = 1 + 30 * (3 + 2) / (5 - ((test))(1, 2, 3));
 
 )TEST";
 
@@ -105,7 +120,8 @@ int main()
 	//s2.Scan(exptestcode);
 	//s2.Scan(iftestcode);
 	//s2.Scan(fortestcode);
-	s2.Scan(fntestcode);
+	//s2.Scan(fntestcode);
+	s2.Scan(postfixtestcode);
 
 	for(auto t : s2._tokens)
 	{

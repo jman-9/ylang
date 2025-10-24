@@ -65,6 +65,8 @@ enum class EToken
 	Fn,
 	Return,
 
+	Invoke,
+	Index,
 	UnaryPlus,
 	UnaryMinus,
 };

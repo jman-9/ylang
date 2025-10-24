@@ -20,18 +20,13 @@ public:
 	TreeNode* Parse();
 
 protected:
-	static bool IsOperator(EToken tok);
-	static bool IsOperator(const Token& tok);
-
-	static int CompPrec(EToken lhs, EToken rhs);
-	static int CompPrec(const Token& lhs, const Token& rhs);
-
 	const std::vector<Token>& _tokens;
 	size_t _pos;
 
-	TreeNode* ParseExpLoop(EToken endToken = EToken::None);
+	TreeNode* ParseExpLoop(EToken endToken = EToken::None, EToken endToken2 = EToken::None);
 	TreeNode* ParseExp(bool first);
 	TreeNode* ParsePrimaryExp();
+	TreeNode* ParsePostfixExp();
 	TreeNode* ParsePrefixExp();
 	TreeNode* ParseOpExp();
 	TreeNode* ParseCompoundStmt(const std::vector<EToken>& allowed = std::vector<EToken>());
@@ -45,4 +40,5 @@ protected:
 	bool IsEnd() const;
 	const Token& GetPrev() const;
 	const Token& GetCur() const;
+	const Token& GetNext() const;
 };

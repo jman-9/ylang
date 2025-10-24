@@ -1,5 +1,8 @@
 LValue -> Id | PostfixExp '.' Id | PostfixExp '[' Exp ']'
 AssignOp -> '=' | '+=' | '-=' | '*=' | '/=' | '%=' | '<<=' | '>>=' | '&=' | '|=' | '^='
+Args -> Exp {',' Exp}
+Params -> Id {',' Id}
+
 Exp -> AssignExp
 AssignExp -> OrExp | LValue AssignOp AssignExp
 OrExp -> AndExp | OrExp '||' AndExp
@@ -11,19 +14,16 @@ EqualExp -> RelExp | EqualExp ('==' | '!=') RelExp
 RelExp   -> ShiftExp | RelExp ('<' | '<=' | '>' | '>=') ShiftExp
 ShiftExp -> AddExp | ShiftExp ('<<' | '>>') AddExp
 AddExp   -> MulExp | AddExp ('+' | '-') MulExp
-MulExp   -> UnaryExp | MulExp ('*' | '/' | '%') UnaryExp
+MulExp   -> UnaryExp | MulExp ('*' | '/' | '%') PrefixExp
 PrefixExp -> ('!' | '~' | '+' | '-') PrefixExp | PostfixExp
-PostfixExp → PrimaryExp | PostfixExp '('[Args]')' | PostfixExp '['Exp']' | PostfixExp '.' Id
-Args -> Exp {',' Exp}
+PostfixExp → PrimaryExp { '(' [Args] ')' | '[' Exp ']' | '.' Id }
 PrimaryExp -> '('Exp')' | Id | Literal
 
-
 Code -> {Stmt}
-Stmt -> Exp | CompoundStmt | IfStmt | ForStmt | FnStmt | ReturnStmt | 'continue' | 'break'
+Stmt -> Exp ';' | CompoundStmt | IfStmt | ForStmt | FnStmt | ReturnStmt | KeyStmt ';'
 CompoundStmt -> '{'{Stmt}'}'
 IfStmt -> 'if' '('Exp')' Stmt ['else' Stmt]
 ForStmt -> 'for' '('[Exp]';' [Exp]';' [Exp]')' Stmt
 FnStmt -> 'fn' Id '('[Params]')' (Exp | CompoundStmt)
-ReturnStmt -> 'return' [Exp]
-
-Params -> Id {',' Id}
+ReturnStmt -> 'return' [Exp] ';'
+KeyStmt -> 'continue' | 'break'
