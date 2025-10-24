@@ -1,15 +1,8 @@
 #pragma once
-#include "Token.h"
+#include "TreeNode.h"
 #include <vector>
 #include <map>
 
-
-struct TreeNode
-{
-	Token self;
-	TreeNode* parent = nullptr;
-	std::vector<TreeNode*> childs;
-};
 
 class Parser
 {

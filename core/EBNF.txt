@@ -1,7 +1,6 @@
 LValue -> Id | PostfixExp '.' Id | PostfixExp '[' Exp ']'
 AssignOp -> '=' | '+=' | '-=' | '*=' | '/=' | '%=' | '<<=' | '>>=' | '&=' | '|=' | '^='
 Args -> Exp {',' Exp}
-Params -> Id {',' Id}
 
 Exp -> AssignExp
 AssignExp -> OrExp | LValue AssignOp AssignExp
@@ -27,3 +26,4 @@ ForStmt -> 'for' '('[Exp]';' [Exp]';' [Exp]')' Stmt
 FnStmt -> 'fn' Id '('[Params]')' (Exp | CompoundStmt)
 ReturnStmt -> 'return' [Exp] ';'
 KeyStmt -> 'continue' | 'break'
+Params -> Id {',' Id}

@@ -1,6 +1,7 @@
 #include "ylang.h"
 #include "core/Scanner.h"
 #include "core/Parser.h"
+#include "core/SemanticAnalyzer.h"
 #include <format>
 using namespace std;
 
@@ -91,6 +92,8 @@ fn test(a, b, c) {
 
 p = 1 + 30 * (3 + 2) / (5 - ((test))(1, 2, 3));
 
+g[p] = 10;
+
 )TEST";
 
 
@@ -141,7 +144,11 @@ int main()
 	{
 		Parser p(s2._tokens);
 		TreeNode* ast = p.Parse();
-		int a = 1;
+		if(ast)
+		{
+			SemanticAnalyzer sa;
+			sa.Analyze(*ast);
+		}
 	}
 
 	return 0;
