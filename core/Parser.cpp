@@ -356,6 +356,7 @@ TreeNode* Parser::ParseStmt()
 
 	if(ast = ParseIf()) return ast;
 	if(ast = ParseFor()) return ast;
+	if(ast = ParseFn()) return ast;
 
 	return nullptr;
 }
@@ -490,6 +491,73 @@ TreeNode* Parser::ParseFor()
 	forNode->childs.push_back(loop);
 	loop->parent = forNode;
 	return forNode;
+}
+
+TreeNode* Parser::ParseFn()
+{
+	if(GetCur().kind != EToken::Fn)
+	{
+		return nullptr;
+	}
+
+	Token fn = GetCur();
+	MoveNext();
+
+	if(GetCur().kind != EToken::Id)
+	{
+		throw 'n';
+	}
+	MoveNext();
+
+	if(GetCur().kind != EToken::LParen)
+	{
+		throw 'n';
+	}
+	MoveNext();
+
+	TreeNode* params = new TreeNode;
+	params->self.line = fn.line;
+	//TODO 메모리 릭
+	for( ; ; )
+	{
+		if(GetCur().kind == EToken::RParen)
+		{//push
+			MoveNext();
+			break;
+		}
+		else if(GetCur().kind == EToken::Id)
+		{
+			TreeNode* param = new TreeNode;
+			param->self = GetCur();
+			params->childs.push_back(param);
+			param->parent = params;
+			MoveNext();
+			if(GetCur().kind == EToken::Comma)
+			{
+				MoveNext();
+			}
+			else if(GetCur().kind != EToken::RParen)
+			{
+				throw 'n';
+			}
+		}
+		else
+		{
+			throw 'n';
+		}
+	}
+
+	TreeNode* body = ParseStmt();
+	if(!body)
+	{
+		throw 'n';
+	}
+
+	TreeNode* fnNode = new TreeNode;
+	fnNode->childs.push_back(params);
+	fnNode->childs.push_back(body);
+	body->parent = fnNode;
+	return fnNode;
 }
 
 

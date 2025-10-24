@@ -68,6 +68,15 @@ for(i=1; i<10; i+=1) {}
 
 )TEST";
 
+const char* fntestcode =
+R"TEST(
+
+fn test(a, b, c) {
+  d = a + b + c
+}
+
+)TEST";
+
 
 int main()
 {
@@ -94,7 +103,8 @@ int main()
 	Scanner s2;
 	//s2.Scan(exptestcode);
 	//s2.Scan(iftestcode);
-	s2.Scan(fortestcode);
+	//s2.Scan(fortestcode);
+	s2.Scan(fntestcode);
 
 	for(auto t : s2._tokens)
 	{

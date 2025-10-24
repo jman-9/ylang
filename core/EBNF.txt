@@ -13,13 +13,16 @@ ShiftExp -> AddExp | ShiftExp ('<<' | '>>') AddExp
 AddExp   -> MulExp | AddExp ('+' | '-') MulExp
 MulExp   -> UnaryExp | MulExp ('*' | '/' | '%') UnaryExp
 PrefixExp -> ('!' | '~' | '+' | '-') PrefixExp | PostfixExp
-PostfixExp → PrimaryExp | PostfixExp '(' [ Args ] ')' | PostfixExp '[' Exp ']' | PostfixExp '.' Id
-Args -> Exp { ',' Exp }
-PrimaryExp -> '(' Exp ')' | Id | Literal
+PostfixExp → PrimaryExp | PostfixExp '('[Args]')' | PostfixExp '['Exp']' | PostfixExp '.' Id
+Args -> Exp {',' Exp}
+PrimaryExp -> '('Exp')' | Id | Literal
 
 
 Code -> {Stmt}
-Stmt -> Exp | CompoundStmt | IfStmt | ForStmt
-CompoundStmt -> '{' {Stmt} '}'
-IfStmt -> 'if' '(' Exp ')' Stmt ['else' Stmt]
-ForStmt -> 'for' '(' [Exp] ';' [Exp] ';' [Exp] ')' Stmt
+Stmt -> Exp | CompoundStmt | IfStmt | ForStmt | FnStmt
+CompoundStmt -> '{'{Stmt}'}'
+IfStmt -> 'if' '('Exp')' Stmt ['else' Stmt]
+ForStmt -> 'for' '('[Exp]';' [Exp]';' [Exp]')' Stmt
+FnStmt -> 'fn' Id '('[Params]')' (Exp | CompoundStmt)
+
+Params -> Id {',' Id}
