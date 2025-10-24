@@ -3,97 +3,105 @@ using namespace std;
 
 
 
-std::map<EToken, int> Parser::_opMap;
-std::map<EToken, int> Parser::_precMap;
+static map<EToken, int> s_opMap;
+static map<EToken, int> s_precMap;
+static vector<EToken> s_allowedFor;
+static vector<EToken> s_allowedFn;
 
 static bool InitParser()
 {
-	Parser::_opMap[ EToken::Assign ] = 10;
-	Parser::_opMap[ EToken::PlusAssign ] = 10;
-	Parser::_opMap[ EToken::MinusAssign ] = 10;
-	Parser::_opMap[ EToken::MulAssign ] = 10;
-	Parser::_opMap[ EToken::DivAssign ] = 10;
-	Parser::_opMap[ EToken::ModAssign ] = 10;
-	Parser::_opMap[ EToken::AndAssign ] = 10;
-	Parser::_opMap[ EToken::OrAssign ] = 10;
-	Parser::_opMap[ EToken::XorAssign ] = 10;
-	Parser::_opMap[ EToken::LShiftAssign ] = 10;
-	Parser::_opMap[ EToken::RShiftAssign ] = 10;
+	s_opMap[ EToken::Assign ] = 10;
+	s_opMap[ EToken::PlusAssign ] = 10;
+	s_opMap[ EToken::MinusAssign ] = 10;
+	s_opMap[ EToken::MulAssign ] = 10;
+	s_opMap[ EToken::DivAssign ] = 10;
+	s_opMap[ EToken::ModAssign ] = 10;
+	s_opMap[ EToken::AndAssign ] = 10;
+	s_opMap[ EToken::OrAssign ] = 10;
+	s_opMap[ EToken::XorAssign ] = 10;
+	s_opMap[ EToken::LShiftAssign ] = 10;
+	s_opMap[ EToken::RShiftAssign ] = 10;
 
-	Parser::_opMap[ EToken::Or ] = 20;
-	Parser::_opMap[ EToken::And ] = 30;
+	s_opMap[ EToken::Or ] = 20;
+	s_opMap[ EToken::And ] = 30;
 
-	Parser::_opMap[ EToken::Pipe ] = 40;
-	Parser::_opMap[ EToken::Caret ] = 50;
-	Parser::_opMap[ EToken::Amp ] = 60;
+	s_opMap[ EToken::Pipe ] = 40;
+	s_opMap[ EToken::Caret ] = 50;
+	s_opMap[ EToken::Amp ] = 60;
 
-	Parser::_opMap[ EToken::Equal ] = 70;
-	Parser::_opMap[ EToken::NotEqual ] = 70;
+	s_opMap[ EToken::Equal ] = 70;
+	s_opMap[ EToken::NotEqual ] = 70;
 
-	Parser::_opMap[ EToken::Greater ] = 80;
-	Parser::_opMap[ EToken::Less ] = 80;
-	Parser::_opMap[ EToken::GreaterEqual ] = 80;
-	Parser::_opMap[ EToken::LessEqual ] = 80;
+	s_opMap[ EToken::Greater ] = 80;
+	s_opMap[ EToken::Less ] = 80;
+	s_opMap[ EToken::GreaterEqual ] = 80;
+	s_opMap[ EToken::LessEqual ] = 80;
 
-	Parser::_opMap[ EToken::LShift ] = 90;
-	Parser::_opMap[ EToken::RShift ] = 90;
+	s_opMap[ EToken::LShift ] = 90;
+	s_opMap[ EToken::RShift ] = 90;
 
-	Parser::_opMap[ EToken::Plus ] = 100;
-	Parser::_opMap[ EToken::Minus ] = 100;
+	s_opMap[ EToken::Plus ] = 100;
+	s_opMap[ EToken::Minus ] = 100;
 
-	Parser::_opMap[ EToken::Star ] = 110;
-	Parser::_opMap[ EToken::Slash ] = 110;
-	Parser::_opMap[ EToken::Percent ] = 110;
+	s_opMap[ EToken::Star ] = 110;
+	s_opMap[ EToken::Slash ] = 110;
+	s_opMap[ EToken::Percent ] = 110;
 
 	/*===========================================*/
 
-	Parser::_precMap[ EToken::Assign ] = 10;
-	Parser::_precMap[ EToken::PlusAssign ] = 10;
-	Parser::_precMap[ EToken::MinusAssign ] = 10;
-	Parser::_precMap[ EToken::MulAssign ] = 10;
-	Parser::_precMap[ EToken::DivAssign ] = 10;
-	Parser::_precMap[ EToken::ModAssign ] = 10;
-	Parser::_precMap[ EToken::AndAssign ] = 10;
-	Parser::_precMap[ EToken::OrAssign ] = 10;
-	Parser::_precMap[ EToken::XorAssign ] = 10;
-	Parser::_precMap[ EToken::LShiftAssign ] = 10;
-	Parser::_precMap[ EToken::RShiftAssign ] = 10;
+	s_precMap[ EToken::Assign ] = 10;
+	s_precMap[ EToken::PlusAssign ] = 10;
+	s_precMap[ EToken::MinusAssign ] = 10;
+	s_precMap[ EToken::MulAssign ] = 10;
+	s_precMap[ EToken::DivAssign ] = 10;
+	s_precMap[ EToken::ModAssign ] = 10;
+	s_precMap[ EToken::AndAssign ] = 10;
+	s_precMap[ EToken::OrAssign ] = 10;
+	s_precMap[ EToken::XorAssign ] = 10;
+	s_precMap[ EToken::LShiftAssign ] = 10;
+	s_precMap[ EToken::RShiftAssign ] = 10;
 
-	Parser::_precMap[ EToken::Or ] = 20;
-	Parser::_precMap[ EToken::And ] = 30;
+	s_precMap[ EToken::Or ] = 20;
+	s_precMap[ EToken::And ] = 30;
 
-	Parser::_precMap[ EToken::Pipe ] = 40;
-	Parser::_precMap[ EToken::Caret ] = 50;
-	Parser::_precMap[ EToken::Amp ] = 60;
+	s_precMap[ EToken::Pipe ] = 40;
+	s_precMap[ EToken::Caret ] = 50;
+	s_precMap[ EToken::Amp ] = 60;
 
-	Parser::_precMap[ EToken::Equal ] = 70;
-	Parser::_precMap[ EToken::NotEqual ] = 70;
+	s_precMap[ EToken::Equal ] = 70;
+	s_precMap[ EToken::NotEqual ] = 70;
 
-	Parser::_precMap[ EToken::Greater ] = 80;
-	Parser::_precMap[ EToken::Less ] = 80;
-	Parser::_precMap[ EToken::GreaterEqual ] = 80;
-	Parser::_precMap[ EToken::LessEqual ] = 80;
+	s_precMap[ EToken::Greater ] = 80;
+	s_precMap[ EToken::Less ] = 80;
+	s_precMap[ EToken::GreaterEqual ] = 80;
+	s_precMap[ EToken::LessEqual ] = 80;
 
-	Parser::_precMap[ EToken::LShift ] = 90;
-	Parser::_precMap[ EToken::RShift ] = 90;
+	s_precMap[ EToken::LShift ] = 90;
+	s_precMap[ EToken::RShift ] = 90;
 
-	Parser::_precMap[ EToken::Plus ] = 100;
-	Parser::_precMap[ EToken::Minus ] = 100;
+	s_precMap[ EToken::Plus ] = 100;
+	s_precMap[ EToken::Minus ] = 100;
 
-	Parser::_precMap[ EToken::Star ] = 110;
-	Parser::_precMap[ EToken::Slash ] = 110;
-	Parser::_precMap[ EToken::Percent ] = 110;
+	s_precMap[ EToken::Star ] = 110;
+	s_precMap[ EToken::Slash ] = 110;
+	s_precMap[ EToken::Percent ] = 110;
 
-	Parser::_precMap[ EToken::Not ] = 190;
-	Parser::_precMap[ EToken::Tilde ] = 190;
-	Parser::_precMap[ EToken::UnaryMinus ] = 190;
-	Parser::_precMap[ EToken::UnaryPlus ] = 190;
+	s_precMap[ EToken::Not ] = 190;
+	s_precMap[ EToken::Tilde ] = 190;
+	s_precMap[ EToken::UnaryMinus ] = 190;
+	s_precMap[ EToken::UnaryPlus ] = 190;
 
- 	Parser::_precMap[ EToken::LParen ] = 200;
- 	Parser::_precMap[ EToken::Id ] = 200;
- 	Parser::_precMap[ EToken::Num ] = 200;
- 	Parser::_precMap[ EToken::Str ] = 200;
- 	Parser::_precMap[ EToken::RawStr ] = 200;
+ 	s_precMap[ EToken::LParen ] = 200;
+ 	s_precMap[ EToken::Id ] = 200;
+ 	s_precMap[ EToken::Num ] = 200;
+ 	s_precMap[ EToken::Str ] = 200;
+ 	s_precMap[ EToken::RawStr ] = 200;
+
+	/*===========================================*/
+
+	s_allowedFor.push_back(EToken::Break);
+	s_allowedFor.push_back(EToken::Continue);
+	s_allowedFn.push_back(EToken::Return);
 
 	return true;
 }
@@ -102,7 +110,7 @@ static bool init = InitParser();
 
 bool Parser::IsOperator(EToken tok)
 {
-	return _opMap.find(tok) != _opMap.end();
+	return s_opMap.find(tok) != s_opMap.end();
 }
 bool Parser::IsOperator(const Token& tok)
 {
@@ -111,12 +119,12 @@ bool Parser::IsOperator(const Token& tok)
 
 int Parser::CompPrec(EToken lhs, EToken rhs)
 {
-	auto lfound = _precMap.find(lhs);
-	auto rfound = _precMap.find(rhs);
+	auto lfound = s_precMap.find(lhs);
+	auto rfound = s_precMap.find(rhs);
 
-	if(lfound == _precMap.end())
+	if(lfound == s_precMap.end())
 		return 1;
-	if(rfound == _precMap.end())
+	if(rfound == s_precMap.end())
 		return -1;
 
 	return lfound->second - rfound->second;
@@ -288,8 +296,8 @@ TreeNode* Parser::ParsePrefixExp()
 TreeNode* Parser::ParseOpExp()
 {
 	auto& cur = GetCur();
-	auto found = _opMap.find(cur.kind);
-	if(found == _opMap.end())
+	auto found = s_opMap.find(cur.kind);
+	if(found == s_opMap.end())
 	{
 		return nullptr;
 	}
@@ -314,7 +322,7 @@ TreeNode* Parser::ParseOpExp()
 }
 
 
-TreeNode* Parser::ParseCompoundStmt()
+TreeNode* Parser::ParseCompoundStmt(const std::vector<EToken>& allowed /* = std::vector<EToken>() */)
 {
 	if(GetCur().kind != EToken::LBrace)
 	{
@@ -332,7 +340,7 @@ TreeNode* Parser::ParseCompoundStmt()
 			throw 'n';
 		}
 
-		TreeNode* stmt = ParseStmt();
+		TreeNode* stmt = ParseStmt(allowed);
 		if(!stmt)
 		{
 			throw 'n';
@@ -347,17 +355,51 @@ TreeNode* Parser::ParseCompoundStmt()
 	return compound;
 }
 
-TreeNode* Parser::ParseStmt()
+TreeNode* Parser::ParseStmt(const std::vector<EToken>& allowed /* = std::vector<EToken>() */)
 {
 	TreeNode* ast = ParseExpLoop();
 	if(ast) return ast;
 
-	if(ast = ParseCompoundStmt()) return ast;
+	if(ast = ParseCompoundStmt(allowed)) return ast;
 
 	if(ast = ParseIf()) return ast;
 	if(ast = ParseFor()) return ast;
 	if(ast = ParseFn()) return ast;
 
+	auto& cur = GetCur();
+	bool needParsing = false;
+	for(auto a : allowed)
+	{
+		if(a == cur.kind)
+		{
+			needParsing = true;
+			break;
+		}
+	}
+	if(!needParsing) return nullptr;
+
+	if(cur.kind == EToken::Continue || cur.kind == EToken::Break)
+	{
+		ast = new TreeNode;
+		ast->self = cur;
+		MoveNext();
+		return ast;
+	}
+	else if(cur.kind == EToken::Return)
+	{
+		ast = new TreeNode;
+		ast->self = cur;
+		MoveNext();
+		TreeNode* ret = ParseExpLoop();
+		if(ret)
+		{
+			ast->childs.push_back(ret);
+			ret->parent = ast;
+		}
+		return ast;
+	}
+
+	throw 'n';
 	return nullptr;
 }
 
@@ -482,7 +524,7 @@ TreeNode* Parser::ParseFor()
 	cond->parent = forNode;
 	update->parent = forNode;
 
-	TreeNode* loop = ParseStmt();
+	TreeNode* loop = ParseStmt(s_allowedFor);
 	if(!loop)
 	{
 		throw 'n';
@@ -547,7 +589,7 @@ TreeNode* Parser::ParseFn()
 		}
 	}
 
-	TreeNode* body = ParseStmt();
+	TreeNode* body = ParseStmt(s_allowedFn);
 	if(!body)
 	{
 		throw 'n';

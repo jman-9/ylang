@@ -19,10 +19,11 @@ PrimaryExp -> '('Exp')' | Id | Literal
 
 
 Code -> {Stmt}
-Stmt -> Exp | CompoundStmt | IfStmt | ForStmt | FnStmt
+Stmt -> Exp | CompoundStmt | IfStmt | ForStmt | FnStmt | ReturnStmt | 'continue' | 'break'
 CompoundStmt -> '{'{Stmt}'}'
 IfStmt -> 'if' '('Exp')' Stmt ['else' Stmt]
 ForStmt -> 'for' '('[Exp]';' [Exp]';' [Exp]')' Stmt
 FnStmt -> 'fn' Id '('[Params]')' (Exp | CompoundStmt)
+ReturnStmt -> 'return' [Exp]
 
 Params -> Id {',' Id}

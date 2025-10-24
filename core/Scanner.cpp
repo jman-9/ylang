@@ -164,7 +164,10 @@ void Scanner::ProcessIdKeywords()
 		else if(t.val == "if") t.kind = EToken::If;
 		else if(t.val == "else") t.kind = EToken::Else;
 		else if(t.val == "for") t.kind = EToken::For;
+		else if(t.val == "break") t.kind = EToken::Break;
+		else if(t.val == "continue") t.kind = EToken::Continue;
 		else if(t.val == "fn") t.kind = EToken::Fn;
+		else if(t.val == "return") t.kind = EToken::Return;
 	}
 }
 

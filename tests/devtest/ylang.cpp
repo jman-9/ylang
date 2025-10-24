@@ -62,9 +62,9 @@ c = 1
 const char* fortestcode =
 R"TEST(
 
-for( ; ; ) {}
+for( ; ; ) { continue }
 
-for(i=1; i<10; i+=1) {}
+for(i=1; i<10; i+=1) { break }
 
 )TEST";
 
@@ -73,6 +73,7 @@ R"TEST(
 
 fn test(a, b, c) {
   d = a + b + c
+  return
 }
 
 )TEST";

@@ -20,10 +20,6 @@ public:
 	TreeNode* Parse();
 
 protected:
-	friend bool InitParser();
-	static std::map<EToken, int> _opMap;
-	static std::map<EToken, int> _precMap;
-
 	static bool IsOperator(EToken tok);
 	static bool IsOperator(const Token& tok);
 
@@ -38,8 +34,8 @@ protected:
 	TreeNode* ParsePrimaryExp();
 	TreeNode* ParsePrefixExp();
 	TreeNode* ParseOpExp();
-	TreeNode* ParseCompoundStmt();
-	TreeNode* ParseStmt();
+	TreeNode* ParseCompoundStmt(const std::vector<EToken>& allowed = std::vector<EToken>());
+	TreeNode* ParseStmt(const std::vector<EToken>& allowed = std::vector<EToken>());
 	TreeNode* ParseIf();
 	TreeNode* ParseFor();
 	TreeNode* ParseFn();
