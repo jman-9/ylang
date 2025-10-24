@@ -314,23 +314,125 @@ TreeNode* Parser::ParseOpExp()
 }
 
 
-bool Parser::Parse()
+TreeNode* Parser::ParseCompoundStmt()
 {
+	if(GetCur().kind != EToken::LBrace)
+	{
+		return nullptr;
+	}
+
+	TreeNode* compound = new TreeNode;
+	compound->self = GetCur();
+	MoveNext();
+
+	for( ; GetCur().kind != EToken::RBrace; )
+	{
+		if(IsEnd())
+		{
+			throw 'n';
+		}
+
+		TreeNode* stmt = ParseStmt();
+		if(!stmt)
+		{
+			throw 'n';
+		}
+
+		compound->childs.push_back(stmt);
+		stmt->parent = compound;
+	}
+
+	MoveNext();
+
+	return compound;
+}
+
+TreeNode* Parser::ParseStmt()
+{
+	TreeNode* ast = ParseExpLoop();
+	if(ast) return ast;
+
+	if(ast = ParseCompoundStmt()) return ast;
+
+	if(ast = ParseIf()) return ast;
+
+	return nullptr;
+}
+
+TreeNode* Parser::ParseIf()
+{
+	if(GetCur().kind != EToken::If)
+	{
+		return nullptr;
+	}
+
+	Token _if = GetCur();
+	MoveNext();
+
+	if(GetCur().kind != EToken::LParen)
+	{
+		throw 'n';
+	}
+	MoveNext();
+
+	TreeNode* exp = ParseExpLoop(EToken::RParen);
+	if(!exp)
+	{
+		throw 'n';
+	}
+	if(GetCur().kind != EToken::RParen)
+	{
+		throw 'n';
+	}
+	MoveNext();
+
+	TreeNode* ifNode = new TreeNode;
+	ifNode->self = _if;
+	ifNode->childs.push_back(exp);
+	exp->parent = ifNode;
+
+	TreeNode* _true = ParseStmt();
+	if(!_true)
+	{
+		throw 'n';
+	}
+
+	ifNode->childs.push_back(_true);
+	_true->parent = ifNode;
+
+	if(GetCur().kind == EToken::Else)
+	{
+		MoveNext();
+		TreeNode* _false = ParseStmt();
+		if(!_true)
+		{
+			throw 'n';
+		}
+
+		ifNode->childs.push_back(_false);
+		_false->parent = ifNode;
+	}
+
+	return ifNode;
+}
+
+TreeNode* Parser::Parse()
+{
+	TreeNode* root = new TreeNode;
+
 	for( ; !IsEnd(); )
 	{
-
-		TreeNode* ast = ParseExpLoop();
-		if(ast)
+		TreeNode* ast = ParseStmt();
+		if(!ast)
 		{
-			int a  = 1;
-
+			throw 'n';
 		}
-		//else if(ParseKey())
-		//{
-		//}
+		root->childs.push_back(ast);
+		ast->parent = root;
 	}
-	return true;
+	return root;
 }
+
 
 bool Parser::MoveNext()
 {

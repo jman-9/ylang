@@ -7,7 +7,6 @@
 struct TreeNode
 {
 	Token self;
-	int prec = 0;
 	TreeNode* parent = nullptr;
 	std::vector<TreeNode*> childs;
 };
@@ -18,7 +17,7 @@ public:
 	Parser(const std::vector<Token>& tokens);
 	virtual ~Parser();
 
-	bool Parse();
+	TreeNode* Parse();
 
 protected:
 	friend bool InitParser();
@@ -39,6 +38,9 @@ protected:
 	TreeNode* ParsePrimaryExp();
 	TreeNode* ParsePrefixExp();
 	TreeNode* ParseOpExp();
+	TreeNode* ParseCompoundStmt();
+	TreeNode* ParseStmt();
+	TreeNode* ParseIf();
 
 	bool MoveNext();
 	bool MovePrev();

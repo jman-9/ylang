@@ -44,9 +44,25 @@ R"TEST(
 
 )TEST";
 
+const char* iftestcode =
+R"TEST(
+
+if(1) { a = 1 } else { b = 1 }
+
+c = 1
+
+{
+  if(0) { a = 1 } else { b = 1 }
+
+  f = 10
+}
+
+)TEST";
+
 
 int main()
 {
+#if 0
 	Scanner s;
 	s.Scan(testcode);
 
@@ -64,9 +80,11 @@ int main()
 			cout << errStr << endl;
 		}
 	}
+#endif
 
 	Scanner s2;
-	s2.Scan(exptestcode);
+	//s2.Scan(exptestcode);
+	s2.Scan(iftestcode);
 
 	for(auto t : s2._tokens)
 	{
@@ -85,7 +103,8 @@ int main()
 	else
 	{
 		Parser p(s2._tokens);
-		p.Parse();
+		TreeNode* ast = p.Parse();
+		int a = 1;
 	}
 
 	return 0;

@@ -60,7 +60,7 @@ enum class EToken
 	If,
 	Else,
 	For,
-	Func,
+	Fn,
 
 	UnaryPlus,
 	UnaryMinus,

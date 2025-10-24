@@ -164,7 +164,7 @@ void Scanner::ProcessIdKeywords()
 		else if(t.val == "if") t.kind = EToken::If;
 		else if(t.val == "else") t.kind = EToken::Else;
 		else if(t.val == "for") t.kind = EToken::For;
-		else if(t.val == "func") t.kind = EToken::Func;
+		else if(t.val == "fn") t.kind = EToken::Fn;
 	}
 }
 
@@ -175,6 +175,7 @@ bool Scanner::Scan(const string& orgCode)
 
 	uint32_t lineNum = 1;
 	int i = 0;
+	uint32_t acceptedLine = 0;
 	const TransTbl* accepted = &_transTbl;
 
 	for( ; i<code.size(); )
@@ -211,6 +212,7 @@ bool Scanner::Scan(const string& orgCode)
 		if(next != accepted->next.end())
 		{
 			accepted = &next->second;
+			acceptedLine = lineNum;
 			i++;
 			continue;
 		}
@@ -259,11 +261,15 @@ bool Scanner::Scan(const string& orgCode)
 			#ifdef DEBUG_OUT
 				cout << "token : " << accepted->tokStr << endl;
 			#endif
-			_tokens.push_back({ accepted->tok, lineNum, accepted->tokStr });
+			_tokens.push_back({ accepted->tok, acceptedLine, accepted->tokStr });
 		}
 
 		accepted = &_transTbl;
+		acceptedLine = 0;
 	}
+
+	if(accepted != &_transTbl)
+		_tokens.push_back({ accepted->tok, acceptedLine, accepted->tokStr });
 
 	ProcessIdKeywords();
 	return ProcessStringTokens();
@@ -496,7 +502,7 @@ uint32_t Scanner::AdvanceNumber(const std::string& code, int start, Error& retEr
 		}
 		else
 		{//octa
-			for(i++; i<code.size(); i++)
+			for(; i<code.size(); i++)
 			{
 				if('0' <= code[i] && code[i] <= '7') continue;
 
