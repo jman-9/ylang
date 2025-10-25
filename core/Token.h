@@ -82,6 +82,8 @@ struct Token
 	bool IsWhiteSpace() const;
 	bool IsLiteral() const;
 	bool IsPrefixUnary() const;
+	bool Is(EToken tok) const;
+	bool operator==(EToken rhs) const;
 
 	static const Token& Null();
 	static bool IsWhiteSpace(EToken tok);

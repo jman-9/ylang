@@ -20,6 +20,15 @@ bool Token::IsPrefixUnary() const
 	return Token::IsPrefixUnary(kind);
 }
 
+bool Token::Is(EToken tok) const
+{
+	return kind == tok;
+}
+
+bool Token::operator==(EToken rhs) const
+{
+	return Is(rhs);
+}
 
 const Token& Token::Null()
 {

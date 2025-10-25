@@ -1,14 +1,48 @@
 #pragma once
 #include "TreeNode.h"
+#include <string>
+#include <map>
 
+enum class ESymbol
+{
+	Var,
+	Fn,
+	Cls,
+};
+
+struct Param
+{
+	std::string name;
+};
+
+struct Symbol
+{
+	std::string name;
+	ESymbol kind;
+
+	// fn
+	std::vector<Param> params;
+};
 
 class SemanticAnalyzer
 {
 public:
-	SemanticAnalyzer();
+	SemanticAnalyzer(const TreeNode& code);
 	~SemanticAnalyzer();
 
-	bool Analyze(const TreeNode& code);
+	bool Analyze();
 
 protected:
+	const TreeNode& _code;
+
+	int scope;
+	std::vector<std::map<std::string, Symbol>> _symTbl;
+
+
+	bool AnalyzeStmt(TreeNode* stmt);
+	bool AnalyzeExp(TreeNode* stmt);
+	bool AnalyzeFor(TreeNode* stmt);
+	bool AnalyzeIf(TreeNode* stmt);
+	bool AnalyzeFn(TreeNode* stmt);
+	bool AnalyzeCompound(TreeNode* stmt, const std::vector<Param>& stackVars = std::vector<Param>());
 };

@@ -649,6 +649,7 @@ TreeNode* Parser::ParseFn()
 	{
 		throw 'n';
 	}
+	fn.val = GetCur().val;
 	MoveNext();
 
 	if(GetCur().kind != EToken::LParen)

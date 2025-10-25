@@ -5,7 +5,7 @@
 #include <format>
 using namespace std;
 
-const char* testcode =
+const char* lextestcode =
 R"TEST(
 
 func
@@ -96,6 +96,40 @@ g[p] = 10;
 
 )TEST";
 
+const char* testcode =
+R"TEST(
+
+tt = 10;
+
+{
+  ttt = 20;
+  tt += ttt;
+}
+
+//tt = sum(1,1,1);
+
+fn sum(a, b, c) {
+  d = a + b + c;
+  return d;
+}
+
+//sum(1, 1);
+t = sum(1, 2, 3);
+
+
+a = 10;
+for(i=0; i<10; i+=1)
+{
+  a += 1;
+}
+
+if(a > 10)
+{
+  p = 1 + 30 * (3 + 2) / (5 - ((sum))(1, 2, 3));
+}
+
+)TEST";
+
 
 int main()
 {
@@ -120,11 +154,13 @@ int main()
 #endif
 
 	Scanner s2;
+	//s2.Scan(lextestcode);
 	//s2.Scan(exptestcode);
 	//s2.Scan(iftestcode);
 	//s2.Scan(fortestcode);
 	//s2.Scan(fntestcode);
-	s2.Scan(postfixtestcode);
+	//s2.Scan(postfixtestcode);
+	s2.Scan(testcode);
 
 	for(auto t : s2._tokens)
 	{
@@ -146,8 +182,8 @@ int main()
 		TreeNode* ast = p.Parse();
 		if(ast)
 		{
-			SemanticAnalyzer sa;
-			sa.Analyze(*ast);
+			SemanticAnalyzer sa(*ast);
+			sa.Analyze();
 		}
 	}
 
