@@ -8,7 +8,7 @@ BytecodeBuilder::BytecodeBuilder(const TreeNode& code)
 	: _code(code)
 	, _reg(0)
 {
-
+	_symTbl.resize(1);
 }
 
 BytecodeBuilder::~BytecodeBuilder()
@@ -40,6 +40,9 @@ bool BytecodeBuilder::BuildStmt(const TreeNode& stmt)
 	case EToken::If : return BuildIf(stmt);
 	case EToken::Fn : return BuildFn(stmt);
 	case EToken::LBrace : return BuildCompound(stmt);
+	case EToken::Return :
+	case EToken::Continue :
+	case EToken::Break : return true;
 	default: ;
 	}
 	return BuildExp(stmt, true);
@@ -49,12 +52,24 @@ bool BytecodeBuilder::BuildExp(const TreeNode& stmt, bool root)
 {
 	uint32_t regStack = _reg;
 
+	if(stmt.self == EToken::Id || stmt.self.IsLiteral())
+	{
+		_bytecode.push_back( { .codeStr = format("{} = {}", format("t{}", _reg), stmt.self.val) } );
+		return true;
+	}
+
 	if(stmt.self == EToken::Invoke)
 	{
-		//BuildInvoke(stmt);
-		// 0번이 함수 이름 리졸브
+		for(size_t i = 1; i<stmt.childs	.size(); i++)
+		{
+			if(!BuildExp(*stmt.childs[i], false))
+				throw 'n';
+			_reg++;
+		}
 
-		int a = 1;
+		_reg = regStack;
+		_bytecode.push_back( { .codeStr = format("t{} = invoke {}", _reg, _symTbl.back()[stmt.childs[0]->self.val].pos) } );
+		return true;
 	}
 
 
@@ -158,7 +173,7 @@ bool BytecodeBuilder::BuildFor(const TreeNode& stmt)
 	size_t loopEnd = _bytecode.size();
 	BuildExp(update, true);
 
-	_bytecode.push_back( { .codeStr = format("goto {}", loopStart) } );
+	_bytecode.push_back( { .codeStr = format("jmp {}", loopStart) } );
 
 	size_t updateEnd = _bytecode.size() + 1;
 
@@ -199,7 +214,53 @@ bool BytecodeBuilder::BuildIf(const TreeNode& stmt)
 
 bool BytecodeBuilder::BuildFn(const TreeNode& stmt)
 {
+	uint32_t regStack = _reg;
+	_reg = 0;
 
+	if(stmt.self != EToken::Fn)
+		throw 'n';
+
+	size_t skipLine = _bytecode.size();
+	_bytecode.push_back( { .codeStr = "jmp " } );
+
+	auto& name = stmt.self.val;
+	auto& params = stmt.childs[0]->childs;
+	auto& block = *stmt.childs[1];
+
+	Symbol sym;
+	sym.name = name;
+	sym.pos = _bytecode.size() + 1;
+	sym.kind = ESymbol::Fn;
+	for(auto& p : params)
+	{
+		Param prm;
+		prm.name = p->self.val;
+		sym.params.push_back(prm);
+
+		_bytecode.push_back( { .codeStr = format("{} = t{}", prm.name, _reg++) } );
+	}
+
+	_reg = 1;
+	if(block.self == EToken::LBrace)
+	{
+		if(!BuildCompound(block))
+		{
+			throw 'n';
+		}
+	}
+	else if(!BuildStmt(block))
+	{
+		throw 'n';
+	}
+
+	_bytecode.push_back( { .codeStr = "ret" } );
+
+	_bytecode[skipLine].codeStr += to_string(_bytecode.size()+1);
+
+	_reg = regStack;
+
+	//TODO
+	_symTbl.back()[ name ] = sym;
 	return true;
 }
 
@@ -208,10 +269,14 @@ bool BytecodeBuilder::BuildCompound(const TreeNode& stmt)
 	if(stmt.self != EToken::LBrace)
 		throw 'n';
 
+	_symTbl.resize(_symTbl.size() + 1);
+	_symTbl.back() = _symTbl[_symTbl.size() - 2];
+
 	for(auto& itm : stmt.childs)
 	{
 		BuildStmt(*itm);
 	}
 
+	_symTbl.pop_back();
 	return true;
 }

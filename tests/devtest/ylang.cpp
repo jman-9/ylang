@@ -129,11 +129,20 @@ for(i=0; i<10; i+=1)
 
 if(a > 10)
 {
-  p = 1 + 30 * (3 + 2) / (5 - ((sum))(1, 2, 3));
+  fn sum2(a1, b, c) {
+    d = a1 + b + c;
+    return d;
+  }
+
+  p = 1 + 30 * (3 + 2) / (5 - sum2(1, 2, 3));
 }
 else if(a < 5)
 {
-  p = 3 * 7;
+  fn sum2(a1, b, c) {
+    d = a1 + b + c;
+    return d;
+  }
+  p = 3 * 7 + sum2(4, 5, 6);
 }
 else
 {
