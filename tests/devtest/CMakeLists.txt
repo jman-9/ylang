@@ -15,7 +15,7 @@ endif()
 
 
 target_link_libraries(ylang
-	PRIVATE ylang_core
+	PRIVATE ycore
 )
 
 target_include_directories(ylang
