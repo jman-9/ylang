@@ -2,6 +2,7 @@
 #include "core/Scanner.h"
 #include "core/Parser.h"
 #include "core/SemanticAnalyzer.h"
+#include "core/BytecodeBuilder.h"
 #include <format>
 using namespace std;
 
@@ -101,6 +102,9 @@ R"TEST(
 
 tt = 10;
 
+t = 20 + tt - 50 * ((61 - 3)) + 4;
+
+
 {
   ttt = 20;
   tt += ttt;
@@ -126,6 +130,21 @@ for(i=0; i<10; i+=1)
 if(a > 10)
 {
   p = 1 + 30 * (3 + 2) / (5 - ((sum))(1, 2, 3));
+}
+else if(a < 5)
+{
+  p = 3 * 7;
+}
+else
+{
+  if(a == 6)
+    p = 6 * 9;
+  else if(a == 7)
+    p = 7 * 9;
+  else
+  {
+    if(a == 8) p = 8 * 9; else p = 9 * 9;
+  }
 }
 
 )TEST";
@@ -180,11 +199,13 @@ int main()
 	{
 		Parser p(s2._tokens);
 		TreeNode* ast = p.Parse();
-		if(ast)
-		{
-			SemanticAnalyzer sa(*ast);
-			sa.Analyze();
-		}
+		if(!ast) throw 'n';
+
+		SemanticAnalyzer sa(*ast);
+		if(!sa.Analyze()) throw 'n';
+
+		BytecodeBuilder bb(*ast);
+		if(!bb.Build()) throw 'n';
 	}
 
 	return 0;

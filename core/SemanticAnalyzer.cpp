@@ -15,15 +15,15 @@ bool SemanticAnalyzer::Analyze()
 {
 	for(const auto& stmt : _code.childs)
 	{
-		AnalyzeStmt(stmt);
+		AnalyzeStmt(*stmt);
 	}
 
 	return true;
 }
 
-bool SemanticAnalyzer::AnalyzeStmt(TreeNode* stmt)
+bool SemanticAnalyzer::AnalyzeStmt(const TreeNode& stmt)
 {
-	switch(stmt->self.kind)
+	switch(stmt.self.kind)
 	{
 	case EToken::For : return AnalyzeFor(stmt);
 	case EToken::If : return AnalyzeIf(stmt);
@@ -34,11 +34,11 @@ bool SemanticAnalyzer::AnalyzeStmt(TreeNode* stmt)
 	return AnalyzeExp(stmt);
 }
 
-bool SemanticAnalyzer::AnalyzeExp(TreeNode* stmt)
+bool SemanticAnalyzer::AnalyzeExp(const TreeNode& stmt)
 {
-	if(stmt->self == EToken::Assign)
+	if(stmt.self == EToken::Assign)
 	{
-		bool rhsOk = AnalyzeExp(stmt->childs.back());
+		bool rhsOk = AnalyzeExp(*stmt.childs.back());
 		if(!rhsOk)
 		{
 			throw 'n';
@@ -47,20 +47,20 @@ bool SemanticAnalyzer::AnalyzeExp(TreeNode* stmt)
 		// TODO
 		// LValue 체크? 구문분석에서?
 		// postfix LValue 체크 필요
-		auto found = _symTbl.back().find(stmt->childs.front()->self.val);
+		auto found = _symTbl.back().find(stmt.childs.front()->self.val);
 		if(found == _symTbl.back().end())
 		{
 			Symbol sym;
-			sym.name = stmt->childs.front()->self.val;
+			sym.name = stmt.childs.front()->self.val;
 			sym.kind = ESymbol::Var;
 			_symTbl.back()[ sym.name ] = sym;
 		}
 		return true;
 	}
 
-	if(stmt->self == EToken::Invoke)
+	if(stmt.self == EToken::Invoke)
 	{//TODO 괄호 이용할 경우 처리
-		auto& name = stmt->childs[0];
+		auto& name = stmt.childs[0];
 		if(name->self == EToken::Id)
 		{
 			auto found = _symTbl.back().find(name->self.val);
@@ -70,7 +70,7 @@ bool SemanticAnalyzer::AnalyzeExp(TreeNode* stmt)
 			}
 
 			//TODO 가변인자
-			if(stmt->childs.size() - 1 != found->second.params.size())
+			if(stmt.childs.size() - 1 != found->second.params.size())
 			{
 				throw 'n';
 			}
@@ -79,9 +79,9 @@ bool SemanticAnalyzer::AnalyzeExp(TreeNode* stmt)
 		return true;
 	}
 
-	if(stmt->self == EToken::Id)
+	if(stmt.self == EToken::Id)
 	{
-		auto found = _symTbl.back().find(stmt->self.val);
+		auto found = _symTbl.back().find(stmt.self.val);
 		if(found == _symTbl.back().end())
 		{
 			throw 'n';
@@ -90,9 +90,9 @@ bool SemanticAnalyzer::AnalyzeExp(TreeNode* stmt)
 		return true;
 	}
 
-	for(auto& c : stmt->childs)
+	for(auto& c : stmt.childs)
 	{
-		if(!AnalyzeExp(c))
+		if(!AnalyzeExp(*c))
 		{
 			throw 'n';
 		}
@@ -101,15 +101,15 @@ bool SemanticAnalyzer::AnalyzeExp(TreeNode* stmt)
 	return true;
 }
 
-bool SemanticAnalyzer::AnalyzeFor(TreeNode* stmt)
+bool SemanticAnalyzer::AnalyzeFor(const TreeNode& stmt)
 {
-	if(stmt->self != EToken::For)
+	if(stmt.self != EToken::For)
 		throw 'n';
 
-	auto& init = stmt->childs[0];
-	auto& cond = stmt->childs[1];
-	auto& update = stmt->childs[2];
-	auto& block = stmt->childs[3];
+	auto& init = *stmt.childs[0];
+	auto& cond = *stmt.childs[1];
+	auto& update = *stmt.childs[2];
+	auto& block = *stmt.childs[3];
 	if(!AnalyzeExp(init))
 	{
 		throw 'n';
@@ -130,13 +130,13 @@ bool SemanticAnalyzer::AnalyzeFor(TreeNode* stmt)
 	return true;
 }
 
-bool SemanticAnalyzer::AnalyzeIf(TreeNode* stmt)
+bool SemanticAnalyzer::AnalyzeIf(const TreeNode& stmt)
 {
-	if(stmt->self != EToken::If)
+	if(stmt.self != EToken::If)
 		throw 'n';
 
-	auto& test = stmt->childs[0];
-	auto& _true = stmt->childs[1];
+	auto& test = *stmt.childs[0];
+	auto& _true = *stmt.childs[1];
 
 	if(!AnalyzeExp(test))
 	{
@@ -147,9 +147,9 @@ bool SemanticAnalyzer::AnalyzeIf(TreeNode* stmt)
 		throw 'n';
 	}
 
-	if(stmt->childs.size() > 2)
+	if(stmt.childs.size() > 2)
 	{
-		auto& _false = stmt->childs[2];
+		auto& _false = *stmt.childs[2];
 		if(!AnalyzeStmt(_false))
 		{
 			throw 'n';
@@ -159,14 +159,14 @@ bool SemanticAnalyzer::AnalyzeIf(TreeNode* stmt)
 	return true;
 }
 
-bool SemanticAnalyzer::AnalyzeFn(TreeNode* stmt)
+bool SemanticAnalyzer::AnalyzeFn(const TreeNode& stmt)
 {
-	if(stmt->self != EToken::Fn)
+	if(stmt.self != EToken::Fn)
 		throw 'n';
 
-	auto& name = stmt->self.val;
-	auto& params = stmt->childs[0]->childs;
-	auto& block = stmt->childs[1];
+	auto& name = stmt.self.val;
+	auto& params = stmt.childs[0]->childs;
+	auto& block = *stmt.childs[1];
 
 	auto found = _symTbl.back().find(name);
 	if(found != _symTbl.back().end())
@@ -190,7 +190,7 @@ bool SemanticAnalyzer::AnalyzeFn(TreeNode* stmt)
 		sym.params.push_back(prm);
 	}
 
-	if(block->self == EToken::LBrace)
+	if(block.self == EToken::LBrace)
 	{
 		if(!AnalyzeCompound(block, sym.params))
 		{
@@ -206,9 +206,9 @@ bool SemanticAnalyzer::AnalyzeFn(TreeNode* stmt)
 	return true;
 }
 
-bool SemanticAnalyzer::AnalyzeCompound(TreeNode* stmt, const std::vector<Param>& stackVars /* = std::vector<Param>() */)
+bool SemanticAnalyzer::AnalyzeCompound(const TreeNode& stmt, const std::vector<Param>& stackVars /* = std::vector<Param>() */)
 {
-	if(stmt->self != EToken::LBrace)
+	if(stmt.self != EToken::LBrace)
 		throw 'n';
 
 	_symTbl.resize(_symTbl.size() + 1);
@@ -222,9 +222,9 @@ bool SemanticAnalyzer::AnalyzeCompound(TreeNode* stmt, const std::vector<Param>&
 		_symTbl.back()[ v.name ] = sym;
 	}
 
-	for(auto& itm : stmt->childs)
+	for(auto& itm : stmt.childs)
 	{
-		AnalyzeStmt(itm);
+		AnalyzeStmt(*itm);
 	}
 
 	_symTbl.pop_back();

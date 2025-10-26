@@ -21,5 +21,6 @@ struct Symbol
 	ESymbol kind;
 
 	// fn
+	uint32_t pos;
 	std::vector<Param> params;
 };
