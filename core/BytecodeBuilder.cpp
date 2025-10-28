@@ -24,6 +24,7 @@ int ConstTable::GetIdx(const Token& tok) const
 
 SymbolTable::SymbolTable()
 {
+	_scopeTbl.push_back(SCOPE_FUNC);
 	_symTbl.resize(1);
 }
 
@@ -32,20 +33,32 @@ SymbolTable::~SymbolTable()
 
 SymbolTable::SymbolData SymbolTable::GetSymbolData(const string& name) const
 {
-	if(_symTbl.size() > 1)
+	int firstFunc = -1;
+	for(int i=(int)_symTbl.size()-1; i>=0; i--)
 	{
-		for(int i=0; i<_symTbl.size()-1; i++)
+		auto found = _symTbl[i].find( { .name = name } );
+		if(found != _symTbl[i].end())
 		{
-			auto found = _symTbl[i].find( { .name = name } );
-			if(found != _symTbl[i].end())
+			if(firstFunc >= 0)
 			{
 				return SymbolData{ .idx = { .kind = Idx::GLOBAL, .idx = found->second }, .sym = found->first };
+			}
+			else
+				return SymbolData{ .idx = { .kind = Idx::LOCAL, .idx = found->second - GetBehindFuncScopeCnt(i) }, .sym = found->first };
+		}
+
+		if(_scopeTbl[i] == SCOPE_FUNC)
+		{
+			if(firstFunc < 0)
+				firstFunc = i;
+			else
+			{//TODO
+				//throw 'n';
 			}
 		}
 	}
 
-	auto found = _symTbl.back().find( { .name = name } );
-	return found == _symTbl.back().end() ? SymbolData() : SymbolData{ .idx = { .kind = Idx::LOCAL, .idx = found->second - GetGlobalSymbolCnt() }, .sym = found->first };
+	return SymbolData();
 }
 
 int SymbolTable::GetNewSlotIdx() const
@@ -66,7 +79,7 @@ int SymbolTable::GetGlobalSymbolCnt() const
 	size_t sz = 0;
 	for(int i=0; i<_symTbl.size()-1; i++)
 	{
-		sz += _symTbl.size();
+		sz += _symTbl[i].size();
 	}
 	return (int)sz;
 }
@@ -81,15 +94,46 @@ int SymbolTable::GetSymbolCnt() const
 	return GetGlobalSymbolCnt() + GetLocalSymbolCnt();
 }
 
+int SymbolTable::GetBehindFuncScopeCnt(int idx) const
+{
+	if(idx <= 0) return 0;
+	if(idx >= _symTbl.size()) return -1;
 
-void SymbolTable::AddScope()
+	if(_symTbl.size() <= 1)
+		return 0;
+
+	size_t sz = 0;
+	for(int i=idx; i>=0; i--)
+	{
+		if(_scopeTbl[i] == SCOPE_FUNC)
+		{
+			for(int j=i-1; j>=0; j--)
+			{
+				sz += _symTbl[j].size();
+			}
+			break;
+		}
+	}
+	return (int)sz;
+}
+
+
+void SymbolTable::AddBlockScope()
 {
 	_symTbl.resize(_symTbl.size() + 1);
+	_scopeTbl.push_back(SCOPE_BLOCK);
+}
+
+void SymbolTable::AddFuncScope()
+{
+	_symTbl.resize(_symTbl.size() + 1);
+	_scopeTbl.push_back(SCOPE_FUNC);
 }
 
 void SymbolTable::PopScope()
 {
 	_symTbl.pop_back();
+	_scopeTbl.pop_back();
 }
 
 SymbolTable::Idx SymbolTable::AddOrNot(const Symbol& sym)
@@ -103,7 +147,7 @@ SymbolTable::Idx SymbolTable::AddOrNot(const Symbol& sym)
 	int newIdx = GetNewSlotIdx();
 	_symTbl.back()[sym] = newIdx;
 
-	return Idx{ .kind = Idx::LOCAL, .idx = newIdx - GetGlobalSymbolCnt() };
+	return Idx{ .kind = Idx::LOCAL, .idx = newIdx - GetBehindFuncScopeCnt((int)_symTbl.size()-1) };
 }
 
 SymbolTable::Idx SymbolTable::GetIdx(const string& name) const
@@ -167,6 +211,18 @@ bool BytecodeBuilder::Build(Bytecode& retCode)
 	return true;
 }
 
+void BytecodeBuilder::BuildBlockOpen()
+{
+	_bytecode.push_back( {  .kind = Opcode::PushSp, .codeStr = "pushsp" } );
+	_symTbl.AddBlockScope();
+}
+
+void BytecodeBuilder::BuildBlockClose()
+{
+	_symTbl.PopScope();
+	_bytecode.push_back( {  .kind = Opcode::PopSp, .codeStr = "popsp" } );
+}
+
 bool BytecodeBuilder::BuildStmt(const TreeNode& stmt)
 {
 	switch(stmt.self.kind)
@@ -175,7 +231,7 @@ bool BytecodeBuilder::BuildStmt(const TreeNode& stmt)
 	case EToken::If : return BuildIf(stmt);
 	case EToken::Fn : return BuildFn(stmt);
 	case EToken::LBrace : return BuildCompound(stmt);
-	case EToken::Return :
+	case EToken::Return : return BuildReturn(stmt);
 	case EToken::Continue :
 	case EToken::Break : return true;
 	default: ;
@@ -217,7 +273,7 @@ bool BytecodeBuilder::BuildExp(const TreeNode& stmt, bool root)
 
 	if(stmt.self == EToken::Invoke)
 	{
-		for(size_t i = 1; i<stmt.childs	.size(); i++)
+		for(size_t i = 1; i<stmt.childs.size(); i++)
 		{
 			if(!BuildExp(*stmt.childs[i], false))
 				throw 'n';
@@ -227,7 +283,10 @@ bool BytecodeBuilder::BuildExp(const TreeNode& stmt, bool root)
 		_reg = regStack;
 
 		_bytecode.push_back( { .codeStr = format("t{} = invoke {}", _reg, _symTbl.GetSymbol(stmt.childs[0]->self.val).pos) } );
-		//TODO invoke
+		Inst::Invoke ivk{ .pos = (uint32_t)_symTbl.GetSymbol(stmt.childs[0]->self.val).pos, .numPrms = (uint32_t)stmt.childs.size()-1 };
+		_bytecode.back().kind = Opcode::Invoke;
+		_bytecode.back().code.resize(sizeof(ivk));
+		memcpy(_bytecode.back().code.data(), &ivk, sizeof(ivk));
 		return true;
 	}
 
@@ -357,6 +416,21 @@ bool BytecodeBuilder::BuildExp(const TreeNode& stmt, bool root)
 	return true;
 }
 
+bool BytecodeBuilder::BuildReturn(const TreeNode& stmt)
+{
+	if(stmt.childs.empty())
+	{//TODO
+	}
+	else
+	{
+		if(!BuildExp(*stmt.childs[0], true))
+		{
+			throw 'n';
+		}
+	}
+	return true;
+}
+
 bool BytecodeBuilder::BuildFor(const TreeNode& stmt)
 {
 	if(stmt.self != EToken::For)
@@ -383,7 +457,13 @@ bool BytecodeBuilder::BuildFor(const TreeNode& stmt)
 	size_t loopEnd = _bytecode.size();
 	BuildExp(update, true);
 
-	_bytecode.push_back( { .codeStr = format("jmp {}", loopStart) } );
+	Inst::Jmp jmp{ .pos = (uint32_t)loopStart };
+	Instruction inst;
+	inst.kind = Opcode::Jmp;
+	inst.codeStr = format("jmp {}", loopStart);
+	inst.code.resize(sizeof(jmp));
+	memcpy(inst.code.data(), &jmp, sizeof(jmp));
+	_bytecode.push_back(inst);
 
 	size_t updateEnd = _bytecode.size() + 1;
 
@@ -437,6 +517,9 @@ bool BytecodeBuilder::BuildFn(const TreeNode& stmt)
 	auto& params = stmt.childs[0]->childs;
 	auto& block = *stmt.childs[1];
 
+	_bytecode.push_back( {  .kind = Opcode::PushSp, .codeStr = "pushsp" } );
+	_symTbl.AddFuncScope();
+
 	Symbol sym;
 	sym.name = name;
 	sym.pos = _bytecode.size() + 1;
@@ -447,10 +530,18 @@ bool BytecodeBuilder::BuildFn(const TreeNode& stmt)
 		prm.name = p->self.val;
 		sym.params.push_back(prm);
 
-		_bytecode.push_back( { .codeStr = format("{} = t{}", prm.name, _reg++) } );
+		auto idx = _symTbl.AddOrNot( { .name = p->self.val, .kind = ESymbol::Var } );
+		_bytecode.push_back( { .kind = Opcode::Assign, .codeStr = format("{} = t{}", prm.name, _reg) } );
+		Inst::Assign as;
+		as.dstKind = (uint8_t)RefKind::LocalVar;
+		as.dst = idx.idx;
+		as.src1Kind = (uint8_t)RefKind::Reg;
+		as.src1 = _reg++;
+		_bytecode.back().code.resize(sizeof(as));
+		memcpy(_bytecode.back().code.data(), &as, sizeof(as));
 	}
 
-	_reg = 1;
+	_reg = 0;
 	if(block.self == EToken::LBrace)
 	{
 		if(!BuildCompound(block))
@@ -463,13 +554,17 @@ bool BytecodeBuilder::BuildFn(const TreeNode& stmt)
 		throw 'n';
 	}
 
-	_bytecode.push_back( { .codeStr = "ret" } );
-
-	_bytecode[skipLine].codeStr += to_string(_bytecode.size()+1);
-
 	_reg = regStack;
 
+	BuildBlockClose();
+	_bytecode.push_back( { .kind = Opcode::Ret, .codeStr = "ret" } );
 	_symTbl.AddOrNot(sym);
+
+	_bytecode[skipLine].codeStr += to_string(_bytecode.size()+1);
+	Inst::Jmp jmp{ .pos = (uint32_t)_bytecode.size() + 1 };
+	_bytecode[skipLine].kind = Opcode::Jmp;
+	_bytecode[skipLine].code.resize(sizeof(jmp));
+	memcpy(_bytecode[skipLine].code.data(), &jmp, sizeof(jmp));
 	return true;
 }
 
@@ -478,15 +573,13 @@ bool BytecodeBuilder::BuildCompound(const TreeNode& stmt)
 	if(stmt.self != EToken::LBrace)
 		throw 'n';
 
-	_bytecode.push_back( {  .kind = Opcode::PushSp, .codeStr = "pushsp" } );
-	_symTbl.AddScope();
+	BuildBlockOpen();
 
 	for(auto& itm : stmt.childs)
 	{
 		BuildStmt(*itm);
 	}
 
-	_symTbl.PopScope();
-	_bytecode.push_back( {  .kind = Opcode::PopSp, .codeStr = "popsp" } );
+	BuildBlockClose();
 	return true;
 }

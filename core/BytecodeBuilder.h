@@ -34,6 +34,12 @@ class ConstTable
 class SymbolTable
 {
 public:
+	enum ScopeType
+	{
+		SCOPE_BLOCK,
+		SCOPE_FUNC,
+	};
+
 	struct Idx
 	{
 		enum Kind
@@ -57,7 +63,8 @@ public:
 	SymbolTable();
 	~SymbolTable();
 
-	void AddScope();
+	void AddBlockScope();
+	void AddFuncScope();
 	void PopScope();
 
 	Idx AddOrNot(const Symbol& sym);
@@ -78,6 +85,7 @@ protected:
 	};
 
 	std::vector<std::unordered_map<Symbol, int, SymbolHash, SymbolEqual>> _symTbl;
+	std::vector<ScopeType> _scopeTbl;
 
 	SymbolData GetSymbolData(const std::string& name) const;
 
@@ -85,6 +93,7 @@ protected:
 	int GetGlobalSymbolCnt() const;
 	int GetLocalSymbolCnt() const;
 	int GetSymbolCnt() const;
+	int GetBehindFuncScopeCnt(int idx) const;
 };
 
 
@@ -104,7 +113,8 @@ protected:
 	ConstTable _constTbl;
 	SymbolTable _symTbl;
 
-	//std::vector<std::map<std::string, Symbol>> _symTbl;
+	void BuildBlockOpen();
+	void BuildBlockClose();
 
 	bool BuildStmt(const TreeNode& stmt);
 	bool BuildFor(const TreeNode& stmt);
@@ -113,4 +123,5 @@ protected:
 	bool BuildCompound(const TreeNode& stmt);
 	bool BuildExp(const TreeNode& stmt, bool root);
 	bool BuildInvoke(const TreeNode& stmt);
+	bool BuildReturn(const TreeNode& stmt);
 };

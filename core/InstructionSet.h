@@ -6,6 +6,9 @@ enum class Opcode : uint16_t
 	Assign,
 	PushSp,
 	PopSp,
+	Jmp,
+	Invoke,
+	Ret,
 };
 
 enum class RefKind : uint8_t
@@ -31,6 +34,17 @@ struct Assign
 	uint16_t src1 = 0;
 	uint16_t src2 = 0;
 	uint16_t rsvd = 0;
+};
+
+struct Jmp
+{
+	uint32_t pos;
+};
+
+struct Invoke
+{
+	uint32_t pos;
+	uint32_t numPrms;
 };
 
 }

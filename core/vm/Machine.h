@@ -42,7 +42,11 @@ public:
 	std::vector<Variable> _regs;
 	std::vector<Variable> _stack;
 	std::stack<uint16_t> _spStack;
+	std::stack<uint16_t> _cspStack;
+	std::stack<uint16_t> _rpStack;
+	std::stack<uint32_t> _retStack;
 	int _sp;
+	int _rp;
 
 protected:
 	Variable* ResolveVar(RefKind k, int idx);

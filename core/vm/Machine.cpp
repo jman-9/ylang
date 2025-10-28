@@ -172,8 +172,11 @@ bool Variable::CalcAndAssign(const Variable& lhs, EToken calcOp, const Variable&
 
 Machine::Machine()
 {
+	_rp = 0;
 	_sp = 0;
 	_spStack.push(0);
+	_rpStack.push(0);
+	_cspStack.push(0);
 	_regs.resize(10);
 	_stack.resize(50);
 }
@@ -183,13 +186,17 @@ Variable* Machine::ResolveVar(RefKind k, int idx)
 {
 	switch(k)
 	{
-	case RefKind::Reg: return &_regs[idx];
+	case RefKind::Reg:
+		{
+			_rp = _rpStack.top() + idx + 1;
+			return &_regs[_rpStack.top() + idx];
+		}
 	case RefKind::GlobalVar: return &_stack[idx];
 	case RefKind::LocalVar:
 		{
-			if(_sp < _spStack.top() + idx + 1)
-				_sp = _spStack.top() + idx + 1;
-			return &_stack[idx + _spStack.top()];
+			if(_sp < _cspStack.top() + idx + 1)
+				_sp = _cspStack.top() + idx + 1;
+			return &_stack[idx + _cspStack.top()];
 		}
 	case RefKind::Const: return &_consts[idx];
 	default: return nullptr;
@@ -210,9 +217,7 @@ void Machine::Run(const Bytecode& code)
 		auto& inst = code._code[i];
 		if(inst.kind == Opcode::Assign)
 		{
-			Inst::Assign as;
-			memcpy(&as, inst.code.data(), sizeof(as));
-
+			const Inst::Assign& as = *(Inst::Assign*)inst.code.data();
 
 			if((RefKind)as.dstKind == RefKind::Const)
 			{
@@ -262,6 +267,30 @@ void Machine::Run(const Bytecode& code)
 		{
 			_sp = _spStack.top();
 			_spStack.pop();
+		}
+		else if(inst.kind == Opcode::Jmp)
+		{
+			const Inst::Jmp& jmp = *(Inst::Jmp*)inst.code.data();
+			i = jmp.pos - 2;
+		}
+		else if(inst.kind == Opcode::Invoke)
+		{
+			const Inst::Invoke& ivk = *(Inst::Invoke*)inst.code.data();
+			_retStack.push((uint32_t)i+1);
+			_rp -= (int)ivk.numPrms;
+			_rpStack.push(_rp);
+			_cspStack.push(_sp);
+
+			i = ivk.pos - 2;
+		}
+		else if(inst.kind == Opcode::Ret)
+		{
+			_sp = _cspStack.top();
+			_cspStack.pop();
+			_rp = _rpStack.top();
+			_rpStack.pop();
+			i = _retStack.top() - 1;
+			_retStack.pop();
 		}
 	}
 
