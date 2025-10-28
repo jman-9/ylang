@@ -447,9 +447,12 @@ bool BytecodeBuilder::BuildFor(const TreeNode& stmt)
 
 	size_t loopStart = _bytecode.size() + 1;
 	BuildExp(cond, false);
-	condStr = format("jne {}, ", format("t{}", _reg));
+	condStr = format("jz {}, ", format("t{}", _reg));
 	_bytecode.push_back( { .codeStr = condStr } );
 	size_t condLine = _bytecode.size() - 1;
+	Inst::Jz jz;
+	jz.testKind = (uint8_t)RefKind::Reg;
+	jz.test = _reg;
 
 
 	BuildCompound(block);
@@ -468,6 +471,10 @@ bool BytecodeBuilder::BuildFor(const TreeNode& stmt)
 	size_t updateEnd = _bytecode.size() + 1;
 
 	_bytecode[condLine].codeStr += to_string(updateEnd);
+	_bytecode[condLine].kind = Opcode::Jz;
+	jz.pos = (uint32_t)updateEnd;
+	_bytecode[condLine].code.resize(sizeof(jz));
+	*(Inst::Jz*)_bytecode[condLine].code.data() = jz;
 
 	return true;
 }
@@ -483,13 +490,22 @@ bool BytecodeBuilder::BuildIf(const TreeNode& stmt)
 	string condStr;
 
 	BuildExp(test, false);
-	condStr = format("jne {}, ", format("t{}", _reg));
+	condStr = format("jz {}, ", format("t{}", _reg));
 	_bytecode.push_back( { .codeStr = condStr } );
 	size_t condLine = _bytecode.size() - 1;
+	Inst::Jz jz;
+	jz.testKind = (uint8_t)RefKind::Reg;
+	jz.test = _reg;
 
 	BuildStmt(_true);
+	_bytecode.push_back( { .codeStr = format("jmp ") } );
+	size_t skipLine = _bytecode.size() - 1;
 
 	_bytecode[condLine].codeStr += to_string(_bytecode.size() + 1);
+	_bytecode[condLine].kind = Opcode::Jz;
+	jz.pos = (uint32_t)_bytecode.size() + 1;
+	_bytecode[condLine].code.resize(sizeof(jz));
+	*(Inst::Jz*)_bytecode[condLine].code.data() = jz;
 
 	if(stmt.childs.size() > 2)
 	{
@@ -499,6 +515,13 @@ bool BytecodeBuilder::BuildIf(const TreeNode& stmt)
 			throw 'n';
 		}
 	}
+
+	_bytecode[skipLine].codeStr += to_string(_bytecode.size() + 1);
+	_bytecode[skipLine].kind = Opcode::Jmp;
+	Inst::Jmp jmp{ .pos = (uint32_t)_bytecode.size() + 1 };
+	_bytecode[skipLine].code.resize(sizeof(jmp));
+	*(Inst::Jmp*)_bytecode[skipLine].code.data() = jmp;
+
 	return true;
 }
 
@@ -522,7 +545,7 @@ bool BytecodeBuilder::BuildFn(const TreeNode& stmt)
 
 	Symbol sym;
 	sym.name = name;
-	sym.pos = _bytecode.size() + 1;
+	sym.pos = _bytecode.size();
 	sym.kind = ESymbol::Fn;
 	for(auto& p : params)
 	{

@@ -9,6 +9,7 @@ enum class Opcode : uint16_t
 	Jmp,
 	Invoke,
 	Ret,
+	Jz,
 };
 
 enum class RefKind : uint8_t
@@ -38,13 +39,21 @@ struct Assign
 
 struct Jmp
 {
-	uint32_t pos;
+	uint32_t pos = 0;
+};
+
+struct Jz
+{
+	uint8_t testKind = (uint8_t)RefKind::None;
+	uint8_t rsvd = 0;
+	uint16_t test = 0;
+	uint32_t pos = 0;
 };
 
 struct Invoke
 {
-	uint32_t pos;
-	uint32_t numPrms;
+	uint32_t pos = 0;
+	uint32_t numPrms = 0;
 };
 
 }

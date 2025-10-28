@@ -292,6 +292,15 @@ void Machine::Run(const Bytecode& code)
 			i = _retStack.top() - 1;
 			_retStack.pop();
 		}
+		else if(inst.kind == Opcode::Jz)
+		{
+			const Inst::Jz& jz = *(Inst::Jz*)inst.code.data();
+			Variable* test = ResolveVar((RefKind)jz.testKind, jz.test);
+			if(!test->num)
+			{
+				i = jz.pos - 2;
+			}
+		}
 	}
 
 	int a = 1;
