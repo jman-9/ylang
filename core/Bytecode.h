@@ -8,6 +8,8 @@ struct Constant
 {
 	enum Type
 	{
+		NONE,
+
 		NUM,
 		STR,
 		FLOAT,

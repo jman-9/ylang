@@ -58,7 +58,7 @@ bool Token::IsPrefixUnary(EToken tok)
 
 bool Token::IsAssign(EToken tok)
 {
-	return EToken::Assign <= tok && EToken::RShiftAssign <= tok;
+	return EToken::Assign <= tok && tok <= EToken::RShiftAssign;
 }
 
 bool Token::IsWhiteSpace(const Token& tok)
