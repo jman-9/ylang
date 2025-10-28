@@ -4,6 +4,8 @@
 enum class Opcode : uint16_t
 {
 	Assign,
+	PushSp,
+	PopSp,
 };
 
 enum class RefKind : uint8_t

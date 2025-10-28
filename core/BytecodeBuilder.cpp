@@ -103,7 +103,7 @@ SymbolTable::Idx SymbolTable::AddOrNot(const Symbol& sym)
 	int newIdx = GetNewSlotIdx();
 	_symTbl.back()[sym] = newIdx;
 
-	return Idx{ .kind = Idx::LOCAL, .idx = newIdx };
+	return Idx{ .kind = Idx::LOCAL, .idx = newIdx - GetGlobalSymbolCnt() };
 }
 
 SymbolTable::Idx SymbolTable::GetIdx(const string& name) const
@@ -478,6 +478,7 @@ bool BytecodeBuilder::BuildCompound(const TreeNode& stmt)
 	if(stmt.self != EToken::LBrace)
 		throw 'n';
 
+	_bytecode.push_back( {  .kind = Opcode::PushSp, .codeStr = "pushsp" } );
 	_symTbl.AddScope();
 
 	for(auto& itm : stmt.childs)
@@ -486,5 +487,6 @@ bool BytecodeBuilder::BuildCompound(const TreeNode& stmt)
 	}
 
 	_symTbl.PopScope();
+	_bytecode.push_back( {  .kind = Opcode::PopSp, .codeStr = "popsp" } );
 	return true;
 }

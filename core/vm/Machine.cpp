@@ -172,6 +172,7 @@ bool Variable::CalcAndAssign(const Variable& lhs, EToken calcOp, const Variable&
 
 Machine::Machine()
 {
+	_sp = 0;
 	_spStack.push(0);
 	_regs.resize(10);
 	_stack.resize(50);
@@ -184,7 +185,12 @@ Variable* Machine::ResolveVar(RefKind k, int idx)
 	{
 	case RefKind::Reg: return &_regs[idx];
 	case RefKind::GlobalVar: return &_stack[idx];
-	case RefKind::LocalVar: return &_stack[idx + _spStack.top()];
+	case RefKind::LocalVar:
+		{
+			if(_sp < _spStack.top() + idx + 1)
+				_sp = _spStack.top() + idx + 1;
+			return &_stack[idx + _spStack.top()];
+		}
 	case RefKind::Const: return &_consts[idx];
 	default: return nullptr;
 	}
@@ -247,6 +253,15 @@ void Machine::Run(const Bytecode& code)
 				{//TODO func call, unary
 				}
 			}
+		}
+		else if(inst.kind == Opcode::PushSp)
+		{
+			_spStack.push(_sp);
+		}
+		else if(inst.kind == Opcode::PopSp)
+		{
+			_sp = _spStack.top();
+			_spStack.pop();
 		}
 	}
 
