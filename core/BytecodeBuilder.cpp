@@ -4,19 +4,130 @@
 using namespace std;
 
 
-BytecodeBuilder::BytecodeBuilder(const TreeNode& code)
-	: _code(code)
-	, _reg(0)
+
+int ConstTable::AddOrNot(const Token& tok)
+{
+	auto found = _constMap.find(tok);
+	if(found != _constMap.end())
+		return found->second;
+
+	_constMap[tok] = (uint16_t)_constMap.size();
+	return (int)_constMap.size() - 1;
+}
+
+int ConstTable::GetIdx(const Token& tok) const
+{
+	auto found = _constMap.find(tok);
+	return found == _constMap.end() ? -1 : (int)found->second;
+}
+
+
+SymbolTable::SymbolTable()
 {
 	_symTbl.resize(1);
 }
 
-BytecodeBuilder::~BytecodeBuilder()
-{
+SymbolTable::~SymbolTable()
+{}
 
+SymbolTable::SymbolData SymbolTable::GetSymbolData(const string& name) const
+{
+	if(_symTbl.size() > 1)
+	{
+		for(int i=0; i<_symTbl.size()-1; i++)
+		{
+			auto found = _symTbl[i].find( { .name = name } );
+			if(found != _symTbl[i].end())
+			{
+				return SymbolData{ .idx = { .kind = Idx::GLOBAL, .idx = found->second }, .sym = found->first };
+			}
+		}
+	}
+
+	auto found = _symTbl.back().find( { .name = name } );
+	return found == _symTbl.back().end() ? SymbolData() : SymbolData{ .idx = { .kind = Idx::LOCAL, .idx = found->second - GetGlobalSymbolCnt() }, .sym = found->first };
 }
 
-bool BytecodeBuilder::Build()
+int SymbolTable::GetNewSlotIdx() const
+{
+	size_t sz = 0;
+	for(auto& scope : _symTbl)
+	{
+		sz += scope.size();
+	}
+	return (int)sz;
+}
+
+int SymbolTable::GetGlobalSymbolCnt() const
+{
+	if(_symTbl.size() <= 1)
+		return 0;
+
+	size_t sz = 0;
+	for(int i=0; i<_symTbl.size()-1; i++)
+	{
+		sz += _symTbl.size();
+	}
+	return (int)sz;
+}
+
+int SymbolTable::GetLocalSymbolCnt() const
+{
+	return (int)_symTbl.back().size();
+}
+
+int SymbolTable::GetSymbolCnt() const
+{
+	return GetGlobalSymbolCnt() + GetLocalSymbolCnt();
+}
+
+
+void SymbolTable::AddScope()
+{
+	_symTbl.resize(_symTbl.size() + 1);
+}
+
+void SymbolTable::PopScope()
+{
+	_symTbl.pop_back();
+}
+
+SymbolTable::Idx SymbolTable::AddOrNot(const Symbol& sym)
+{
+	auto idx = GetIdx(sym.name);
+	if(idx.kind != Idx::NONE)
+	{
+		return idx;
+	}
+
+	int newIdx = GetNewSlotIdx();
+	_symTbl.back()[sym] = newIdx;
+
+	return Idx{ .kind = Idx::LOCAL, .idx = newIdx };
+}
+
+SymbolTable::Idx SymbolTable::GetIdx(const string& name) const
+{
+	return GetSymbolData(name).idx;
+}
+
+Symbol SymbolTable::GetSymbol(const string& name) const
+{
+	return GetSymbolData(name).sym;
+}
+
+
+BytecodeBuilder::BytecodeBuilder(const TreeNode& code)
+	: _code(code)
+	, _reg(0)
+{
+}
+
+BytecodeBuilder::~BytecodeBuilder()
+{
+}
+
+bool BytecodeBuilder::Build(Bytecode& retCode)
 {
 	for(const auto& stmt : _code.childs)
 	{
@@ -28,6 +139,30 @@ bool BytecodeBuilder::Build()
 	{
 		cout << format("{:4} {}\n", i+1, _bytecode[i].codeStr);
 	}
+
+	map<int, Token> sorted;
+	for(auto& c : _constTbl._constMap)
+	{
+		sorted[ c.second ] = c.first;
+	}
+	for(auto& [idx, tok] : sorted)
+	{
+		Constant c;
+		if(tok == EToken::Num)
+		{//todo float
+			c.type = Constant::NUM;
+			c.num = stoll(tok.val);
+		}
+		else
+		{
+			c.type = Constant::STR;
+			c.str = tok.val;
+		}
+
+		retCode._consts.push_back(c);
+	}
+
+	retCode._code = _bytecode;
 
 	return true;
 }
@@ -51,10 +186,32 @@ bool BytecodeBuilder::BuildStmt(const TreeNode& stmt)
 bool BytecodeBuilder::BuildExp(const TreeNode& stmt, bool root)
 {
 	uint32_t regStack = _reg;
+	Inst::Assign inst;
 
 	if(stmt.self == EToken::Id || stmt.self.IsLiteral())
 	{
-		_bytecode.push_back( { .codeStr = format("{} = {}", format("t{}", _reg), stmt.self.val) } );
+		inst.dstKind = (uint8_t)RefKind::Reg;
+		inst.dst = _reg;
+
+		int srcNum = -1;
+		if(stmt.self.IsLiteral())
+		{
+			inst.src1Kind = (uint8_t)RefKind::Const;
+			inst.src1 = _constTbl.AddOrNot(stmt.self);
+		}
+		else
+		{
+			auto idx = _symTbl.AddOrNot({ .name = stmt.self.val, .kind = ESymbol::Var });
+
+			inst.src1Kind = idx.kind == SymbolTable::Idx::LOCAL ? (uint8_t)RefKind::LocalVar : (uint8_t)RefKind::GlobalVar;
+			inst.src1 = (uint16_t)idx.idx;
+		}
+
+		string rhs = format("{}({}{})", stmt.self.val, inst.src1Kind == (uint8_t)RefKind::LocalVar ? 'l' : 'g', inst.src1);
+
+		_bytecode.push_back( { .kind = Opcode::Assign, .codeStr = format("{} = {}", format("t{}", _reg), rhs ) } );
+		_bytecode.back().code.resize(sizeof(inst));
+		memcpy(_bytecode.back().code.data(), &inst, sizeof(inst));
 		return true;
 	}
 
@@ -68,7 +225,9 @@ bool BytecodeBuilder::BuildExp(const TreeNode& stmt, bool root)
 		}
 
 		_reg = regStack;
-		_bytecode.push_back( { .codeStr = format("t{} = invoke {}", _reg, _symTbl.back()[stmt.childs[0]->self.val].pos) } );
+
+		_bytecode.push_back( { .codeStr = format("t{} = invoke {}", _reg, _symTbl.GetSymbol(stmt.childs[0]->self.val).pos) } );
+		//TODO invoke
 		return true;
 	}
 
@@ -93,11 +252,27 @@ bool BytecodeBuilder::BuildExp(const TreeNode& stmt, bool root)
 			throw 'n';
 		}
 		lhsStr = format("t{}", _reg);
+		inst.src1Kind = (uint8_t)RefKind::Reg;
+		inst.src1 = (uint16_t)_reg;
 		_reg++;
 	}
 	else
 	{
-		lhsStr = lhs->self.val;
+		if(lhs->self.IsLiteral())
+		{
+			inst.src1Kind = (uint8_t)RefKind::Const;
+			inst.src1 = _constTbl.AddOrNot(lhs->self);
+			lhsStr = lhs->self.val;
+		}
+		else
+		{
+			auto idx = _symTbl.AddOrNot({ .name = lhs->self.val, .kind = ESymbol::Var });
+
+			inst.src1Kind = idx.kind == SymbolTable::Idx::LOCAL ? (uint8_t)RefKind::LocalVar : (uint8_t)RefKind::GlobalVar;
+			inst.src1 = (uint16_t)idx.idx;
+
+			lhsStr = format("{}({}{})", lhs->self.val, inst.src1Kind == (uint8_t)RefKind::LocalVar ? 'l' : 'g', inst.src1);
+		}
 	}
 
 	if(rhs)
@@ -109,24 +284,53 @@ bool BytecodeBuilder::BuildExp(const TreeNode& stmt, bool root)
 				throw 'n';
 			}
 			rhsStr = format("t{}", _reg);
+			inst.src2Kind = (uint8_t)RefKind::Reg;
+			inst.src2 = (uint16_t)_reg;
 			_reg++;
 		}
 		else
 		{
-			rhsStr = rhs->self.val;
+			if(rhs->self.IsLiteral())
+			{
+				inst.src2Kind = (uint8_t)RefKind::Const;
+				inst.src2 = _constTbl.AddOrNot(rhs->self);
+				rhsStr = rhs->self.val;
+			}
+			else
+			{
+				auto idx = _symTbl.GetIdx(rhs->self.val);
+				if(idx.kind == SymbolTable::Idx::NONE)
+				{
+					throw 'n';
+				}
+
+				inst.src2Kind = idx.kind == SymbolTable::Idx::LOCAL ? (uint8_t)RefKind::LocalVar : (uint8_t)RefKind::GlobalVar;
+				inst.src2 = (uint16_t)idx.idx;
+
+				rhsStr = format("{}({}{})", rhs->self.val, inst.src2Kind == (uint8_t)RefKind::LocalVar ? 'l' : 'g', inst.src2);
+			}
+
+
 		}
 
 		codeStr = format("{} {} {}", lhsStr, stmt.self.val, rhsStr);
+		inst.op = (uint8_t)stmt.self.kind;
 	}
 	else
 	{
 		if(stmt.self.IsPrefixUnary())
 		{
 			codeStr = stmt.self.val + lhsStr;
+			inst.op = (uint8_t)stmt.self.kind;
+			inst.src2Kind = inst.src1Kind;
+			inst.src2 = inst.src1;
+			inst.src1Kind = (uint8_t)RefKind::None;
+			inst.src1 = 0;
 		}
 		else if(stmt.self == EToken::LParen)
 		{
 			codeStr = lhsStr;
+			inst.op = (uint8_t)EToken::None;
 		}
 		else
 		{
@@ -137,13 +341,19 @@ bool BytecodeBuilder::BuildExp(const TreeNode& stmt, bool root)
 	_reg = regStack;
 	if(!root)
 	{
-		_bytecode.push_back( { .codeStr = format("{} = {}", format("t{}", _reg), codeStr) } );
+		inst.dstKind = (uint8_t)RefKind::Reg;
+		inst.dst = _reg;
+		codeStr = format("{} = {}", format("t{}", _reg), codeStr);
 	}
 	else
 	{
-		_bytecode.push_back( { .codeStr = codeStr } );
+		inst.dstKind = (uint8_t)EToken::None;
+		inst.dst = 0;
 	}
 
+	_bytecode.push_back( { .codeStr = codeStr } );
+	_bytecode.back().code.resize(sizeof(inst));
+	memcpy(_bytecode.back().code.data(), &inst, sizeof(inst));
 	return true;
 }
 
@@ -259,8 +469,7 @@ bool BytecodeBuilder::BuildFn(const TreeNode& stmt)
 
 	_reg = regStack;
 
-	//TODO
-	_symTbl.back()[ name ] = sym;
+	_symTbl.AddOrNot(sym);
 	return true;
 }
 
@@ -269,14 +478,13 @@ bool BytecodeBuilder::BuildCompound(const TreeNode& stmt)
 	if(stmt.self != EToken::LBrace)
 		throw 'n';
 
-	_symTbl.resize(_symTbl.size() + 1);
-	_symTbl.back() = _symTbl[_symTbl.size() - 2];
+	_symTbl.AddScope();
 
 	for(auto& itm : stmt.childs)
 	{
 		BuildStmt(*itm);
 	}
 
-	_symTbl.pop_back();
+	_symTbl.PopScope();
 	return true;
 }

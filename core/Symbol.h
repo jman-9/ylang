@@ -5,6 +5,8 @@
 
 enum class ESymbol
 {
+	None,
+
 	Var,
 	Fn,
 	Cls,
@@ -17,10 +19,10 @@ struct Param
 
 struct Symbol
 {
-	std::string name;
-	ESymbol kind;
+	std::string name = "";
+	ESymbol kind = ESymbol::None;
 
 	// fn
-	size_t pos;
+	size_t pos = 0;
 	std::vector<Param> params;
 };

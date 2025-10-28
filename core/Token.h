@@ -2,7 +2,7 @@
 #include <stdint.h>
 #include <string>
 
-enum class EToken
+enum class EToken : uint8_t
 {
 	None,
 
@@ -82,6 +82,7 @@ struct Token
 	bool IsWhiteSpace() const;
 	bool IsLiteral() const;
 	bool IsPrefixUnary() const;
+	bool IsAssign() const;
 	bool Is(EToken tok) const;
 	bool operator==(EToken rhs) const;
 
@@ -89,9 +90,9 @@ struct Token
 	static bool IsWhiteSpace(EToken tok);
 	static bool IsLiteral(EToken tok);
 	static bool IsPrefixUnary(EToken tok);
+	static bool IsAssign(EToken tok);
 	static bool IsWhiteSpace(const Token& tok);
 	static bool IsLiteral(const Token& tok);
 	static bool IsPrefixUnary(const Token& tok);
-
-protected:
+	static bool IsAssign(const Token& tok);
 };

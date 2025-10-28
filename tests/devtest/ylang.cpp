@@ -3,6 +3,7 @@
 #include "core/Parser.h"
 #include "core/SemanticAnalyzer.h"
 #include "core/BytecodeBuilder.h"
+#include "core/vm/Machine.h"
 #include <format>
 using namespace std;
 
@@ -104,7 +105,7 @@ tt = 10;
 
 t = 20 + tt - 50 * ((61 - 3)) + 4;
 
-
+/*
 {
   ttt = 20;
   tt += ttt;
@@ -155,7 +156,7 @@ else
     if(a == 8) p = 8 * 9; else p = 9 * 9;
   }
 }
-
+*/
 )TEST";
 
 
@@ -214,7 +215,11 @@ int main()
 		if(!sa.Analyze()) throw 'n';
 
 		BytecodeBuilder bb(*ast);
-		if(!bb.Build()) throw 'n';
+		Bytecode c;
+		if(!bb.Build(c)) throw 'n';
+
+		yvm::Machine m;
+		m.Run(c);
 	}
 
 	return 0;

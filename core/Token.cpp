@@ -20,6 +20,11 @@ bool Token::IsPrefixUnary() const
 	return Token::IsPrefixUnary(kind);
 }
 
+bool Token::IsAssign() const
+{
+	return Token::IsAssign(kind);
+}
+
 bool Token::Is(EToken tok) const
 {
 	return kind == tok;
@@ -51,6 +56,11 @@ bool Token::IsPrefixUnary(EToken tok)
 	return tok == EToken::Not || tok == EToken::Tilde || tok == EToken::Plus || tok == EToken::Minus || tok == EToken::UnaryPlus || tok == EToken::UnaryMinus;
 }
 
+bool Token::IsAssign(EToken tok)
+{
+	return EToken::Assign <= tok && EToken::RShiftAssign <= tok;
+}
+
 bool Token::IsWhiteSpace(const Token& tok)
 {
 	return IsWhiteSpace(tok.kind);
@@ -64,4 +74,9 @@ bool Token::IsLiteral(const Token& tok)
 bool Token::IsPrefixUnary(const Token& tok)
 {
 	return IsPrefixUnary(tok.kind);
+}
+
+bool Token::IsAssign(const Token& tok)
+{
+	return IsAssign(tok.kind);
 }
