@@ -2,6 +2,7 @@
 #include "TreeNode.h"
 #include <vector>
 #include <map>
+#include <set>
 
 
 class Parser
@@ -22,10 +23,10 @@ protected:
 	TreeNode* ParsePostfixExp();
 	TreeNode* ParsePrefixExp();
 	TreeNode* ParseOpExp();
-	TreeNode* ParseCompoundStmt(const std::vector<EToken>& allowed = std::vector<EToken>());
-	TreeNode* ParseStmt(const std::vector<EToken>& allowed = std::vector<EToken>());
-	TreeNode* ParseIf();
-	TreeNode* ParseFor();
+	TreeNode* ParseCompoundStmt(const std::set<EToken>& allowed = std::set<EToken>());
+	TreeNode* ParseStmt(const std::set<EToken>& allowed = std::set<EToken>());
+	TreeNode* ParseIf(const std::set<EToken>& allowed = std::set<EToken>());
+	TreeNode* ParseFor(const std::set<EToken>& allowed = std::set<EToken>());
 	TreeNode* ParseFn();
 
 	bool MoveNext();

@@ -4,8 +4,8 @@ using namespace std;
 
 static map<EToken, int> s_opMap;
 static map<EToken, int> s_precMap;
-static vector<EToken> s_allowedFor;
-static vector<EToken> s_allowedFn;
+static set<EToken> s_allowedFor;
+static set<EToken> s_allowedFn;
 
 static bool InitParser()
 {
@@ -102,9 +102,9 @@ static bool InitParser()
 
 	/*===========================================*/
 
-	s_allowedFor.push_back(EToken::Break);
-	s_allowedFor.push_back(EToken::Continue);
-	s_allowedFn.push_back(EToken::Return);
+	s_allowedFor.insert(EToken::Break);
+	s_allowedFor.insert(EToken::Continue);
+	s_allowedFn.insert(EToken::Return);
 
 	return true;
 }
@@ -402,7 +402,7 @@ TreeNode* Parser::ParseOpExp()
 }
 
 
-TreeNode* Parser::ParseCompoundStmt(const std::vector<EToken>& allowed /* = std::vector<EToken>() */)
+TreeNode* Parser::ParseCompoundStmt(const std::set<EToken>& allowed /* = std::set<EToken>() */)
 {
 	if(GetCur().kind != EToken::LBrace)
 	{
@@ -435,7 +435,7 @@ TreeNode* Parser::ParseCompoundStmt(const std::vector<EToken>& allowed /* = std:
 	return compound;
 }
 
-TreeNode* Parser::ParseStmt(const std::vector<EToken>& allowed /* = std::vector<EToken>() */)
+TreeNode* Parser::ParseStmt(const std::set<EToken>& allowed /* = std::set<EToken>() */)
 {
 	TreeNode* ast = ParseExpLoop(EToken::Semicolon);
 	if(ast)
@@ -450,21 +450,13 @@ TreeNode* Parser::ParseStmt(const std::vector<EToken>& allowed /* = std::vector<
 
 	if(ast = ParseCompoundStmt(allowed)) return ast;
 
-	if(ast = ParseIf()) return ast;
-	if(ast = ParseFor()) return ast;
+	if(ast = ParseIf(allowed)) return ast;
+	if(ast = ParseFor(allowed)) return ast;
 	if(ast = ParseFn()) return ast;
 
 	auto& cur = GetCur();
-	bool needParsing = false;
-	for(auto a : allowed)
-	{
-		if(a == cur.kind)
-		{
-			needParsing = true;
-			break;
-		}
-	}
-	if(!needParsing) return nullptr;
+	if(allowed.find(cur.kind) == allowed.end())
+		return nullptr;
 
 	if(cur.kind == EToken::Continue || cur.kind == EToken::Break)
 	{
@@ -503,7 +495,7 @@ TreeNode* Parser::ParseStmt(const std::vector<EToken>& allowed /* = std::vector<
 	return nullptr;
 }
 
-TreeNode* Parser::ParseIf()
+TreeNode* Parser::ParseIf(const std::set<EToken>& allowed /* = std::set<EToken>() */)
 {
 	if(GetCur().kind != EToken::If)
 	{
@@ -535,7 +527,7 @@ TreeNode* Parser::ParseIf()
 	ifNode->childs.push_back(exp);
 	exp->parent = ifNode;
 
-	TreeNode* _true = ParseStmt();
+	TreeNode* _true = ParseStmt(allowed);
 	if(!_true)
 	{
 		throw 'n';
@@ -547,7 +539,7 @@ TreeNode* Parser::ParseIf()
 	if(GetCur().kind == EToken::Else)
 	{
 		MoveNext();
-		TreeNode* _false = ParseStmt();
+		TreeNode* _false = ParseStmt(allowed);
 		if(!_true)
 		{
 			throw 'n';
@@ -560,7 +552,7 @@ TreeNode* Parser::ParseIf()
 	return ifNode;
 }
 
-TreeNode* Parser::ParseFor()
+TreeNode* Parser::ParseFor(const std::set<EToken>& allowed /* = std::set<EToken>() */)
 {
 	if(GetCur().kind != EToken::For)
 	{
@@ -624,7 +616,10 @@ TreeNode* Parser::ParseFor()
 	cond->parent = forNode;
 	update->parent = forNode;
 
-	TreeNode* loop = ParseStmt(s_allowedFor);
+	set<EToken> localAllowed = allowed;
+	localAllowed.insert(s_allowedFor.begin(), s_allowedFor.end());
+
+	TreeNode* loop = ParseStmt(localAllowed);
 	if(!loop)
 	{
 		throw 'n';

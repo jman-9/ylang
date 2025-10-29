@@ -213,14 +213,16 @@ bool BytecodeBuilder::Build(Bytecode& retCode)
 
 void BytecodeBuilder::BuildBlockOpen()
 {
-	_bytecode.push_back( {  .kind = Opcode::PushSp, .codeStr = "pushsp" } );
+	_bytecode.push_back( {  .kind = EOpcode::PushSp, .codeStr = "pushsp" } );
+	if(!_loopStack.empty()) _loopStack.top().pushSpCnt++;
 	_symTbl.AddBlockScope();
 }
 
 void BytecodeBuilder::BuildBlockClose()
 {
 	_symTbl.PopScope();
-	_bytecode.push_back( {  .kind = Opcode::PopSp, .codeStr = "popsp" } );
+	if(!_loopStack.empty()) _loopStack.top().pushSpCnt--;
+	_bytecode.push_back( {  .kind = EOpcode::PopSp, .codeStr = "popsp" } );
 }
 
 bool BytecodeBuilder::BuildStmt(const TreeNode& stmt)
@@ -232,8 +234,8 @@ bool BytecodeBuilder::BuildStmt(const TreeNode& stmt)
 	case EToken::Fn : return BuildFn(stmt);
 	case EToken::LBrace : return BuildCompound(stmt);
 	case EToken::Return : return BuildReturn(stmt);
-	case EToken::Continue :
-	case EToken::Break : return true;
+	case EToken::Continue : return BuildContinue(stmt);
+	case EToken::Break : return BuildBreak(stmt);
 	default: ;
 	}
 	return BuildExp(stmt, true);
@@ -246,26 +248,26 @@ bool BytecodeBuilder::BuildExp(const TreeNode& stmt, bool root)
 
 	if(stmt.self == EToken::Id || stmt.self.IsLiteral())
 	{
-		inst.dstKind = (uint8_t)RefKind::Reg;
+		inst.dstKind = (uint8_t)ERefKind::Reg;
 		inst.dst = _reg;
 
 		int srcNum = -1;
 		if(stmt.self.IsLiteral())
 		{
-			inst.src1Kind = (uint8_t)RefKind::Const;
+			inst.src1Kind = (uint8_t)ERefKind::Const;
 			inst.src1 = _constTbl.AddOrNot(stmt.self);
 		}
 		else
 		{
 			auto idx = _symTbl.AddOrNot({ .name = stmt.self.val, .kind = ESymbol::Var });
 
-			inst.src1Kind = idx.kind == SymbolTable::Idx::LOCAL ? (uint8_t)RefKind::LocalVar : (uint8_t)RefKind::GlobalVar;
+			inst.src1Kind = idx.kind == SymbolTable::Idx::LOCAL ? (uint8_t)ERefKind::LocalVar : (uint8_t)ERefKind::GlobalVar;
 			inst.src1 = (uint16_t)idx.idx;
 		}
 
-		string rhs = format("{}({}{})", stmt.self.val, inst.src1Kind == (uint8_t)RefKind::LocalVar ? 'l' : 'g', inst.src1);
+		string rhs = format("{}({}{})", stmt.self.val, inst.src1Kind == (uint8_t)ERefKind::LocalVar ? 'l' : 'g', inst.src1);
 
-		_bytecode.push_back( { .kind = Opcode::Assign, .codeStr = format("{} = {}", format("t{}", _reg), rhs ) } );
+		_bytecode.push_back( { .kind = EOpcode::Assign, .codeStr = format("{} = {}", format("t{}", _reg), rhs ) } );
 		_bytecode.back().code.resize(sizeof(inst));
 		memcpy(_bytecode.back().code.data(), &inst, sizeof(inst));
 		return true;
@@ -284,7 +286,7 @@ bool BytecodeBuilder::BuildExp(const TreeNode& stmt, bool root)
 
 		_bytecode.push_back( { .codeStr = format("t{} = invoke {}", _reg, _symTbl.GetSymbol(stmt.childs[0]->self.val).pos) } );
 		Inst::Invoke ivk{ .pos = (uint32_t)_symTbl.GetSymbol(stmt.childs[0]->self.val).pos, .numPrms = (uint32_t)stmt.childs.size()-1 };
-		_bytecode.back().kind = Opcode::Invoke;
+		_bytecode.back().kind = EOpcode::Invoke;
 		_bytecode.back().code.resize(sizeof(ivk));
 		memcpy(_bytecode.back().code.data(), &ivk, sizeof(ivk));
 		return true;
@@ -311,7 +313,7 @@ bool BytecodeBuilder::BuildExp(const TreeNode& stmt, bool root)
 			throw 'n';
 		}
 		lhsStr = format("t{}", _reg);
-		inst.src1Kind = (uint8_t)RefKind::Reg;
+		inst.src1Kind = (uint8_t)ERefKind::Reg;
 		inst.src1 = (uint16_t)_reg;
 		_reg++;
 	}
@@ -319,7 +321,7 @@ bool BytecodeBuilder::BuildExp(const TreeNode& stmt, bool root)
 	{
 		if(lhs->self.IsLiteral())
 		{
-			inst.src1Kind = (uint8_t)RefKind::Const;
+			inst.src1Kind = (uint8_t)ERefKind::Const;
 			inst.src1 = _constTbl.AddOrNot(lhs->self);
 			lhsStr = lhs->self.val;
 		}
@@ -327,10 +329,10 @@ bool BytecodeBuilder::BuildExp(const TreeNode& stmt, bool root)
 		{
 			auto idx = _symTbl.AddOrNot({ .name = lhs->self.val, .kind = ESymbol::Var });
 
-			inst.src1Kind = idx.kind == SymbolTable::Idx::LOCAL ? (uint8_t)RefKind::LocalVar : (uint8_t)RefKind::GlobalVar;
+			inst.src1Kind = idx.kind == SymbolTable::Idx::LOCAL ? (uint8_t)ERefKind::LocalVar : (uint8_t)ERefKind::GlobalVar;
 			inst.src1 = (uint16_t)idx.idx;
 
-			lhsStr = format("{}({}{})", lhs->self.val, inst.src1Kind == (uint8_t)RefKind::LocalVar ? 'l' : 'g', inst.src1);
+			lhsStr = format("{}({}{})", lhs->self.val, inst.src1Kind == (uint8_t)ERefKind::LocalVar ? 'l' : 'g', inst.src1);
 		}
 	}
 
@@ -343,7 +345,7 @@ bool BytecodeBuilder::BuildExp(const TreeNode& stmt, bool root)
 				throw 'n';
 			}
 			rhsStr = format("t{}", _reg);
-			inst.src2Kind = (uint8_t)RefKind::Reg;
+			inst.src2Kind = (uint8_t)ERefKind::Reg;
 			inst.src2 = (uint16_t)_reg;
 			_reg++;
 		}
@@ -351,7 +353,7 @@ bool BytecodeBuilder::BuildExp(const TreeNode& stmt, bool root)
 		{
 			if(rhs->self.IsLiteral())
 			{
-				inst.src2Kind = (uint8_t)RefKind::Const;
+				inst.src2Kind = (uint8_t)ERefKind::Const;
 				inst.src2 = _constTbl.AddOrNot(rhs->self);
 				rhsStr = rhs->self.val;
 			}
@@ -363,10 +365,10 @@ bool BytecodeBuilder::BuildExp(const TreeNode& stmt, bool root)
 					throw 'n';
 				}
 
-				inst.src2Kind = idx.kind == SymbolTable::Idx::LOCAL ? (uint8_t)RefKind::LocalVar : (uint8_t)RefKind::GlobalVar;
+				inst.src2Kind = idx.kind == SymbolTable::Idx::LOCAL ? (uint8_t)ERefKind::LocalVar : (uint8_t)ERefKind::GlobalVar;
 				inst.src2 = (uint16_t)idx.idx;
 
-				rhsStr = format("{}({}{})", rhs->self.val, inst.src2Kind == (uint8_t)RefKind::LocalVar ? 'l' : 'g', inst.src2);
+				rhsStr = format("{}({}{})", rhs->self.val, inst.src2Kind == (uint8_t)ERefKind::LocalVar ? 'l' : 'g', inst.src2);
 			}
 
 
@@ -383,7 +385,7 @@ bool BytecodeBuilder::BuildExp(const TreeNode& stmt, bool root)
 			inst.op = (uint8_t)stmt.self.kind;
 			inst.src2Kind = inst.src1Kind;
 			inst.src2 = inst.src1;
-			inst.src1Kind = (uint8_t)RefKind::None;
+			inst.src1Kind = (uint8_t)ERefKind::None;
 			inst.src1 = 0;
 		}
 		else if(stmt.self == EToken::LParen)
@@ -400,7 +402,7 @@ bool BytecodeBuilder::BuildExp(const TreeNode& stmt, bool root)
 	_reg = regStack;
 	if(!root)
 	{
-		inst.dstKind = (uint8_t)RefKind::Reg;
+		inst.dstKind = (uint8_t)ERefKind::Reg;
 		inst.dst = _reg;
 		codeStr = format("{} = {}", format("t{}", _reg), codeStr);
 	}
@@ -431,6 +433,34 @@ bool BytecodeBuilder::BuildReturn(const TreeNode& stmt)
 	return true;
 }
 
+bool BytecodeBuilder::BuildContinue(const TreeNode& stmt)
+{
+	if(stmt.self != EToken::Continue)
+		throw 'n';
+
+	for(int i=0; i<_loopStack.top().pushSpCnt; i++)
+	{
+		_bytecode.push_back( { .kind = EOpcode::PopSp, .codeStr = "popsp" } );
+	}
+	_bytecode.push_back( { .kind = EOpcode::Jmp, } );
+	_loopStack.top().contLines.push_back((int)_bytecode.size()-1);
+	return true;
+}
+
+bool BytecodeBuilder::BuildBreak(const TreeNode& stmt)
+{
+	if(stmt.self != EToken::Break)
+		throw 'n';
+
+	for(int i=0; i<_loopStack.top().pushSpCnt; i++)
+	{
+		_bytecode.push_back( { .kind = EOpcode::PopSp, .codeStr = "popsp" } );
+	}
+	_bytecode.push_back( { .kind = EOpcode::Jmp, } );
+	_loopStack.top().breakLines.push_back((int)_bytecode.size()-1);
+	return true;
+}
+
 bool BytecodeBuilder::BuildFor(const TreeNode& stmt)
 {
 	if(stmt.self != EToken::For)
@@ -451,30 +481,54 @@ bool BytecodeBuilder::BuildFor(const TreeNode& stmt)
 	_bytecode.push_back( { .codeStr = condStr } );
 	size_t condLine = _bytecode.size() - 1;
 	Inst::Jz jz;
-	jz.testKind = (uint8_t)RefKind::Reg;
+	jz.testKind = (uint8_t)ERefKind::Reg;
 	jz.test = _reg;
 
+	_loopStack.push({});
 
+	//TODO single stmt
 	BuildCompound(block);
 
-	size_t loopEnd = _bytecode.size();
+	size_t loopEnd = _bytecode.size() + 1;
 	BuildExp(update, true);
 
 	Inst::Jmp jmp{ .pos = (uint32_t)loopStart };
 	Instruction inst;
-	inst.kind = Opcode::Jmp;
-	inst.codeStr = format("jmp {}", loopStart);
+	inst.kind = EOpcode::Jmp;
 	inst.code.resize(sizeof(jmp));
-	memcpy(inst.code.data(), &jmp, sizeof(jmp));
+	*(Inst::Jmp*)inst.code.data() = jmp;
+	inst.codeStr = format("jmp {}", loopStart);
 	_bytecode.push_back(inst);
 
 	size_t updateEnd = _bytecode.size() + 1;
 
 	_bytecode[condLine].codeStr += to_string(updateEnd);
-	_bytecode[condLine].kind = Opcode::Jz;
+	_bytecode[condLine].kind = EOpcode::Jz;
 	jz.pos = (uint32_t)updateEnd;
 	_bytecode[condLine].code.resize(sizeof(jz));
 	*(Inst::Jz*)_bytecode[condLine].code.data() = jz;
+
+	for(auto& cl : _loopStack.top().contLines)
+	{
+		auto& inst = _bytecode[cl];
+		inst.kind = EOpcode::Jmp;
+		Inst::Jmp jmp{ .pos = (uint32_t)loopEnd };
+		inst.code.resize(sizeof(jmp));
+		*(Inst::Jmp*)inst.code.data() = jmp;
+		inst.codeStr = format("jmp {}", loopEnd);
+	}
+
+	for(auto& bl : _loopStack.top().breakLines)
+	{
+		auto& inst = _bytecode[bl];
+		inst.kind = EOpcode::Jmp;
+		Inst::Jmp jmp{ .pos = (uint32_t)updateEnd };
+		inst.code.resize(sizeof(jmp));
+		*(Inst::Jmp*)inst.code.data() = jmp;
+		inst.codeStr = format("jmp {}", updateEnd);
+	}
+
+	_loopStack.pop();
 
 	return true;
 }
@@ -494,7 +548,7 @@ bool BytecodeBuilder::BuildIf(const TreeNode& stmt)
 	_bytecode.push_back( { .codeStr = condStr } );
 	size_t condLine = _bytecode.size() - 1;
 	Inst::Jz jz;
-	jz.testKind = (uint8_t)RefKind::Reg;
+	jz.testKind = (uint8_t)ERefKind::Reg;
 	jz.test = _reg;
 
 	BuildStmt(_true);
@@ -502,7 +556,7 @@ bool BytecodeBuilder::BuildIf(const TreeNode& stmt)
 	size_t skipLine = _bytecode.size() - 1;
 
 	_bytecode[condLine].codeStr += to_string(_bytecode.size() + 1);
-	_bytecode[condLine].kind = Opcode::Jz;
+	_bytecode[condLine].kind = EOpcode::Jz;
 	jz.pos = (uint32_t)_bytecode.size() + 1;
 	_bytecode[condLine].code.resize(sizeof(jz));
 	*(Inst::Jz*)_bytecode[condLine].code.data() = jz;
@@ -517,7 +571,7 @@ bool BytecodeBuilder::BuildIf(const TreeNode& stmt)
 	}
 
 	_bytecode[skipLine].codeStr += to_string(_bytecode.size() + 1);
-	_bytecode[skipLine].kind = Opcode::Jmp;
+	_bytecode[skipLine].kind = EOpcode::Jmp;
 	Inst::Jmp jmp{ .pos = (uint32_t)_bytecode.size() + 1 };
 	_bytecode[skipLine].code.resize(sizeof(jmp));
 	*(Inst::Jmp*)_bytecode[skipLine].code.data() = jmp;
@@ -540,7 +594,7 @@ bool BytecodeBuilder::BuildFn(const TreeNode& stmt)
 	auto& params = stmt.childs[0]->childs;
 	auto& block = *stmt.childs[1];
 
-	_bytecode.push_back( {  .kind = Opcode::PushSp, .codeStr = "pushsp" } );
+	_bytecode.push_back( {  .kind = EOpcode::PushSp, .codeStr = "pushsp" } );
 	_symTbl.AddFuncScope();
 
 	Symbol sym;
@@ -554,11 +608,11 @@ bool BytecodeBuilder::BuildFn(const TreeNode& stmt)
 		sym.params.push_back(prm);
 
 		auto idx = _symTbl.AddOrNot( { .name = p->self.val, .kind = ESymbol::Var } );
-		_bytecode.push_back( { .kind = Opcode::Assign, .codeStr = format("{} = t{}", prm.name, _reg) } );
+		_bytecode.push_back( { .kind = EOpcode::Assign, .codeStr = format("{} = t{}", prm.name, _reg) } );
 		Inst::Assign as;
-		as.dstKind = (uint8_t)RefKind::LocalVar;
+		as.dstKind = (uint8_t)ERefKind::LocalVar;
 		as.dst = idx.idx;
-		as.src1Kind = (uint8_t)RefKind::Reg;
+		as.src1Kind = (uint8_t)ERefKind::Reg;
 		as.src1 = _reg++;
 		_bytecode.back().code.resize(sizeof(as));
 		memcpy(_bytecode.back().code.data(), &as, sizeof(as));
@@ -580,12 +634,12 @@ bool BytecodeBuilder::BuildFn(const TreeNode& stmt)
 	_reg = regStack;
 
 	BuildBlockClose();
-	_bytecode.push_back( { .kind = Opcode::Ret, .codeStr = "ret" } );
+	_bytecode.push_back( { .kind = EOpcode::Ret, .codeStr = "ret" } );
 	_symTbl.AddOrNot(sym);
 
 	_bytecode[skipLine].codeStr += to_string(_bytecode.size()+1);
 	Inst::Jmp jmp{ .pos = (uint32_t)_bytecode.size() + 1 };
-	_bytecode[skipLine].kind = Opcode::Jmp;
+	_bytecode[skipLine].kind = EOpcode::Jmp;
 	_bytecode[skipLine].code.resize(sizeof(jmp));
 	memcpy(_bytecode[skipLine].code.data(), &jmp, sizeof(jmp));
 	return true;

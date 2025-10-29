@@ -49,7 +49,7 @@ public:
 	int _rp;
 
 protected:
-	Variable* ResolveVar(RefKind k, int idx);
+	Variable* ResolveVar(ERefKind k, int idx);
 };
 
 }

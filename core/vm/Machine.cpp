@@ -182,23 +182,23 @@ Machine::Machine()
 }
 
 
-Variable* Machine::ResolveVar(RefKind k, int idx)
+Variable* Machine::ResolveVar(ERefKind k, int idx)
 {
 	switch(k)
 	{
-	case RefKind::Reg:
+	case ERefKind::Reg:
 		{
 			_rp = _rpStack.top() + idx + 1;
 			return &_regs[_rpStack.top() + idx];
 		}
-	case RefKind::GlobalVar: return &_stack[idx];
-	case RefKind::LocalVar:
+	case ERefKind::GlobalVar: return &_stack[idx];
+	case ERefKind::LocalVar:
 		{
 			if(_sp < _cspStack.top() + idx + 1)
 				_sp = _cspStack.top() + idx + 1;
 			return &_stack[idx + _cspStack.top()];
 		}
-	case RefKind::Const: return &_consts[idx];
+	case ERefKind::Const: return &_consts[idx];
 	default: return nullptr;
 	}
 }
@@ -215,20 +215,20 @@ void Machine::Run(const Bytecode& code)
 	for(i=0; i<code._code.size(); i++)
 	{
 		auto& inst = code._code[i];
-		if(inst.kind == Opcode::Assign)
+		if(inst.kind == EOpcode::Assign)
 		{
 			const Inst::Assign& as = *(Inst::Assign*)inst.code.data();
 
-			if((RefKind)as.dstKind == RefKind::Const)
+			if((ERefKind)as.dstKind == ERefKind::Const)
 			{
 				throw 'n';
 			}
 
-			if((RefKind)as.dstKind != RefKind::None)
+			if((ERefKind)as.dstKind != ERefKind::None)
 			{
-				Variable* dst = ResolveVar((RefKind)as.dstKind, as.dst);
-				Variable* src1 = ResolveVar((RefKind)as.src1Kind, as.src1);
-				Variable* src2 = ResolveVar((RefKind)as.src2Kind, as.src2);
+				Variable* dst = ResolveVar((ERefKind)as.dstKind, as.dst);
+				Variable* src1 = ResolveVar((ERefKind)as.src1Kind, as.src1);
+				Variable* src2 = ResolveVar((ERefKind)as.src2Kind, as.src2);
 				if(src1 && src2)
 				{
 					dst->CalcAndAssign(*src1, (EToken)as.op, *src2);
@@ -245,13 +245,13 @@ void Machine::Run(const Bytecode& code)
 			{
 				if(Token::IsAssign((EToken)as.op))
 				{
-					if((RefKind)as.src1Kind == RefKind::Const)
+					if((ERefKind)as.src1Kind == ERefKind::Const)
 					{
 						throw 'n';
 					}
 
-					Variable* dst = ResolveVar((RefKind)as.src1Kind, as.src1);
-					Variable* src = ResolveVar((RefKind)as.src2Kind, as.src2);
+					Variable* dst = ResolveVar((ERefKind)as.src1Kind, as.src1);
+					Variable* src = ResolveVar((ERefKind)as.src2Kind, as.src2);
 					dst->Assign((EToken)as.op, *src);
 				}
 				else
@@ -259,21 +259,21 @@ void Machine::Run(const Bytecode& code)
 				}
 			}
 		}
-		else if(inst.kind == Opcode::PushSp)
+		else if(inst.kind == EOpcode::PushSp)
 		{
 			_spStack.push(_sp);
 		}
-		else if(inst.kind == Opcode::PopSp)
+		else if(inst.kind == EOpcode::PopSp)
 		{
 			_sp = _spStack.top();
 			_spStack.pop();
 		}
-		else if(inst.kind == Opcode::Jmp)
+		else if(inst.kind == EOpcode::Jmp)
 		{
 			const Inst::Jmp& jmp = *(Inst::Jmp*)inst.code.data();
 			i = jmp.pos - 2;
 		}
-		else if(inst.kind == Opcode::Invoke)
+		else if(inst.kind == EOpcode::Invoke)
 		{
 			const Inst::Invoke& ivk = *(Inst::Invoke*)inst.code.data();
 			_retStack.push((uint32_t)i+1);
@@ -283,7 +283,7 @@ void Machine::Run(const Bytecode& code)
 
 			i = ivk.pos - 2;
 		}
-		else if(inst.kind == Opcode::Ret)
+		else if(inst.kind == EOpcode::Ret)
 		{
 			_sp = _cspStack.top();
 			_cspStack.pop();
@@ -292,10 +292,10 @@ void Machine::Run(const Bytecode& code)
 			i = _retStack.top() - 1;
 			_retStack.pop();
 		}
-		else if(inst.kind == Opcode::Jz)
+		else if(inst.kind == EOpcode::Jz)
 		{
 			const Inst::Jz& jz = *(Inst::Jz*)inst.code.data();
-			Variable* test = ResolveVar((RefKind)jz.testKind, jz.test);
+			Variable* test = ResolveVar((ERefKind)jz.testKind, jz.test);
 			if(!test->num)
 			{
 				i = jz.pos - 2;

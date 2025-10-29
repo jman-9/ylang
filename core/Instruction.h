@@ -6,7 +6,7 @@
 
 struct Instruction
 {
-	Opcode kind;
+	EOpcode kind;
 	std::vector<uint8_t> code;
 	std::string codeStr;
 };

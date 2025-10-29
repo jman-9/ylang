@@ -7,6 +7,7 @@
 #include <vector>
 #include <map>
 #include <unordered_map>
+#include <stack>
 
 
 class ConstTable
@@ -113,6 +114,14 @@ protected:
 	ConstTable _constTbl;
 	SymbolTable _symTbl;
 
+	struct LoopControl
+	{
+		std::vector<int> contLines;
+		std::vector<int> breakLines;
+		int pushSpCnt = 0;
+	};
+	std::stack<LoopControl> _loopStack;
+
 	void BuildBlockOpen();
 	void BuildBlockClose();
 
@@ -124,4 +133,6 @@ protected:
 	bool BuildExp(const TreeNode& stmt, bool root);
 	bool BuildInvoke(const TreeNode& stmt);
 	bool BuildReturn(const TreeNode& stmt);
+	bool BuildContinue(const TreeNode& stmt);
+	bool BuildBreak(const TreeNode& stmt);
 };
