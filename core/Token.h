@@ -95,4 +95,6 @@ struct Token
 	static bool IsLiteral(const Token& tok);
 	static bool IsPrefixUnary(const Token& tok);
 	static bool IsAssign(const Token& tok);
+
+	static std::string_view TokenString(EToken tok);
 };
