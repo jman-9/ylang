@@ -111,6 +111,7 @@ protected:
 	const TreeNode& _code;
 	uint32_t _reg;
 	std::vector<Instruction> _bytecode;
+	std::vector<std::string> _bytecodeStr;
 	ConstTable _constTbl;
 	SymbolTable _symTbl;
 
@@ -135,4 +136,14 @@ protected:
 	bool BuildReturn(const TreeNode& stmt);
 	bool BuildContinue(const TreeNode& stmt);
 	bool BuildBreak(const TreeNode& stmt);
+
+private:
+	template<EOpcode Op>
+	void FillBytecode(int ln);
+	template<class InstType>
+	void FillBytecode(int ln, const InstType& inst);
+	template<EOpcode Op>
+	int PushBytecode();
+	template<class InstType>
+	int PushBytecode(const InstType& inst);
 };

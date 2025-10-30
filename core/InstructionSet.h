@@ -3,6 +3,8 @@
 
 enum class EOpcode : uint16_t
 {
+	Noop,
+
 	Assign,
 	PushSp,
 	PopSp,
@@ -42,18 +44,18 @@ struct Jmp
 	uint32_t pos = 0;
 };
 
+struct Invoke
+{
+	uint32_t pos = 0;
+	uint32_t numPrms = 0;
+};
+
 struct Jz
 {
 	uint8_t testKind = (uint8_t)ERefKind::None;
 	uint8_t rsvd = 0;
 	uint16_t test = 0;
 	uint32_t pos = 0;
-};
-
-struct Invoke
-{
-	uint32_t pos = 0;
-	uint32_t numPrms = 0;
 };
 
 }
