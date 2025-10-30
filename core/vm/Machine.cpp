@@ -212,7 +212,7 @@ void Machine::Run(const Bytecode& code)
 	}
 
 	int i;
-	for(i=0; i<code._code.size(); i++)
+	for(i=0; i<code._code.size(); )
 	{
 		auto& inst = code._code[i];
 		if(inst == EOpcode::Assign)
@@ -271,7 +271,8 @@ void Machine::Run(const Bytecode& code)
 		else if(inst == EOpcode::Jmp)
 		{
 			const Inst::Jmp& jmp = *(Inst::Jmp*)inst.code.data();
-			i = jmp.pos - 2;
+			i = jmp.pos;
+			continue;
 		}
 		else if(inst == EOpcode::Invoke)
 		{
@@ -281,7 +282,8 @@ void Machine::Run(const Bytecode& code)
 			_rpStack.push(_rp);
 			_cspStack.push(_sp);
 
-			i = ivk.pos - 2;
+			i = ivk.pos;
+			continue;
 		}
 		else if(inst == EOpcode::Ret)
 		{
@@ -289,8 +291,9 @@ void Machine::Run(const Bytecode& code)
 			_cspStack.pop();
 			_rp = _rpStack.top();
 			_rpStack.pop();
-			i = _retStack.top() - 1;
+			i = _retStack.top();
 			_retStack.pop();
+			continue;
 		}
 		else if(inst == EOpcode::Jz)
 		{
@@ -298,9 +301,12 @@ void Machine::Run(const Bytecode& code)
 			Variable* test = ResolveVar((ERefKind)jz.testKind, jz.test);
 			if(!test->num)
 			{
-				i = jz.pos - 2;
+				i = jz.pos;
+				continue;
 			}
 		}
+
+		i++;
 	}
 
 	int a = 1;

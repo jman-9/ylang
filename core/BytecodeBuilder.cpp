@@ -182,6 +182,7 @@ BytecodeBuilder::BytecodeBuilder(const TreeNode& code)
 	: _code(code)
 	, _reg(0)
 {
+	PushBytecode<EOpcode::Noop>();
 }
 
 BytecodeBuilder::~BytecodeBuilder()
@@ -282,7 +283,7 @@ bool BytecodeBuilder::Build(Bytecode& retCode)
 
 	for(int i=0; i<_bytecodeStr.size(); i++)
 	{
-		cout << format("{:4} {}\n", i+1, _bytecodeStr[i]);
+		cout << format("{:4} {}\n", i, _bytecodeStr[i]);
 	}
 
 	map<int, Token> sorted;
@@ -565,7 +566,7 @@ bool BytecodeBuilder::BuildFor(const TreeNode& stmt)
 
 	BuildExp(init, true);
 
-	size_t loopStart = _bytecode.size() + 1;
+	size_t loopStart = _bytecode.size();
 	BuildExp(cond, false);
 
 	size_t condLine = _bytecode.size();
@@ -580,13 +581,13 @@ bool BytecodeBuilder::BuildFor(const TreeNode& stmt)
 	//TODO single stmt
 	BuildCompound(block);
 
-	size_t loopEnd = _bytecode.size() + 1;
+	size_t loopEnd = _bytecode.size();
 	BuildExp(update, true);
 
 	Inst::Jmp jmp{ .pos = (uint32_t)loopStart };
 	PushBytecode(jmp);
 
-	size_t updateEnd = _bytecode.size() + 1;
+	size_t updateEnd = _bytecode.size();
 	jz.pos = (uint32_t)updateEnd;
 	FillBytecode((int)condLine, jz);
 
@@ -641,7 +642,7 @@ bool BytecodeBuilder::BuildIf(const TreeNode& stmt)
 		}
 	}
 
-	Inst::Jmp jmp{ .pos = (uint32_t)_bytecode.size() + 1 };
+	Inst::Jmp jmp{ .pos = (uint32_t)_bytecode.size() };
 	FillBytecode((int)skipLine, jmp);
 	return true;
 }
@@ -702,7 +703,7 @@ bool BytecodeBuilder::BuildFn(const TreeNode& stmt)
 	PushBytecode<EOpcode::Ret>();
 	_symTbl.AddOrNot(sym);
 
-	Inst::Jmp jmp{ .pos = (uint32_t)_bytecode.size() + 1 };
+	Inst::Jmp jmp{ .pos = (uint32_t)_bytecode.size() };
 	FillBytecode((int)skipLine, jmp);
 	return true;
 }
