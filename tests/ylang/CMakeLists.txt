@@ -7,18 +7,18 @@ endif()
 project ("devtest")
 
 # Add source to this project's executable.
-add_executable (devtest "devtest.cpp")
+add_executable (ylang "ylang.cpp" "ylang.h")
 
 if (CMAKE_VERSION VERSION_GREATER 3.12)
-	set_property(TARGET devtest PROPERTY CXX_STANDARD 20)
+	set_property(TARGET ylang PROPERTY CXX_STANDARD 20)
 endif()
 
 
-target_link_libraries(devtest
+target_link_libraries(ylang
 	PRIVATE ycore
 )
 
-target_include_directories(devtest
+target_include_directories(ylang
 	PRIVATE ${CMAKE_SOURCE_DIR}
 	PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}
 )

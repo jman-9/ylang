@@ -1,9 +1,9 @@
-#include "ylang.h"
 #include "core/Scanner.h"
 #include "core/Parser.h"
 #include "core/SemanticAnalyzer.h"
 #include "core/BytecodeBuilder.h"
 #include "core/vm/Machine.h"
+#include <iostream>
 #include <format>
 using namespace std;
 
@@ -168,6 +168,18 @@ else
 */
 )TEST";
 
+const char* testcode2 =
+R"TEST(
+a = 0;
+for(i=0; i<10; i+=1)
+{
+  for(j=0; j<10; j+=1)
+  {
+    continue;
+    a += 1;
+  }
+}
+)TEST";
 
 int main()
 {
@@ -198,7 +210,8 @@ int main()
 	//s2.Scan(fortestcode);
 	//s2.Scan(fntestcode);
 	//s2.Scan(postfixtestcode);
-	s2.Scan(testcode);
+	//s2.Scan(testcode);
+	s2.Scan(testcode2);
 
 	for(auto t : s2._tokens)
 	{
