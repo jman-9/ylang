@@ -170,20 +170,23 @@ else
 
 const char* testcode2 =
 R"TEST(
-println("=== chained calls ===");
+x = 10;
+y = 20;
+println("sum = " + (x + y));
 
-fn add1(x)
-{
-    return x + 1;
+for(i=1; i<6; i+=1) {
+    if(i == 3) {
+        println("halfway!");
+        continue;
+    }
+    println(i);
 }
 
-fn add2(x)
-{
-    return add1(x) + 1;
+fn square(n) {
+    return n * n;
 }
 
-println(add2(5));
-
+println("square(5) = " + square(5));
 )TEST";
 
 int main()

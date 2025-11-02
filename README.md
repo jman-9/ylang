@@ -1,13 +1,14 @@
 # ylang 0.0.1 — *it runs*
 
-A lightweight programming language featuring a complete compilation pipeline from source to bytecode execution.
+A lightweight, C-like, retro-styled programming language
 
 ---
 
 ## Overview
 
-`ylang` is a minimal scripting language project designed to prove the full flow of a working language system:
-from lexical analysis to execution on a custom virtual machine.
+`ylang` is a lightweight, C-like language designed with a simple and retro style.
+
+It implements a complete compilation pipeline — from scanning to bytecode generation — and execution on its own virtual machine, named `yvm` — keeping it small, structured, and clear.
 
 
 
@@ -27,8 +28,7 @@ Source (.y)
 **VM Features:**
 
 * Variable & arithmetic operations
-* control statements
-  * if / for / break / continue / return
+* Control statements: if/for/break/continue/return
 * User functions
 * Dynamically typed variables
 
@@ -61,7 +61,7 @@ ylang/
 
 #### Using GUI
 ```
-1. Open the project folder in **Visual Studio 2022**
+1. Open the project folder in Visual Studio 2022
 2. Select configuration
 3. Build
 4. Run
@@ -72,10 +72,9 @@ ylang/
 ```cmd
 cmake --preset x64-debug
 cmake --build --preset x64-debug
-### Windows GUI (MSVC)
 ```
 
-### Linux / macOS (planned verification)
+### Linux / macOS
 
 ```bash
 mkdir build && cd build
@@ -99,7 +98,7 @@ Example result:
 Hello, ylang!
 ```
 
----
+
 
 ## Examples
 
@@ -114,6 +113,39 @@ Hello, ylang!
 | `perfect.y`     | Perfect number check  |
 | `times.y`       | Multiplication table  |
 
+## Quick Example
+```y
+x = 10;
+y = 20;
+println("sum = " + (x + y));
+
+for(i=1; i<6; i+=1) {
+    if(i == 3) {
+        println("halfway!");
+        continue;
+    }
+    println(i);
+}
+
+fn square(n) {
+    return n * n;
+}
+
+println("square(5) = " + square(5));
+```
+Output:
+```
+sum = 30
+1
+2
+halfway!
+4
+5
+square(5) = 25
+```
+
+
+
 ---
 
 ## Tech Stack
@@ -121,7 +153,7 @@ Hello, ylang!
 * **Language:** *C++20*
 * **Build System:** CMake
 * **Runtime:** Custom Stack-Based Virtual Machine
-* **Platform:** not dependent
+* **Platform:** Cross-platform
 
 
 
