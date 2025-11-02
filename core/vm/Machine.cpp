@@ -36,14 +36,30 @@ bool Variable::Assign(EToken op, const Variable& rval)
 			{
 				if(type == NUM)
 				{
+					Clear();
+					type = STR;
 					str = format("{}{}", num, rval.str);
 				}
-				else
+				else if(type == FLOAT)
+				{
+					Clear();
+					type = STR;
+					str = format("{}{}", _float, rval.str);
+				}
+				else if(type == STR)
 				{//TODO
+					if(rval.type == NUM)
+						str = to_string(rval.num);
+					else if(rval.type == Constant::FLOAT)
+						str = to_string(rval._float);
+					else if(rval.type == STR)
+						str += rval.str;
+					else
+						throw 'n';	//TODO impl
 				}
 			}
 			else
-			{
+			{//TODO impl
 				throw 'n';
 				return false;
 			}
@@ -99,16 +115,41 @@ bool Variable::CalcAndAssign(const Variable& lhs, EToken calcOp, const Variable&
 	//TODO +, - confusion if(Token::IsPrefixUnary(calcOp))
 
 	if(lhs.type == STR || rhs.type == STR)
-	{//TODO
-		throw 'n';
+	{//todo refactor
+		if(calcOp == EToken::Plus)
+		{
+			if(lhs.type == NUM)
+			{
+				str = format("{}{}", lhs.num, rhs.str);
+			}
+			else if(lhs.type == FLOAT)
+			{
+				str = format("{}{}", lhs._float, rhs.str);
+			}
+			else if(lhs.type == STR)
+			{//TODO impl
+				if(rhs.type == NUM)
+					str = lhs.str + to_string(rhs.num);
+				else if(rhs.type == Constant::FLOAT)
+					str = lhs.str + to_string(rhs._float);
+				else if(rhs.type == STR)
+					str = lhs.str + rhs.str;
+				else
+					throw 'n';	//TODO impl
+			}
+			type = STR;
+		}
+		else
+		{//TODO impl
+			throw 'n';
+			return false;
+		}
 	}
 	else if(lhs.type == FLOAT || rhs.type == FLOAT)
 	{
 		double lfloat = lhs.type == FLOAT ? lhs._float : (double)lhs.num;
 		double rfloat = rhs.type == FLOAT ? rhs._float : (double)rhs.num;
 
-		Clear();
-		type = FLOAT;
 		switch(calcOp)
 		{
 		case EToken::Plus:			_float = lfloat + rfloat; break;
@@ -133,14 +174,13 @@ bool Variable::CalcAndAssign(const Variable& lhs, EToken calcOp, const Variable&
 				}
 			}
 		}
+		type = FLOAT;
 	}
 	else
 	{
 		int64_t lnum = lhs.num;
 		int64_t rnum = rhs.num;
 
-		Clear();
-		type = NUM;
 		switch(calcOp)
 		{
 		case EToken::Plus:			num = lnum + rnum; break;
@@ -164,6 +204,7 @@ bool Variable::CalcAndAssign(const Variable& lhs, EToken calcOp, const Variable&
 		default:
 			throw 'n';
 		}
+		type = NUM;
 	}
 
 	return true;
