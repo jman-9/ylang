@@ -1,0 +1,13 @@
+println("=== conditional test ===");
+
+x = 10;
+y = 20;
+
+if(x < y)
+{
+    println("x is less than y");
+}
+else
+{
+    println("x is not less than y");
+}

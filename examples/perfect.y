@@ -1,4 +1,4 @@
-println("=== perfect numbers ===");
+println("=== perfect numbers (under 1000) ===");
 
 for(i=2; i<=1000; i+=1)
 {
