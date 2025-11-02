@@ -170,15 +170,19 @@ else
 
 const char* testcode2 =
 R"TEST(
-fn abc()
+println("=== chained calls ===");
+
+fn add1(x)
 {
-return 1;
+    return x + 1;
 }
 
-fn abcd(abc)
+fn add2(x)
 {
-return 2;
+    return add1(x) + 1;
 }
+
+println(add2(5));
 
 )TEST";
 

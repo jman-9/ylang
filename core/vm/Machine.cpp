@@ -268,9 +268,9 @@ void Machine::Run(const Bytecode& code)
 
 			if((ERefKind)as.dstKind != ERefKind::None)
 			{
-				Variable* dst = ResolveVar((ERefKind)as.dstKind, as.dst);
 				Variable* src1 = ResolveVar((ERefKind)as.src1Kind, as.src1);
 				Variable* src2 = ResolveVar((ERefKind)as.src2Kind, as.src2);
+				Variable* dst = ResolveVar((ERefKind)as.dstKind, as.dst);
 				if(src1 && src2)
 				{
 					dst->CalcAndAssign(*src1, (EToken)as.op, *src2);
@@ -292,8 +292,8 @@ void Machine::Run(const Bytecode& code)
 						throw 'n';
 					}
 
-					Variable* dst = ResolveVar((ERefKind)as.src1Kind, as.src1);
 					Variable* src = ResolveVar((ERefKind)as.src2Kind, as.src2);
+					Variable* dst = ResolveVar((ERefKind)as.src1Kind, as.src1);
 					dst->Assign((EToken)as.op, *src);
 				}
 				else
@@ -371,7 +371,7 @@ void Machine::Run(const Bytecode& code)
 		{
 			_sp = _cspStack.top();
 			_cspStack.pop();
-			_rp = _rpStack.top();
+			_rp = _rpStack.top() + 1;
 			_rpStack.pop();
 			i = _retStack.top();
 			_retStack.pop();

@@ -526,7 +526,7 @@ bool BytecodeBuilder::BuildReturn(const TreeNode& stmt)
 	}
 	else
 	{
-		if(!BuildExp(*stmt.childs[0], true))
+		if(!BuildExp(*stmt.childs[0], false))
 		{
 			throw 'n';
 		}
@@ -638,7 +638,7 @@ bool BytecodeBuilder::BuildIf(const TreeNode& stmt)
 	size_t skipLine = _bytecode.size();
 	PushBytecode<EOpcode::Noop>();
 
-	jz.pos = (uint32_t)_bytecode.size() + 1;
+	jz.pos = (uint32_t)_bytecode.size();
 	FillBytecode((int)condLine, jz);
 
 	if(stmt.childs.size() > 2)
@@ -675,7 +675,7 @@ bool BytecodeBuilder::BuildFn(const TreeNode& stmt)
 
 	Symbol sym;
 	sym.name = name;
-	sym.pos = _bytecode.size();
+	sym.pos = _bytecode.size() - 1;
 	sym.kind = ESymbol::Fn;
 	for(auto& p : params)
 	{
