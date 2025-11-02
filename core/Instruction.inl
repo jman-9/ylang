@@ -1,5 +1,6 @@
 #pragma once
 #include "Instruction.h"
+#include <string.h>
 #include <type_traits>
 
 

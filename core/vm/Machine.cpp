@@ -50,7 +50,7 @@ bool Variable::Assign(EToken op, const Variable& rval)
 				{//TODO
 					if(rval.type == NUM)
 						str = to_string(rval.num);
-					else if(rval.type == Constant::FLOAT)
+					else if(rval.type == FLOAT)
 						str = to_string(rval._float);
 					else if(rval.type == STR)
 						str += rval.str;
@@ -130,7 +130,7 @@ bool Variable::CalcAndAssign(const Variable& lhs, EToken calcOp, const Variable&
 			{//TODO impl
 				if(rhs.type == NUM)
 					str = lhs.str + to_string(rhs.num);
-				else if(rhs.type == Constant::FLOAT)
+				else if(rhs.type == FLOAT)
 					str = lhs.str + to_string(rhs._float);
 				else if(rhs.type == STR)
 					str = lhs.str + rhs.str;
