@@ -11,4 +11,4 @@ endif()
 
 add_subdirectory(core)
 add_subdirectory(tests/devtest)
-add_subdirectory(tests/ylang)
+add_subdirectory(tools/ylang)

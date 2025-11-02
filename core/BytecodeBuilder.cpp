@@ -277,13 +277,8 @@ bool BytecodeBuilder::Build(Bytecode& retCode)
 {
 	for(const auto& stmt : _code.childs)
 	{
-		BuildStmt(*stmt);
-	}
-
-
-	for(int i=0; i<_bytecodeStr.size(); i++)
-	{
-		cout << format("{:4} {}\n", i, _bytecodeStr[i]);
+		if(!BuildStmt(*stmt))
+			return false;
 	}
 
 	map<int, Token> sorted;

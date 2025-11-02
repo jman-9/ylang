@@ -1,6 +1,7 @@
 #pragma once
 #include "TreeNode.h"
 #include "Symbol.h"
+#include "Error.h"
 #include <string>
 #include <map>
 
@@ -12,6 +13,8 @@ public:
 	~SemanticAnalyzer();
 
 	bool Analyze();
+
+	std::vector<Error> _errors;
 
 protected:
 	const TreeNode& _code;

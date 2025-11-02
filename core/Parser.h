@@ -1,5 +1,6 @@
 #pragma once
 #include "TreeNode.h"
+#include "Error.h"
 #include <vector>
 #include <map>
 #include <set>
@@ -12,6 +13,7 @@ public:
 	virtual ~Parser();
 
 	TreeNode* Parse();
+	std::vector<Error> _errors;
 
 protected:
 	const std::vector<Token>& _tokens;

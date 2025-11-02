@@ -107,11 +107,12 @@ public:
 
 	bool Build(Bytecode& retCode);
 
+	std::vector<std::string> _bytecodeStr;
+
 protected:
 	const TreeNode& _code;
 	uint32_t _reg;
 	std::vector<Instruction> _bytecode;
-	std::vector<std::string> _bytecodeStr;
 	ConstTable _constTbl;
 	SymbolTable _symTbl;
 

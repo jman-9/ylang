@@ -170,53 +170,22 @@ else
 
 const char* testcode2 =
 R"TEST(
-a = 0;
-for(i=0; i<10; i+=1)
+fn abc()
 {
-  for(j=0; j<10; j+=1)
-  {
-    a += 1;
-  }
+return 1;
 }
 
-println(" ");
-println('hello, world!');
-println(a);
-println(' ');
-
-)TEST";
-
-const char* testcode3 =
-R"TEST(
-println("=== perfect numbers ===");
-
-for(i=2; i<=1000; i+=1)
+fn abcd(abc)
 {
-	sum = 0;
-	k = i / 2;
-
-	for(j=1; j<=k; j+=1)
-	{
-		r = i % j;
-		if(r == 0)
-		{
-			sum = sum+j;
-		}
-	}
-
-	if(i == sum)
-	{
-		println(i);
-	}
+return 2;
 }
 
 )TEST";
 
 int main()
 {
-#if 0
 	Scanner s;
-	s.Scan(testcode);
+	s.Scan(testcode2);
 
 	for(auto t : s._tokens)
 	{
@@ -232,45 +201,39 @@ int main()
 			cout << errStr << endl;
 		}
 	}
-#endif
-
-	Scanner s2;
-	//s2.Scan(lextestcode);
-	//s2.Scan(exptestcode);
-	//s2.Scan(iftestcode);
-	//s2.Scan(fortestcode);
-	//s2.Scan(fntestcode);
-	//s2.Scan(postfixtestcode);
-	//s2.Scan(testcode);
-	//s2.Scan(testcode2);
-	s2.Scan(testcode3);
-
-	for(auto t : s2._tokens)
-	{
-		string ts = format("line:{},kind:{},val:{}", t.line, (int)t.kind, t.val);
-		cout << ts << endl;
-	}
-
-	if(!s2._errors.empty())
-	{
-		for(auto e : s2._errors)
-		{
-			string errStr = format("{}({}): error E{}: {}", "some file", e.line, (int)e.code, e.msg);
-			cout << errStr << endl;
-		}
-	}
 	else
 	{
-		Parser p(s2._tokens);
+		Parser p(s._tokens);
 		TreeNode* ast = p.Parse();
-		if(!ast) throw 'n';
+		if(!ast)
+		{
+			for(auto e : p._errors)
+			{
+				string errStr = format("{}({}): error E{}: {}", "some file", e.line, (int)e.code, e.msg);
+				cout << errStr << endl;
+			}
+			return 1;
+		}
 
 		SemanticAnalyzer sa(*ast);
-		if(!sa.Analyze()) throw 'n';
+		if(!sa.Analyze())
+		{
+			for(auto e : sa._errors)
+			{
+				string errStr = format("{}({}): error E{}: {}", "some file", e.line, (int)e.code, e.msg);
+				cout << errStr << endl;
+			}
+			return 1;
+		}
 
 		BytecodeBuilder bb(*ast);
 		Bytecode c;
 		if(!bb.Build(c)) throw 'n';
+
+		for(int i=0; i<bb._bytecodeStr.size(); i++)
+		{
+			cout << format("{:4} {}\n", i, bb._bytecodeStr[i]);
+		}
 
 		yvm::Machine m;
 		m.Run(c);

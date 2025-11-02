@@ -1,4 +1,5 @@
 #include "SemanticAnalyzer.h"
+#include <format>
 
 
 SemanticAnalyzer::SemanticAnalyzer(const TreeNode& code)
@@ -15,7 +16,8 @@ bool SemanticAnalyzer::Analyze()
 {
 	for(const auto& stmt : _code.childs)
 	{
-		AnalyzeStmt(*stmt);
+		if(!AnalyzeStmt(*stmt))
+			return false;
 	}
 
 	return true;
@@ -40,8 +42,10 @@ bool SemanticAnalyzer::AnalyzeExp(const TreeNode& stmt)
 	{
 		bool rhsOk = AnalyzeExp(*stmt.childs.back());
 		if(!rhsOk)
-		{
-			throw 'n';
+		{//todo trace
+			//_errors.push_back(ErrorBuilder::Default(stmt.self.line, "assignment
+			//throw 'n';
+			return false;
 		}
 
 		// TODO
@@ -67,7 +71,8 @@ bool SemanticAnalyzer::AnalyzeExp(const TreeNode& stmt)
 			{//TODO builtin table
 				if(stmt.childs.size() - 1 != 1)
 				{
-					throw 'n';
+					_errors.push_back(ErrorBuilder::Default(name->self.line, format("'{}': not supported function", name->self.val)));
+					return false;
 				}
 			}
 			else
@@ -75,13 +80,15 @@ bool SemanticAnalyzer::AnalyzeExp(const TreeNode& stmt)
 				auto found = _symTbl.back().find(name->self.val);
 				if(found == _symTbl.back().end())
 				{
-					throw 'n';
+					_errors.push_back(ErrorBuilder::Default(name->self.line, format("'{}': function not found", name->self.val)));
+					return false;
 				}
 
 				//TODO 가변인자
 				if(stmt.childs.size() - 1 != found->second.params.size())
-				{
-					throw 'n';
+				{//todo message
+					_errors.push_back(ErrorBuilder::Default(stmt.self.line, format("'{}': no matched arguments", name->self.val)));
+					return false;
 				}
 			}
 		}
@@ -93,8 +100,9 @@ bool SemanticAnalyzer::AnalyzeExp(const TreeNode& stmt)
 	{
 		auto found = _symTbl.back().find(stmt.self.val);
 		if(found == _symTbl.back().end())
-		{
-			throw 'n';
+		{//todo message
+			_errors.push_back(ErrorBuilder::Default(stmt.self.line, format("'{}': not initialized variable", stmt.self.val)));
+			return false;
 		}
 
 		return true;
@@ -103,8 +111,8 @@ bool SemanticAnalyzer::AnalyzeExp(const TreeNode& stmt)
 	for(auto& c : stmt.childs)
 	{
 		if(!AnalyzeExp(*c))
-		{
-			throw 'n';
+		{//todo trace
+			return false;
 		}
 	}
 
@@ -114,6 +122,7 @@ bool SemanticAnalyzer::AnalyzeExp(const TreeNode& stmt)
 bool SemanticAnalyzer::AnalyzeFor(const TreeNode& stmt)
 {
 	if(stmt.self != EToken::For)
+		//todo trace
 		throw 'n';
 
 	auto& init = *stmt.childs[0];
@@ -121,20 +130,20 @@ bool SemanticAnalyzer::AnalyzeFor(const TreeNode& stmt)
 	auto& update = *stmt.childs[2];
 	auto& block = *stmt.childs[3];
 	if(!AnalyzeExp(init))
-	{
-		throw 'n';
+	{//todo trace
+		return false;
 	}
 	if(!AnalyzeExp(cond))
-	{
-		throw 'n';
+	{//todo trace
+		return false;
 	}
 	if(!AnalyzeExp(update))
-	{
-		throw 'n';
+	{//todo trace
+		return false;
 	}
 	if(!AnalyzeStmt(block))
-	{
-		throw 'n';
+	{//todo trace
+		return false;
 	}
 
 	return true;
@@ -143,18 +152,19 @@ bool SemanticAnalyzer::AnalyzeFor(const TreeNode& stmt)
 bool SemanticAnalyzer::AnalyzeIf(const TreeNode& stmt)
 {
 	if(stmt.self != EToken::If)
+		//todo trace
 		throw 'n';
 
 	auto& test = *stmt.childs[0];
 	auto& _true = *stmt.childs[1];
 
 	if(!AnalyzeExp(test))
-	{
-		throw 'n';
+	{//todo trace
+		return false;
 	}
 	if(!AnalyzeStmt(_true))
-	{
-		throw 'n';
+	{//todo trace
+		return false;
 	}
 
 	if(stmt.childs.size() > 2)
@@ -162,7 +172,8 @@ bool SemanticAnalyzer::AnalyzeIf(const TreeNode& stmt)
 		auto& _false = *stmt.childs[2];
 		if(!AnalyzeStmt(_false))
 		{
-			throw 'n';
+			//todo trace
+			return false;
 		}
 	}
 
@@ -172,6 +183,7 @@ bool SemanticAnalyzer::AnalyzeIf(const TreeNode& stmt)
 bool SemanticAnalyzer::AnalyzeFn(const TreeNode& stmt)
 {
 	if(stmt.self != EToken::Fn)
+		//todo trace
 		throw 'n';
 
 	auto& name = stmt.self.val;
@@ -181,7 +193,9 @@ bool SemanticAnalyzer::AnalyzeFn(const TreeNode& stmt)
 	auto found = _symTbl.back().find(name);
 	if(found != _symTbl.back().end())
 	{
-		throw 'n';
+		//todo message
+		_errors.push_back(ErrorBuilder::Default(stmt.self.line, format("'{}': already defined", stmt.self.val)));
+		return false;
 	}
 
 	Symbol sym;
@@ -192,7 +206,9 @@ bool SemanticAnalyzer::AnalyzeFn(const TreeNode& stmt)
 		auto found = _symTbl.back().find(p->self.val);
 		if(found != _symTbl.back().end())
 		{
-			throw 'n';
+			//todo message
+			_errors.push_back(ErrorBuilder::Default(stmt.self.line, format("'{}': already defined name is not allowed", p->self.val)));
+			return false;
 		}
 
 		Param prm;
@@ -204,12 +220,14 @@ bool SemanticAnalyzer::AnalyzeFn(const TreeNode& stmt)
 	{
 		if(!AnalyzeCompound(block, sym.params))
 		{
-			throw 'n';
+			//todo trace
+			return false;
 		}
 	}
 	else if(!AnalyzeStmt(block))
 	{
-		throw 'n';
+		//todo trace
+		return false;
 	}
 
 	_symTbl.back()[ name ] = sym;
@@ -234,7 +252,8 @@ bool SemanticAnalyzer::AnalyzeCompound(const TreeNode& stmt, const std::vector<P
 
 	for(auto& itm : stmt.childs)
 	{
-		AnalyzeStmt(*itm);
+		if(!AnalyzeStmt(*itm))
+			return false;
 	}
 
 	_symTbl.pop_back();

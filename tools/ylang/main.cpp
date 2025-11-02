@@ -6,10 +6,6 @@ using namespace std;
 
 int main(int argc, const char** argv)
 {
-
-	std::filesystem::path cwd = std::filesystem::current_path();
-	std::cout << "Current working directory: " << cwd << '\n';
-
 	if(argc < 2)
 	{
 		string toolName = filesystem::path{argv[0]}.filename().string();
@@ -21,5 +17,5 @@ int main(int argc, const char** argv)
 	}
 
 	ylang y;
-	y.Run(argv[1]);
+	return y.Run(argv[1]) == false;
 }

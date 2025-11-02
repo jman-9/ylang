@@ -17,6 +17,11 @@ Error NoError()
 	return Error();
 }
 
+Error Default(uint32_t line, const std::string& s)
+{
+	return { line, EErr::Error, format("{}", s) };
+}
+
 Error UnknownCharacter(uint32_t line, char c)
 {
 	return { line, EErr::UnknownCharacter, format("unknown character '0x{:02X}'", c) };
@@ -40,6 +45,21 @@ Error UnrecognizedCharacterEscapeSequence(uint32_t line, char c)
 Error UnsupportedCharacterEscapeSequence(uint32_t line, char c)
 {
 	return { line, EErr::UnsupportedCharacterEscapeSequence, format("'{}': unsupported character escape sequence", c) };
+}
+
+Error SyntaxError(uint32_t line, const string& s)
+{
+	return { line, EErr::SyntaxError, format("'{}': syntax error", s) };
+}
+
+Error SyntaxError(uint32_t line, char c)
+{
+	return SyntaxError(line, string(1, c));
+}
+
+Error Missing(uint32_t line, char c)
+{
+	return { line, EErr::Missing, format("'{}': missing", c) };
 }
 
 }

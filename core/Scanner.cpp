@@ -3,7 +3,7 @@
 using namespace std;
 
 
-#define DEBUG_OUT
+//#define DEBUG_OUT
 
 
 Scanner::Scanner()

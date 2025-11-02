@@ -245,13 +245,16 @@ TreeNode* Parser::ParsePrimaryExp()
 		node->self = cur;
 		MoveNext();
 		TreeNode* child = ParseExpLoop(EToken::RParen);
+		//TODO memory leak
 		if(!child)
 		{
-			throw 'n';
+			_errors.push_back(ErrorBuilder::SyntaxError(node->self.line, ')'));
+			return nullptr;
 		}
 		if(GetCur().kind != EToken::RParen)
 		{
-			throw 'n';
+			_errors.push_back(ErrorBuilder::Missing(node->self.line, ')'));
+			return nullptr;
 		}
 		MoveNext();
 
@@ -272,7 +275,7 @@ TreeNode* Parser::ParsePrimaryExp()
 
 TreeNode* Parser::ParsePostfixExp()
 {
-	const Token& cur = GetCur();
+	const Token cur = GetCur();
 	if(cur.kind == EToken::LParen)
 	{
 		TreeNode* args = new TreeNode;
@@ -299,7 +302,8 @@ TreeNode* Parser::ParsePostfixExp()
 			else if(GetPrev().kind != EToken::Comma)
 			{
 				//TODO 메모리 릭
-				throw 'n';
+				_errors.push_back(ErrorBuilder::Missing(cur.line, ','));
+				return nullptr;
 			}
 		}
 		return args;
@@ -314,7 +318,8 @@ TreeNode* Parser::ParsePostfixExp()
 		MoveNext();
 		if(GetPrev().kind != EToken::RBracket)
 		{//TODO 메모리 릭
-			throw 'n';
+			_errors.push_back(ErrorBuilder::Missing(cur.line, ']'));
+			return nullptr;
 		}
 
 		idx->childs.push_back(val);
@@ -327,8 +332,10 @@ TreeNode* Parser::ParsePostfixExp()
 
 		MoveNext();
 		if(GetCur().kind != EToken::Id)
-		{
-			throw 'n';
+		{//TODO leak
+			//TODO classify
+			_errors.push_back(ErrorBuilder::SyntaxError(cur.line, '.'));
+			return nullptr;
 		}
 
 		TreeNode* id = ParsePrimaryExp();
@@ -354,23 +361,16 @@ TreeNode* Parser::ParsePrefixExp()
 
 	TreeNode* rhs = ParsePrefixExp();
 	if(!rhs) rhs = ParsePrimaryExp();
-	if(rhs != nullptr)
-	{
-		TreeNode* node = new TreeNode;
-		node->self = cur;
-		if(cur.kind == EToken::Plus) node->self.kind = EToken::UnaryPlus;
-		if(cur.kind == EToken::Minus) node->self.kind = EToken::UnaryMinus;
+	if(!rhs) return nullptr;
 
-		node->childs.push_back(rhs);
-		rhs->parent = node;
-		return node;
-	}
-	else
-	{
-		throw 'n';
-	}
+	TreeNode* node = new TreeNode;
+	node->self = cur;
+	if(cur.kind == EToken::Plus) node->self.kind = EToken::UnaryPlus;
+	if(cur.kind == EToken::Minus) node->self.kind = EToken::UnaryMinus;
 
-	return nullptr;
+	node->childs.push_back(rhs);
+	rhs->parent = node;
+	return node;
 }
 
 TreeNode* Parser::ParseOpExp()
@@ -385,20 +385,13 @@ TreeNode* Parser::ParseOpExp()
 	MoveNext();
 
 	TreeNode* rhs = ParseExp(false);
-	if(rhs != nullptr)
-	{
-		TreeNode* node = new TreeNode();
-		node->self = cur;
-		node->childs.push_back(rhs);
-		rhs->parent = node;
-		return node;
-	}
-	else
-	{
-		throw 'n';
-	}
+	if(!rhs) return nullptr;
 
-	return nullptr;
+	TreeNode* node = new TreeNode();
+	node->self = cur;
+	node->childs.push_back(rhs);
+	rhs->parent = node;
+	return node;
 }
 
 
@@ -416,14 +409,15 @@ TreeNode* Parser::ParseCompoundStmt(const std::set<EToken>& allowed /* = std::se
 	for( ; GetCur().kind != EToken::RBrace; )
 	{
 		if(IsEnd())
-		{
-			throw 'n';
+		{//todo leak
+			_errors.push_back(ErrorBuilder::Missing(compound->self.line, '}'));
+			return nullptr;
 		}
 
 		TreeNode* stmt = ParseStmt(allowed);
 		if(!stmt)
-		{
-			throw 'n';
+		{//todo leak
+			return nullptr;
 		}
 
 		compound->childs.push_back(stmt);
@@ -441,11 +435,20 @@ TreeNode* Parser::ParseStmt(const std::set<EToken>& allowed /* = std::set<EToken
 	if(ast)
 	{
 		if(GetCur().kind != EToken::Semicolon)
-		{
-			throw 'n';
+		{//todo leak
+			_errors.push_back(ErrorBuilder::Missing(GetCur().line, ';'));
+			return nullptr;
 		}
 		MoveNext();
 		if(ast) return ast;
+	}
+	else
+	{
+		if(GetCur().kind == EToken::Semicolon)
+		{
+			MoveNext();
+			return ParseStmt();
+		}
 	}
 
 	if(ast = ParseCompoundStmt(allowed)) return ast;
@@ -454,15 +457,23 @@ TreeNode* Parser::ParseStmt(const std::set<EToken>& allowed /* = std::set<EToken
 	if(ast = ParseFor(allowed)) return ast;
 	if(ast = ParseFn()) return ast;
 
-	auto& cur = GetCur();
+	if(IsEnd()) return nullptr;
+
+	auto cur = GetCur();
 	if(allowed.find(cur.kind) == allowed.end())
+	{
+		//todo correct message
+		_errors.push_back(ErrorBuilder::SyntaxError(GetCur().line, "tbd"));
+		MoveNext();
 		return nullptr;
+	}
 
 	if(cur.kind == EToken::Continue || cur.kind == EToken::Break)
 	{
 		if(GetNext().kind != EToken::Semicolon)
 		{
-			throw 'n';
+			_errors.push_back(ErrorBuilder::Missing(cur.line, ';'));
+			return nullptr;
 		}
 		ast = new TreeNode;
 		ast->self = cur;
@@ -483,15 +494,17 @@ TreeNode* Parser::ParseStmt(const std::set<EToken>& allowed /* = std::set<EToken
 		}
 
 		if(GetCur().kind != EToken::Semicolon)
-		{
-			throw 'n';
+		{//todo leak
+			_errors.push_back(ErrorBuilder::Missing(cur.line, ';'));
+			return nullptr;
 		}
 		MoveNext();
 
 		return ast;
 	}
 
-	throw 'n';
+	//todo correct message
+	_errors.push_back(ErrorBuilder::SyntaxError(GetCur().line, "tbd"));
 	return nullptr;
 }
 
@@ -507,18 +520,21 @@ TreeNode* Parser::ParseIf(const std::set<EToken>& allowed /* = std::set<EToken>(
 
 	if(GetCur().kind != EToken::LParen)
 	{
-		throw 'n';
+		_errors.push_back(ErrorBuilder::Missing(_if.line, '('));
+		return nullptr;
 	}
 	MoveNext();
 
 	TreeNode* exp = ParseExpLoop(EToken::RParen);
 	if(!exp)
 	{
-		throw 'n';
+		_errors.push_back(ErrorBuilder::SyntaxError(_if.line, ')'));
+		return nullptr;
 	}
 	if(GetCur().kind != EToken::RParen)
-	{
-		throw 'n';
+	{//todo leak
+		_errors.push_back(ErrorBuilder::Missing(_if.line, ')'));
+		return nullptr;
 	}
 	MoveNext();
 
@@ -529,8 +545,9 @@ TreeNode* Parser::ParseIf(const std::set<EToken>& allowed /* = std::set<EToken>(
 
 	TreeNode* _true = ParseStmt(allowed);
 	if(!_true)
-	{
-		throw 'n';
+	{//todo leak
+		//todo correct message
+		return nullptr;
 	}
 
 	ifNode->childs.push_back(_true);
@@ -538,11 +555,13 @@ TreeNode* Parser::ParseIf(const std::set<EToken>& allowed /* = std::set<EToken>(
 
 	if(GetCur().kind == EToken::Else)
 	{
+		uint32_t curLine = GetCur().line;
 		MoveNext();
 		TreeNode* _false = ParseStmt(allowed);
-		if(!_true)
-		{
-			throw 'n';
+		if(!_false)
+		{//todo leak
+			//todo need message
+			return nullptr;
 		}
 
 		ifNode->childs.push_back(_false);
@@ -564,7 +583,8 @@ TreeNode* Parser::ParseFor(const std::set<EToken>& allowed /* = std::set<EToken>
 
 	if(GetCur().kind != EToken::LParen)
 	{
-		throw 'n';
+		_errors.push_back(ErrorBuilder::Missing(_for.line, '('));
+		return nullptr;
 	}
 	MoveNext();
 
@@ -576,8 +596,9 @@ TreeNode* Parser::ParseFor(const std::set<EToken>& allowed /* = std::set<EToken>
 		init->self = { EToken::Num, _for.line, "1" };
 	}
 	if(GetCur().kind != EToken::Semicolon)
-	{
-		throw 'n';
+	{	//TODO 메모리 릭
+		_errors.push_back(ErrorBuilder::Missing(_for.line, ';'));
+		return nullptr;
 	}
 	MoveNext();
 
@@ -589,8 +610,9 @@ TreeNode* Parser::ParseFor(const std::set<EToken>& allowed /* = std::set<EToken>
 		cond->self = { EToken::Num, _for.line, "1" };
 	}
 	if(GetCur().kind != EToken::Semicolon)
-	{
-		throw 'n';
+	{//TODO 메모리 릭
+		_errors.push_back(ErrorBuilder::Missing(_for.line, ';'));
+		return nullptr;
 	}
 	MoveNext();
 
@@ -602,8 +624,9 @@ TreeNode* Parser::ParseFor(const std::set<EToken>& allowed /* = std::set<EToken>
 		update->self = { EToken::Num, _for.line, "1" };
 	}
 	if(GetCur().kind != EToken::RParen)
-	{
-		throw 'n';
+	{//TODO 메모리 릭
+		_errors.push_back(ErrorBuilder::Missing(_for.line, ')'));
+		return nullptr;
 	}
 	MoveNext();
 
@@ -621,8 +644,9 @@ TreeNode* Parser::ParseFor(const std::set<EToken>& allowed /* = std::set<EToken>
 
 	TreeNode* loop = ParseStmt(localAllowed);
 	if(!loop)
-	{
-		throw 'n';
+	{//todo leak
+		//todo need message
+		return nullptr;
 	}
 
 	forNode->childs.push_back(loop);
@@ -642,14 +666,16 @@ TreeNode* Parser::ParseFn()
 
 	if(GetCur().kind != EToken::Id)
 	{
-		throw 'n';
+		_errors.push_back(ErrorBuilder::SyntaxError(fn.line, "fn"));
+		return nullptr;
 	}
 	fn.val = GetCur().val;
 	MoveNext();
 
 	if(GetCur().kind != EToken::LParen)
 	{
-		throw 'n';
+		_errors.push_back(ErrorBuilder::Missing(fn.line, '('));
+		return nullptr;
 	}
 	MoveNext();
 
@@ -675,20 +701,25 @@ TreeNode* Parser::ParseFn()
 				MoveNext();
 			}
 			else if(GetCur().kind != EToken::RParen)
-			{
-				throw 'n';
+			{//todo leak
+				_errors.push_back(ErrorBuilder::Missing(fn.line, ')'));
+				return nullptr;
 			}
 		}
 		else
-		{
-			throw 'n';
+		{//todo leak
+		//todo correct message
+			_errors.push_back(ErrorBuilder::SyntaxError(fn.line, "fn"));
+			return nullptr;
 		}
 	}
 
 	TreeNode* body = ParseStmt(s_allowedFn);
 	if(!body)
-	{
-		throw 'n';
+	{//todo leak
+		//todo correct message
+		_errors.push_back(ErrorBuilder::SyntaxError(fn.line, "fn"));
+		return nullptr;
 	}
 
 	TreeNode* fnNode = new TreeNode;
@@ -708,8 +739,8 @@ TreeNode* Parser::Parse()
 	{
 		TreeNode* ast = ParseStmt();
 		if(!ast)
-		{
-			throw 'n';
+		{//todo leak
+			return nullptr;
 		}
 		root->childs.push_back(ast);
 		ast->parent = root;
