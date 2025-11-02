@@ -63,16 +63,26 @@ bool SemanticAnalyzer::AnalyzeExp(const TreeNode& stmt)
 		auto& name = stmt.childs[0];
 		if(name->self == EToken::Id)
 		{
-			auto found = _symTbl.back().find(name->self.val);
-			if(found == _symTbl.back().end())
-			{
-				throw 'n';
+			if(name->self.val == "print" || name->self.val == "println")
+			{//TODO builtin table
+				if(stmt.childs.size() - 1 != 1)
+				{
+					throw 'n';
+				}
 			}
-
-			//TODO 가변인자
-			if(stmt.childs.size() - 1 != found->second.params.size())
+			else
 			{
-				throw 'n';
+				auto found = _symTbl.back().find(name->self.val);
+				if(found == _symTbl.back().end())
+				{
+					throw 'n';
+				}
+
+				//TODO 가변인자
+				if(stmt.childs.size() - 1 != found->second.params.size())
+				{
+					throw 'n';
+				}
 			}
 		}
 

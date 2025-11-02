@@ -382,6 +382,19 @@ bool BytecodeBuilder::BuildExp(const TreeNode& stmt, bool root)
 
 		_reg = regStack;
 
+		if(stmt.childs[0]->self.val == "print")
+		{//TODO new architecture
+			Inst::Invoke ivk{ .pos = 0xFFFF0000, .numPrms = (uint32_t)stmt.childs.size()-1 };
+			PushBytecode(ivk);
+			return true;
+		}
+		else if(stmt.childs[0]->self.val == "println")
+		{
+			Inst::Invoke ivk{ .pos = 0xFFFF0000+1, .numPrms = (uint32_t)stmt.childs.size()-1 };
+			PushBytecode(ivk);
+			return true;
+		}
+
 		Inst::Invoke ivk{ .pos = (uint32_t)_symTbl.GetSymbol(stmt.childs[0]->self.val).pos, .numPrms = (uint32_t)stmt.childs.size()-1 };
 		PushBytecode(ivk);
 		return true;

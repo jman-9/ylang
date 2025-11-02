@@ -1,7 +1,7 @@
 project ("ylang")
 
 # Add source to this project's executable.
-add_executable (ylang "ylang.cpp" "ylang.h")
+add_executable (ylang "main.cpp"  "ylang.h" "ylang.cpp")
 
 set_property(TARGET ylang PROPERTY CXX_STANDARD 20)
 

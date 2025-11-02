@@ -4,35 +4,27 @@
 #include "core/SemanticAnalyzer.h"
 #include "core/BytecodeBuilder.h"
 #include "core/vm/Machine.h"
+#include <iostream>
 #include <format>
 #include <filesystem>
 #include <fstream>
 using namespace std;
 
-int main(int argc, const char** argv)
+
+bool ylang::Run(const string& srcPath)
 {
-	if(argc < 2)
-	{
-		string toolName = filesystem::path{argv[0]}.filename().string();
-
-		cout << format("{} <source file>\n", toolName);
-		cout << "\n";
-		cout << format("ex) {} perfect.y\n", toolName);
-		return 1;
-	}
-
-	filesystem::path path{argv[1]};
+	filesystem::path path{srcPath};
 	string srcName = path.filename().string();
-	string srcPath = path.string();
 
-	std::ifstream ifs(argv[1], std::ios::binary);
+	ifstream ifs(srcPath, ios::binary);
 	if (!ifs.is_open()) {
 		cout << format("failed to open file: {}\n", srcPath);
-		return 1;
+		return false;
 	}
-	std::string src((std::istreambuf_iterator<char>(ifs)), {});
+	string src((istreambuf_iterator<char>(ifs)), {});
 
 	Scanner s;
+	s.Scan(src);
 	for(auto t : s._tokens)
 	{
 		cout << format("line:{},kind:{},val:{}\n", t.line, (int)t.kind, t.val);
@@ -71,5 +63,5 @@ int main(int argc, const char** argv)
 
 	yvm::Machine m;
 	m.Run(c);
-	return 0;
+	return true;
 }

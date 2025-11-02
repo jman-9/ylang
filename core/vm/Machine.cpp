@@ -1,6 +1,7 @@
 #include "Machine.h"
 #include "../Token.h"
 #include <format>
+#include <iostream>
 using namespace std;
 
 namespace yvm
@@ -23,70 +24,70 @@ bool Variable::Assign(EToken op, const Variable& rval)
 		return false;
 	}
 
-	if(type == STR || rval.type == STR)
+	if(op == EToken::Assign)
 	{
-		if(op == EToken::Assign)
+		*this = rval;
+	}
+	else
 		{
-			type = STR;
-			str = rval.str;
+		if(type == STR || rval.type == STR)
+		{
+			if(op == EToken::PlusAssign)
+			{
+				if(type == NUM)
+				{
+					str = format("{}{}", num, rval.str);
+				}
+				else
+				{//TODO
+				}
+			}
+			else
+			{
+				throw 'n';
+				return false;
+			}
 		}
-		else if(op == EToken::PlusAssign)
+		else if(type == FLOAT || rval.type == FLOAT)
 		{
 			if(type == NUM)
 			{
-				str = format("{}{}", num, rval.str);
+				type = FLOAT;
+				_float = (double)num;
 			}
-			else
-			{//TODO
+
+			double rfloat = rval.type == FLOAT ? rval._float : (double)rval.num;
+
+			switch(op)
+			{
+			case EToken::PlusAssign:	_float += rfloat; break;
+			case EToken::MinusAssign:	_float -= rfloat; break;
+			case EToken::MulAssign:		_float *= rfloat; break;
+			case EToken::DivAssign:		_float /= rfloat; break;
+			default: throw 'n';
 			}
 		}
 		else
 		{
-			throw 'n';
-			return false;
-		}
-	}
-	else if(type == FLOAT || rval.type == FLOAT)
-	{
-		if(type == NUM)
-		{
-			type = FLOAT;
-			_float = (double)num;
-		}
+			if(type == NONE)
+			{
+				type = NUM;
+				num = 0;
+			}
 
-		double rfloat = rval.type == FLOAT ? rval._float : (double)rval.num;
-
-		switch(op)
-		{
-		case EToken::Assign:		_float = rfloat; break;
-		case EToken::PlusAssign:	_float += rfloat; break;
-		case EToken::MinusAssign:	_float -= rfloat; break;
-		case EToken::MulAssign:		_float *= rfloat; break;
-		case EToken::DivAssign:		_float /= rfloat; break;
-		default: throw 'n';
-		}
-	}
-	else
-	{
-		if(type == NONE)
-		{
-			type = NUM;
-			num = 0;
-		}
-
-		switch(op)
-		{
-		case EToken::Assign:		num = rval.num; break;
-		case EToken::PlusAssign:	num += rval.num; break;
-		case EToken::MinusAssign:	num -= rval.num; break;
-		case EToken::MulAssign:		num *= rval.num; break;
-		case EToken::DivAssign:		num /= rval.num; break;
-		case EToken::ModAssign:		num %= rval.num; break;
-		case EToken::AndAssign:		num &= rval.num; break;
-		case EToken::OrAssign:		num |= rval.num; break;
-		case EToken::XorAssign:		num ^= rval.num; break;
-		case EToken::LShiftAssign:	num <<= rval.num; break;
-		case EToken::RShiftAssign:	num >>= rval.num; break;
+			switch(op)
+			{
+			case EToken::PlusAssign:	num += rval.num; break;
+			case EToken::MinusAssign:	num -= rval.num; break;
+			case EToken::MulAssign:		num *= rval.num; break;
+			case EToken::DivAssign:		num /= rval.num; break;
+			case EToken::ModAssign:		num %= rval.num; break;
+			case EToken::AndAssign:		num &= rval.num; break;
+			case EToken::OrAssign:		num |= rval.num; break;
+			case EToken::XorAssign:		num ^= rval.num; break;
+			case EToken::LShiftAssign:	num <<= rval.num; break;
+			case EToken::RShiftAssign:	num >>= rval.num; break;
+			}
 		}
 	}
 
@@ -177,8 +178,8 @@ Machine::Machine()
 	_spStack.push(0);
 	_rpStack.push(0);
 	_cspStack.push(0);
-	_regs.resize(10);
-	_stack.resize(50);
+	_regs.resize(1000);
+	_stack.resize(5000);
 }
 
 
@@ -277,13 +278,53 @@ void Machine::Run(const Bytecode& code)
 		else if(inst == EOpcode::Invoke)
 		{
 			const Inst::Invoke& ivk = *(Inst::Invoke*)inst.code.data();
-			_retStack.push((uint32_t)i+1);
+
 			_rp -= (int)ivk.numPrms;
 			_rpStack.push(_rp);
-			_cspStack.push(_sp);
 
-			i = ivk.pos;
-			continue;
+			if(ivk.pos >= 0xFFFF0000)
+			{// todo new architecture
+				if(ivk.pos == 0xFFFF0000)
+				{
+					auto v = ResolveVar(ERefKind::Reg, _rp);
+
+					if(v->type == Variable::NUM)
+					{
+						cout << v->NUM;
+					}
+					else if(v->type == Variable::STR)
+					{
+						cout << v->STR << "\n";
+					}
+				}
+				else if(ivk.pos == 0xFFFF0000 + 1)
+				{
+					auto v = ResolveVar(ERefKind::Reg, _rp);
+
+					if(v->type == Variable::NUM)
+					{
+						cout << v->num << "\n";
+					}
+					else if(v->type == Variable::STR)
+					{
+						cout << v->str << "\n";
+					}
+				}
+				else
+				{
+					throw 'n';
+				}
+				_rp = _rpStack.top();
+				_rpStack.pop();
+			}
+			else
+			{
+				_retStack.push((uint32_t)i+1);
+				_cspStack.push(_sp);
+
+				i = ivk.pos;
+				continue;
+			}
 		}
 		else if(inst == EOpcode::Ret)
 		{

@@ -1,3 +1,10 @@
 #pragma once
+#include <string>
 
-#include <iostream>
+class ylang
+{
+public:
+	bool Run(const std::string& srcPath);
+
+protected:
+};
