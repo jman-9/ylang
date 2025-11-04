@@ -102,16 +102,16 @@ Hello, ylang!
 
 ## Examples
 
-| File            | Description           |
-| --------------- | --------------------- |
-| `hello.y`       | Basic print           |
-| `cond.y`        | Conditional test      |
-| `forloop.y`     | Simple loop & sum     |
-| `forctrl.y`     | Break & Continue      |
-| `squarefunc.y`  | Basic function call   | 
-| `chaincall.y`   | Chained function call |
-| `perfect.y`     | Perfect number check  |
-| `times.y`       | Multiplication table  |
+| File                                  | Description           |
+| ------------------------------------- | --------------------- |
+| [hello.y](examples/hello.y)           | Basic print           |
+| [cond.y](examples/cond.y)             | Conditional test      |
+| [forloop.y](examples/forloop.y)       | Simple loop & sum     |
+| [forctrl.y](examples/forctrl.y)       | Break & Continue      |
+| [squarefunc.y](examples/squarefunc.y) | Basic function call   | 
+| [chaincall.y](examples/chaincall.y)   | Chained function call |
+| [perfect.y](examples/perfect.y)       | Perfect number check  |
+| [times.y](examples/times.y)           | Multiplication table  |
 
 ## Quick Example
 ```y
