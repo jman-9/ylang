@@ -124,6 +124,15 @@ protected:
 	};
 	std::stack<LoopControl> _loopStack;
 
+	struct FnControl
+	{
+		std::vector<int> retLines;
+		int pushSpCnt = 0;
+	};
+	std::stack<FnControl> _fnStack;
+
+
+
 	void BuildBlockOpen();
 	void BuildBlockClose();
 

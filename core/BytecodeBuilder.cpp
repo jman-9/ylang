@@ -312,6 +312,7 @@ void BytecodeBuilder::BuildBlockOpen()
 {
 	PushBytecode<EOpcode::PushSp>();
 	if(!_loopStack.empty()) _loopStack.top().pushSpCnt++;
+	if(!_fnStack.empty()) _fnStack.top().pushSpCnt++;
 	_symTbl.AddBlockScope();
 }
 
@@ -319,6 +320,7 @@ void BytecodeBuilder::BuildBlockClose()
 {
 	_symTbl.PopScope();
 	if(!_loopStack.empty()) _loopStack.top().pushSpCnt--;
+	if(!_fnStack.empty()) _fnStack.top().pushSpCnt--;
 	PushBytecode<EOpcode::PopSp>();
 }
 
@@ -530,6 +532,12 @@ bool BytecodeBuilder::BuildReturn(const TreeNode& stmt)
 		{
 			throw 'n';
 		}
+
+		for(int i=0; i<_fnStack.top().pushSpCnt; i++)
+		{
+			PushBytecode<EOpcode::PopSp>();
+		}
+		PushBytecode<EOpcode::Ret>();
 	}
 	return true;
 }
@@ -670,13 +678,21 @@ bool BytecodeBuilder::BuildFn(const TreeNode& stmt)
 	auto& params = stmt.childs[0]->childs;
 	auto& block = *stmt.childs[1];
 
+
+	_fnStack.push(FnControl());
+
+	//TODO make scope function
 	PushBytecode<EOpcode::PushSp>();
-	_symTbl.AddFuncScope();
+	_fnStack.top().pushSpCnt++;
 
 	Symbol sym;
 	sym.name = name;
 	sym.pos = _bytecode.size() - 1;
 	sym.kind = ESymbol::Fn;
+	_symTbl.AddOrNot(sym);
+
+	_symTbl.AddFuncScope();
+
 	for(auto& p : params)
 	{
 		Param prm;
@@ -709,7 +725,6 @@ bool BytecodeBuilder::BuildFn(const TreeNode& stmt)
 
 	BuildBlockClose();
 	PushBytecode<EOpcode::Ret>();
-	_symTbl.AddOrNot(sym);
 
 	Inst::Jmp jmp{ .pos = (uint32_t)_bytecode.size() };
 	FillBytecode((int)skipLine, jmp);

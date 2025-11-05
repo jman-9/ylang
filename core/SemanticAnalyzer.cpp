@@ -215,22 +215,24 @@ bool SemanticAnalyzer::AnalyzeFn(const TreeNode& stmt)
 		prm.name = p->self.val;
 		sym.params.push_back(prm);
 	}
+	_symTbl.back()[ name ] = sym;
 
 	if(block.self == EToken::LBrace)
 	{
 		if(!AnalyzeCompound(block, sym.params))
 		{
 			//todo trace
+			_symTbl.back().erase(name);
 			return false;
 		}
 	}
 	else if(!AnalyzeStmt(block))
 	{
 		//todo trace
+		_symTbl.back().erase(name);
 		return false;
 	}
 
-	_symTbl.back()[ name ] = sym;
 	return true;
 }
 

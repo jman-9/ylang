@@ -170,23 +170,18 @@ else
 
 const char* testcode2 =
 R"TEST(
-x = 10;
-y = 20;
-println("sum = " + (x + y));
-
-for(i=1; i<6; i+=1) {
-    if(i == 3) {
-        println("halfway!");
-        continue;
-    }
-    println(i);
+fn fib(n)
+{
+    if(n <= 1)
+        return n;
+    return fib(n - 1) + fib(n - 2);
 }
 
-fn square(n) {
-    return n * n;
+println("=== fibonacci ===");
+for(i = 0; i < 10; i += 1)
+{
+    println("fib(" + i + ") = " + fib(i));
 }
-
-println("square(5) = " + square(5));
 )TEST";
 
 int main()
