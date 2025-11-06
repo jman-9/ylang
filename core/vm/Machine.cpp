@@ -210,6 +210,27 @@ bool Variable::CalcAndAssign(const Variable& lhs, EToken calcOp, const Variable&
 	return true;
 }
 
+bool Variable::CalcUnaryAndAssign(EToken unaryOp, const Variable& rhs)
+{
+	if(rhs.type == STR || rhs.type == NONE)
+	{
+		throw 'n';
+		return false;
+	}
+
+	switch(unaryOp)
+	{
+	case EToken::UnaryPlus: num = +rhs.num; break;
+	case EToken::UnaryMinus: num = -rhs.num; break;
+	case EToken::Not: num = (int64_t)(!rhs.num); break;
+	case EToken::Tilde: num = ~rhs.num; break;
+	default:
+		throw 'n';
+	}
+	type = NUM;
+
+	return true;
+}
 
 
 Machine::Machine()
@@ -280,8 +301,13 @@ void Machine::Run(const Bytecode& code, int start /* = 0 */)
 				{
 					dst->Assign(EToken::Assign, *src1);
 				}
+				else if(src2)
+				{
+					dst->CalcUnaryAndAssign((EToken)as.op, *src2);
+				}
 				else
-				{//TODO unary
+				{
+					throw 'n';
 				}
 			}
 			else
@@ -299,6 +325,7 @@ void Machine::Run(const Bytecode& code, int start /* = 0 */)
 				}
 				else
 				{//TODO func call, unary
+					throw 'n';
 				}
 			}
 		}

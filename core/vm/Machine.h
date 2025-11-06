@@ -29,6 +29,7 @@ struct Variable
 
 	bool Assign(EToken op, const Variable& rval);
 	bool CalcAndAssign(const Variable& lhs, EToken calcOp, const Variable& rhs);
+	bool CalcUnaryAndAssign(EToken unaryOp, const Variable& rhs);
 };
 
 class Machine
