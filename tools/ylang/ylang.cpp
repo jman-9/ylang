@@ -108,28 +108,62 @@ bool ylang::RunFile(const string& srcPath)
 
 bool ylang::StartRepl()
 {
-	cout << "ylang 0.0.1\n";
+	cout << "ylang 0.0.1\n\n";
 
 	SemanticAnalyzer sa;
 	BytecodeBuilder bb;
 	yvm::Machine replMachine;
 
-	string line;
+	vector<string> lines;
+
 	char buf[4096];
+	string code;
 	int pc = 0;
+	bool complete = true;
 	for( ; ; )
 	{
-		cout << ">> ";
+		code = "";
+
+		if(complete)
+		{
+			lines.clear();
+		}
+
+		cout << (complete ? ">> " : ".. ");
+		buf[0] = '\0';
 		cin.getline(buf, 1024);
-		line = buf;
-		if(line == "exit") break;
+		if(buf[0] == '\0')
+		{
+			if(complete)
+				continue;
+			for(auto& l : lines)
+			{
+				code += l + '\n';
+			}
+		}
+		else
+		{
+			if(string(buf) == "exit")
+				break;
+
+			lines.push_back(buf);
+			if(complete)
+			{
+				code = buf;
+			}
+			else
+			{
+				continue;
+			}
+		}
 
 		vector<Error> errs;
 
+		bool run = false;
 		do {	//todo memory leak
 			Scanner s;
-			s.Scan(line);
-			if(!s._errors.empty())
+			s.Scan(code);
+			if(s._tokens.empty() || !s._errors.empty())
 			{
 				errs.insert(errs.end(), s._errors.begin(), s._errors.end());
 				s._errors.clear();
@@ -138,7 +172,7 @@ bool ylang::StartRepl()
 
 			Parser p(s._tokens);
 			TreeNode* ast = p.Parse();
-			if(!p._errors.empty())
+			if(!ast || !p._errors.empty())
 			{
 				errs.insert(errs.end(), p._errors.begin(), p._errors.end());
 				p._errors.clear();
@@ -156,16 +190,36 @@ bool ylang::StartRepl()
 			if(!bb.Build(*ast, c)) throw 'n';
 			replMachine.Run(c, pc);
 			pc = c._code.size();
+			run = true;
 		} while(0);
 
 		if(!errs.empty())
 		{
+			if(complete)
+			{
+				for(auto e : errs)
+				{
+					if(e.IsIncompleteError())
+					{
+						complete = false;
+						break;
+					}
+				}
+				if(!complete)
+					continue;
+			}
+
 			cout << endl;
 			for(auto e : errs)
 			{
 				cout << format("{}: error E{}: {}\n", e.line, (int)e.code, e.msg);
 			}
 			cout << endl;
+			complete = true;
+		}
+		else
+		{
+			complete = run;
 		}
 	}
 

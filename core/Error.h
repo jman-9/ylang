@@ -15,6 +15,7 @@ enum class EErr
 	SyntaxError,
 	Missing,
 	LValueError,
+	ExpectedExpression,
 };
 
 struct Error
@@ -24,6 +25,8 @@ struct Error
 	std::string msg = "";
 
 	bool IsNoError() const;
+	bool IsIncompleteError() const;
+	static bool IsIncompleteError(EErr e);
 };
 
 namespace ErrorBuilder
@@ -42,4 +45,5 @@ namespace ErrorBuilder
 	Error SyntaxError(uint32_t line, char c);
 	Error Missing(uint32_t line, char c);
 	Error LValueError(uint32_t line, const std::string& s);
+	Error ExpectedExpression(uint32_t line, const std::string& s);
 }

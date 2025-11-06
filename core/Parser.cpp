@@ -555,7 +555,7 @@ TreeNode* Parser::ParseIf(const std::set<EToken>& allowed /* = std::set<EToken>(
 	TreeNode* _true = ParseStmt(allowed);
 	if(!_true)
 	{//todo leak
-		//todo correct message
+		_errors.push_back(ErrorBuilder::ExpectedExpression(_if.line, "if"));
 		return nullptr;
 	}
 
@@ -569,7 +569,7 @@ TreeNode* Parser::ParseIf(const std::set<EToken>& allowed /* = std::set<EToken>(
 		TreeNode* _false = ParseStmt(allowed);
 		if(!_false)
 		{//todo leak
-			//todo need message
+			_errors.push_back(ErrorBuilder::ExpectedExpression(_if.line, "else"));
 			return nullptr;
 		}
 

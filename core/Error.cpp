@@ -9,6 +9,17 @@ bool Error::IsNoError() const
 }
 
 
+bool Error::IsIncompleteError() const
+{
+	return IsIncompleteError(code);
+}
+
+bool Error::IsIncompleteError(EErr e)
+{
+	return e == EErr::Missing || e == EErr::UnexpectedEof || e == EErr::ExpectedExpression;
+}
+
+
 namespace ErrorBuilder
 {
 
@@ -67,5 +78,10 @@ Error LValueError(uint32_t line, const std::string& s)
 	return { line, EErr::LValueError, format("'{}': left operand must be l-value", s) };
 }
 
+
+Error ExpectedExpression(uint32_t line, const std::string& _for)
+{
+	return { line, EErr::ExpectedExpression, format("expected expression for '{}'", _for) };
+}
 
 }
