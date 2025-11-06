@@ -150,6 +150,11 @@ bool Variable::CalcAndAssign(const Variable& lhs, EToken calcOp, const Variable&
 		double lfloat = lhs.type == FLOAT ? lhs._float : (double)lhs.num;
 		double rfloat = rhs.type == FLOAT ? rhs._float : (double)rhs.num;
 
+		if(calcOp == EToken::Slash && rfloat == 0.0)
+		{//TODO div 0
+			throw 'n';
+		}
+
 		switch(calcOp)
 		{
 		case EToken::Plus:			_float = lfloat + rfloat; break;
@@ -180,6 +185,11 @@ bool Variable::CalcAndAssign(const Variable& lhs, EToken calcOp, const Variable&
 	{
 		int64_t lnum = lhs.num;
 		int64_t rnum = rhs.num;
+
+		if(calcOp == EToken::Slash && rnum == 0)
+		{//TODO div 0
+			throw 'n';
+		}
 
 		switch(calcOp)
 		{
