@@ -92,6 +92,13 @@ bool SemanticAnalyzer::AnalyzeExp(const TreeNode& stmt)
 			}
 		}
 
+		for(size_t i=1; i<stmt.childs.size(); i++)
+		{
+			if(!AnalyzeExp(*stmt.childs[i]))
+			{//todo trace
+				return false;
+			}
+		}
 		return true;
 	}
 
