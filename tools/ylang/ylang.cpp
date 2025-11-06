@@ -114,12 +114,15 @@ bool ylang::StartRepl()
 	BytecodeBuilder bb;
 	yvm::Machine replMachine;
 
-	char line[4096];
+	string line;
+	char buf[4096];
 	int pc = 0;
 	for( ; ; )
 	{
 		cout << ">> ";
-		cin.getline(line, 1024);
+		cin.getline(buf, 1024);
+		line = buf;
+		if(line == "exit") break;
 
 		vector<Error> errs;
 
@@ -129,6 +132,7 @@ bool ylang::StartRepl()
 			if(!s._errors.empty())
 			{
 				errs.insert(errs.end(), s._errors.begin(), s._errors.end());
+				s._errors.clear();
 				break;
 			}
 
@@ -137,12 +141,14 @@ bool ylang::StartRepl()
 			if(!p._errors.empty())
 			{
 				errs.insert(errs.end(), p._errors.begin(), p._errors.end());
+				p._errors.clear();
 				break;
 			}
 
 			if(!sa.Analyze(*ast))
 			{
-				errs.insert(errs.end(), p._errors.begin(), p._errors.end());
+				errs.insert(errs.end(), sa._errors.begin(), sa._errors.end());
+				sa._errors.clear();
 				break;
 			}
 
@@ -151,5 +157,17 @@ bool ylang::StartRepl()
 			replMachine.Run(c, pc);
 			pc = c._code.size();
 		} while(0);
+
+		if(!errs.empty())
+		{
+			cout << endl;
+			for(auto e : errs)
+			{
+				cout << format("{}: error E{}: {}\n", e.line, (int)e.code, e.msg);
+			}
+			cout << endl;
+		}
 	}
+
+	return true;
 }

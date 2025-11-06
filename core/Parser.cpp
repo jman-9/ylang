@@ -175,6 +175,15 @@ TreeNode* Parser::ParseExpLoop(EToken endToken /* = EToken::None */, EToken endT
 
 		if(CompPrec(ast->self, node->self) >= 0)
 		{
+			if(node->self.IsAssign())
+			{//TODO LValue check
+				if(ast->self != EToken::Id)
+				{
+					_errors.push_back(ErrorBuilder::LValueError(node->self.line, node->self.val));
+					return nullptr;
+				}
+			}
+
 			node->childs.insert(node->childs.begin(), 1, ast);
 			ast->parent = node;
 			ast = node;

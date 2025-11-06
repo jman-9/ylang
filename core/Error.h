@@ -14,6 +14,7 @@ enum class EErr
 	UnsupportedCharacterEscapeSequence,
 	SyntaxError,
 	Missing,
+	LValueError,
 };
 
 struct Error
@@ -40,4 +41,5 @@ namespace ErrorBuilder
 	Error SyntaxError(uint32_t line, const std::string& s);
 	Error SyntaxError(uint32_t line, char c);
 	Error Missing(uint32_t line, char c);
+	Error LValueError(uint32_t line, const std::string& s);
 }
