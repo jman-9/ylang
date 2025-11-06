@@ -593,8 +593,7 @@ bool BytecodeBuilder::BuildFor(const TreeNode& stmt)
 
 	_loopStack.push({});
 
-	//TODO single stmt
-	BuildCompound(block);
+	BuildStmt(block);
 
 	size_t loopEnd = _bytecode.size();
 	BuildExp(update, true);
