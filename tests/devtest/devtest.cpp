@@ -217,8 +217,8 @@ int main()
 			return 1;
 		}
 
-		SemanticAnalyzer sa(*ast);
-		if(!sa.Analyze())
+		SemanticAnalyzer sa;
+		if(!sa.Analyze(*ast))
 		{
 			for(auto e : sa._errors)
 			{
@@ -228,9 +228,9 @@ int main()
 			return 1;
 		}
 
-		BytecodeBuilder bb(*ast);
+		BytecodeBuilder bb;
 		Bytecode c;
-		if(!bb.Build(c)) throw 'n';
+		if(!bb.Build(*ast, c)) throw 'n';
 
 		for(int i=0; i<bb._bytecodeStr.size(); i++)
 		{

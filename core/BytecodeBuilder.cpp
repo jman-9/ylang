@@ -178,9 +178,8 @@ Symbol SymbolTable::GetSymbol(const string& name) const
 }
 
 
-BytecodeBuilder::BytecodeBuilder(const TreeNode& code)
-	: _code(code)
-	, _reg(0)
+BytecodeBuilder::BytecodeBuilder()
+	: _reg(0)
 {
 	PushBytecode<EOpcode::Noop>();
 }
@@ -273,9 +272,9 @@ int BytecodeBuilder::PushBytecode(const InstType& inst)
 	return (int)_bytecode.size() - 1;
 }
 
-bool BytecodeBuilder::Build(Bytecode& retCode)
+bool BytecodeBuilder::Build(const TreeNode& code, Bytecode& retCode)
 {
-	for(const auto& stmt : _code.childs)
+	for(const auto& stmt : code.childs)
 	{
 		if(!BuildStmt(*stmt))
 			return false;

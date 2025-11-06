@@ -102,15 +102,14 @@ protected:
 class BytecodeBuilder
 {
 public:
-	BytecodeBuilder(const TreeNode& code);
+	BytecodeBuilder();
 	~BytecodeBuilder();
 
-	bool Build(Bytecode& retCode);
+	bool Build(const TreeNode& code, Bytecode& retCode);
 
 	std::vector<std::string> _bytecodeStr;
 
 protected:
-	const TreeNode& _code;
 	uint32_t _reg;
 	std::vector<Instruction> _bytecode;
 	ConstTable _constTbl;

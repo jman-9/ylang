@@ -246,15 +246,16 @@ Variable* Machine::ResolveVar(ERefKind k, int idx)
 }
 
 
-void Machine::Run(const Bytecode& code)
+void Machine::Run(const Bytecode& code, int start /* = 0 */)
 {
+	_consts.clear();
 	for(auto& c : code._consts)
 	{
 		_consts.push_back({ .type = (Variable::Type)c.type, .num = c.num, .str = c.str, ._float = c._float });
 	}
 
 	int i;
-	for(i=0; i<code._code.size(); )
+	for(i=start; i<code._code.size(); )
 	{
 		auto& inst = code._code[i];
 		if(inst == EOpcode::Assign)
@@ -390,8 +391,6 @@ void Machine::Run(const Bytecode& code)
 
 		i++;
 	}
-
-	int a = 1;
 }
 
 

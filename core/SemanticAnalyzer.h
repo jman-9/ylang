@@ -9,16 +9,14 @@
 class SemanticAnalyzer
 {
 public:
-	SemanticAnalyzer(const TreeNode& code);
+	SemanticAnalyzer();
 	~SemanticAnalyzer();
 
-	bool Analyze();
+	bool Analyze(const TreeNode& code);
 
 	std::vector<Error> _errors;
 
 protected:
-	const TreeNode& _code;
-
 	std::vector<std::map<std::string, Symbol>> _symTbl;
 
 

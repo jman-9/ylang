@@ -2,8 +2,7 @@
 #include <format>
 
 
-SemanticAnalyzer::SemanticAnalyzer(const TreeNode& code)
-	: _code(code)
+SemanticAnalyzer::SemanticAnalyzer()
 {
 	_symTbl.resize(1);
 }
@@ -12,9 +11,9 @@ SemanticAnalyzer::~SemanticAnalyzer()
 {
 }
 
-bool SemanticAnalyzer::Analyze()
+bool SemanticAnalyzer::Analyze(const TreeNode& code)
 {
-	for(const auto& stmt : _code.childs)
+	for(const auto& stmt : code.childs)
 	{
 		if(!AnalyzeStmt(*stmt))
 			return false;

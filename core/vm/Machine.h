@@ -36,7 +36,7 @@ class Machine
 public:
 	Machine();
 
-	void Run(const Bytecode& code);
+	void Run(const Bytecode& code, int start = 0);
 
 	std::vector<Variable> _consts;
 	std::vector<Variable> _regs;
