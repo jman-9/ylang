@@ -161,7 +161,7 @@ square(5) = 25
 
 * [ ] REPL
 * [ ] Recursion
-* [ ] Array / Map
+* [ ] List / Map
 * [ ] Formatted strings
 * [ ] Class
 * [ ] Automated tests

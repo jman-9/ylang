@@ -170,14 +170,19 @@ else
 
 const char* testcode2 =
 R"TEST(
-a = -1;
-a = -a;
-println(-a);
+a = [[1,2],2,3];
+println(a[0][1]);
+a[0][1] = 9;
+println(a[0][1]);
+println(a[2]);
+a[2] = "hello, list";
+println(a[2]);
 )TEST";
 
 int main()
 {
 	Scanner s;
+	//s.Scan(testcode);
 	s.Scan(testcode2);
 
 	for(auto t : s._tokens)

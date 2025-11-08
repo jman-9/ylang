@@ -58,6 +58,22 @@ void Instruction::Fill(const InstType& inst)
 	{
 		kind = (uint8_t)EOpcode::Jz;
 	}
+	else if constexpr (std::is_same_v<Inst::ListAdd, InstType>)
+	{
+		kind = (uint8_t)EOpcode::ListAdd;
+	}
+	else if constexpr (std::is_same_v<Inst::ListSet, InstType>)
+	{
+		kind = (uint8_t)EOpcode::ListSet;
+	}
+	else if constexpr (std::is_same_v<Inst::ListIdx, InstType>)
+	{
+		kind = (uint8_t)EOpcode::ListIdx;
+	}
+	else if constexpr (std::is_same_v<Inst::ListLValueIdx, InstType>)
+	{
+		kind = (uint8_t)EOpcode::ListLValueIdx;
+	}
 	else
 	{
 		throw 'n';

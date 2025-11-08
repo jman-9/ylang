@@ -1,4 +1,5 @@
 #pragma once
+#include "Token.h"
 #include <stdint.h>
 
 enum class EOpcode : uint16_t
@@ -12,6 +13,10 @@ enum class EOpcode : uint16_t
 	Invoke,
 	Ret,
 	Jz,
+	ListSet,
+	ListAdd,
+	ListIdx,
+	ListLValueIdx,
 };
 
 enum class ERefKind : uint8_t
@@ -56,6 +61,37 @@ struct Jz
 	uint8_t rsvd = 0;
 	uint16_t test = 0;
 	uint32_t pos = 0;
+};
+
+struct ListSet
+{
+	uint8_t dstKind = (uint8_t)ERefKind::None;
+	uint8_t rsvd = 0;
+	uint16_t dst = 0;
+};
+
+struct ListAdd
+{
+	uint8_t dstKind = (uint8_t)ERefKind::None;
+	uint8_t srcKind = (uint8_t)ERefKind::None;
+	uint16_t dst = 0;
+	uint16_t src = 0;
+};
+
+struct ListIdx
+{
+	uint8_t dstKind = (uint8_t)ERefKind::None;
+	uint8_t idxKind = (uint8_t)ERefKind::None;
+	uint16_t dst = 0;
+	uint16_t idx = 0;
+};
+
+struct ListLValueIdx
+{
+	uint8_t dstKind = (uint8_t)ERefKind::None;
+	uint8_t idxKind = (uint8_t)ERefKind::None;
+	uint16_t dst = 0;
+	uint16_t idx = 0;
 };
 
 }

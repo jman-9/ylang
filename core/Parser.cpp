@@ -92,13 +92,14 @@ static bool InitParser()
 
 	s_precMap[ EToken::Invoke ] = 190;
 	s_precMap[ EToken::Dot ] = 190;
-	s_precMap[ EToken::LBracket ] = 190;
+	s_precMap[ EToken::Index ] = 190;
 
  	s_precMap[ EToken::LParen ] = 200;
  	s_precMap[ EToken::Id ] = 200;
  	s_precMap[ EToken::Num ] = 200;
  	s_precMap[ EToken::Str ] = 200;
  	s_precMap[ EToken::RawStr ] = 200;
+	s_precMap[ EToken::List ] = 200;
 
 	/*===========================================*/
 
@@ -177,10 +178,15 @@ TreeNode* Parser::ParseExpLoop(EToken endToken /* = EToken::None */, EToken endT
 		{
 			if(node->self.IsAssign())
 			{//TODO LValue check
-				if(ast->self != EToken::Id)
+				if(ast->self != EToken::Id && ast->self != EToken::Index)
 				{
 					_errors.push_back(ErrorBuilder::LValueError(node->self.line, node->self.val));
 					return nullptr;
+				}
+
+				if(ast->self == EToken::Index)
+				{//TODO algo..
+					ast->self.kind = EToken::LValueIndex;
 				}
 			}
 
@@ -221,9 +227,14 @@ TreeNode* Parser::ParseExp(bool first)
 {
 	TreeNode* node;
 
-	if(GetCur().kind == EToken::LParen)
+	if(GetCur() == EToken::LParen)
 	{
 		if(!IsPrimary(GetPrev()) && GetPrev().kind != EToken::RParen)
+			if(node = ParsePrimaryExp()) return node;
+	}
+	else if(GetCur() == EToken::LBracket)
+	{
+		if(!IsPrimary(GetPrev()) && GetPrev().kind != EToken::RBracket)
 			if(node = ParsePrimaryExp()) return node;
 	}
 	else
@@ -269,6 +280,38 @@ TreeNode* Parser::ParsePrimaryExp()
 
 		node->childs.push_back(child);
 		child->parent = node;
+		return node;
+	}
+	else if(cur.kind == EToken::LBracket)
+	{//list
+		TreeNode* node = new TreeNode();
+		node->self = cur;
+		node->self.kind = EToken::List;
+		MoveNext();
+
+		for( ; ; )
+		{
+			if(GetCur().kind == EToken::RBracket)
+			{//push
+				MoveNext();
+				break;
+			}
+
+			TreeNode* child = ParseExpLoop(EToken::Comma, EToken::RBracket);
+			if(!child)
+			{//todo leak
+				_errors.push_back(ErrorBuilder::SyntaxError(cur.line, ','));
+				return nullptr;
+			}
+			node->childs.push_back(child);
+			if(GetCur().kind == EToken::RBracket)
+			{//push
+				MoveNext();
+				break;
+			}
+
+			MoveNext();
+		}
 		return node;
 	}
 	else if(IsPrimary(cur))
@@ -321,6 +364,7 @@ TreeNode* Parser::ParsePostfixExp()
 	{
 		TreeNode* idx = new TreeNode;
 		idx->self = cur;
+		idx->self.kind = EToken::Index;
 		MoveNext();
 
 		TreeNode* val = ParseExpLoop(EToken::RBracket);

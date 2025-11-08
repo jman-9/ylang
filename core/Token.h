@@ -67,8 +67,10 @@ enum class EToken : uint8_t
 
 	Invoke,
 	Index,
+	LValueIndex,
 	UnaryPlus,
 	UnaryMinus,
+	List,
 };
 
 

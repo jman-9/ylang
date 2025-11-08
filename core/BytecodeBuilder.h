@@ -141,10 +141,11 @@ protected:
 	bool BuildFn(const TreeNode& stmt);
 	bool BuildCompound(const TreeNode& stmt);
 	bool BuildExp(const TreeNode& stmt, bool root);
-	bool BuildInvoke(const TreeNode& stmt);
 	bool BuildReturn(const TreeNode& stmt);
 	bool BuildContinue(const TreeNode& stmt);
 	bool BuildBreak(const TreeNode& stmt);
+	bool BuildList(const TreeNode& stmt);
+	bool BuildIndex(const TreeNode& stmt);
 
 private:
 	template<EOpcode Op>

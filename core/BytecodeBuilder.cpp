@@ -253,6 +253,22 @@ void BytecodeBuilder::FillBytecode(int ln, const InstType& inst)
 	{
 		_bytecodeStr[ln] = format("jz {}{}, {}", ValKindChar(inst.testKind), inst.test, inst.pos);
 	}
+	else if constexpr (is_same_v<Inst::ListSet, InstType>)
+	{
+		_bytecodeStr[ln] = format("listset {}{}", ValKindChar(inst.dstKind), inst.dst);
+	}
+	else if constexpr (is_same_v<Inst::ListAdd, InstType>)
+	{
+		_bytecodeStr[ln] = format("listadd {}{}, {}{}", ValKindChar(inst.dstKind), inst.dst, ValKindChar(inst.srcKind), inst.src);
+	}
+	else if constexpr (is_same_v<Inst::ListIdx, InstType>)
+	{
+		_bytecodeStr[ln] = format("listidx {}{}[{}{}]", ValKindChar(inst.dstKind), inst.dst, ValKindChar(inst.idxKind), inst.idx);
+	}
+	else if constexpr (is_same_v<Inst::ListLValueIdx, InstType>)
+	{
+		_bytecodeStr[ln] = format("listlvalueidx {}{}[{}{}]", ValKindChar(inst.dstKind), inst.dst, ValKindChar(inst.idxKind), inst.idx);
+	}
 }
 template<EOpcode Op>
 int BytecodeBuilder::PushBytecode()
@@ -271,6 +287,7 @@ int BytecodeBuilder::PushBytecode(const InstType& inst)
 	FillBytecode((int)_bytecode.size() - 1, inst);
 	return (int)_bytecode.size() - 1;
 }
+
 
 bool BytecodeBuilder::Build(const TreeNode& code, Bytecode& retCode)
 {
@@ -394,6 +411,17 @@ bool BytecodeBuilder::BuildExp(const TreeNode& stmt, bool root)
 		Inst::Invoke ivk{ .pos = (uint32_t)_symTbl.GetSymbol(stmt.childs[0]->self.val).pos, .numPrms = (uint32_t)stmt.childs.size()-1 };
 		PushBytecode(ivk);
 		return true;
+	}
+
+	if(stmt.self == EToken::List)
+	{
+		return BuildList(stmt);
+	}
+
+
+	if(stmt.self == EToken::Index || stmt.self == EToken::LValueIndex)
+	{
+		return BuildIndex(stmt);
 	}
 
 
@@ -566,6 +594,65 @@ bool BytecodeBuilder::BuildBreak(const TreeNode& stmt)
 	}
 	_loopStack.top().breakLines.push_back((int)_bytecode.size());
 	PushBytecode<EOpcode::Noop>();
+	return true;
+}
+
+bool BytecodeBuilder::BuildList(const TreeNode& stmt)
+{
+	if(stmt.self != EToken::List)
+		throw 'n';
+
+	uint32_t regStack = _reg;
+
+	_reg++;
+	for(size_t i = 0; i<stmt.childs.size(); i++)
+	{
+		if(!BuildExp(*stmt.childs[i], false))
+			throw 'n';
+		_reg++;
+	}
+
+	_reg = regStack;
+
+	Inst::ListSet ls{ .dstKind = (uint8_t)ERefKind::Reg, .dst = (uint16_t)_reg };
+	PushBytecode(ls);
+
+	for(size_t i = 0; i<stmt.childs.size(); i++)
+	{
+		regStack++;
+		Inst::ListAdd la{ .dstKind = (uint8_t)ERefKind::Reg, .srcKind = (uint8_t)ERefKind::Reg, .dst = (uint16_t)_reg, .src = (uint16_t)regStack };
+		PushBytecode(la);
+	}
+	return true;
+}
+
+bool BytecodeBuilder::BuildIndex(const TreeNode& stmt)
+{
+	if(stmt.self != EToken::Index && stmt.self != EToken::LValueIndex)
+		throw 'n';
+
+	uint32_t regStack = _reg;
+
+	for(size_t i = 0; i<stmt.childs.size(); i++)
+	{
+		if(!BuildExp(*stmt.childs[i], false))
+			throw 'n';
+		_reg++;
+	}
+
+	_reg = regStack;
+
+	if(stmt.self == EToken::Index)
+	{
+		Inst::ListIdx li{ .dstKind = (uint8_t)ERefKind::Reg, .idxKind = (uint8_t)ERefKind::Reg, .dst = (uint16_t)_reg, .idx = (uint16_t)(_reg+1) };
+		PushBytecode(li);
+	}
+	else
+	{
+		Inst::ListLValueIdx lli{ .dstKind = (uint8_t)ERefKind::Reg, .idxKind = (uint8_t)ERefKind::Reg, .dst = (uint16_t)_reg, .idx = (uint16_t)(_reg+1) };
+		PushBytecode(lli);
+	}
+
 	return true;
 }
 

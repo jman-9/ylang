@@ -13,10 +13,10 @@ EqualExp -> RelExp | EqualExp ('==' | '!=') RelExp
 RelExp   -> ShiftExp | RelExp ('<' | '<=' | '>' | '>=') ShiftExp
 ShiftExp -> AddExp | ShiftExp ('<<' | '>>') AddExp
 AddExp   -> MulExp | AddExp ('+' | '-') MulExp
-MulExp   -> UnaryExp | MulExp ('*' | '/' | '%') PrefixExp
+MulExp   -> PrefixExp | MulExp ('*' | '/' | '%') PrefixExp
 PrefixExp -> ('!' | '~' | '+' | '-') PrefixExp | PostfixExp
 PostfixExp → PrimaryExp { '(' [Args] ')' | '[' Exp ']' | '.' Id }
-PrimaryExp -> '('Exp')' | Id | Literal
+PrimaryExp -> '('Exp')' | Id | Literal | ListExp
 
 Code -> {Stmt}
 Stmt -> Exp ';' | CompoundStmt | IfStmt | ForStmt | FnStmt | ReturnStmt | KeyStmt ';'
@@ -27,3 +27,6 @@ FnStmt -> 'fn' Id '('[Params]')' (Exp | CompoundStmt)
 ReturnStmt -> 'return' [Exp] ';'
 KeyStmt -> 'continue' | 'break'
 Params -> Id {',' Id}
+
+ListExp -> '[' [Elems] ']'
+Elems -> Exp {',' Exp} [',']
