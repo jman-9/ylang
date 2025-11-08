@@ -216,7 +216,7 @@ void BytecodeBuilder::FillBytecode(int ln, const InstType& inst)
 {
 	_bytecode[ln].Fill(inst);
 
-	if constexpr (is_same_v<Inst::Assign, InstType>)
+	if constexpr (is_same_v<Op::Assign, InstType>)
 	{
 		if(inst.dstKind && inst.src1Kind)
 		{
@@ -240,32 +240,32 @@ void BytecodeBuilder::FillBytecode(int ln, const InstType& inst)
 			throw 'n';
 		}
 	}
-	else if constexpr (is_same_v<Inst::Jmp, InstType>)
+	else if constexpr (is_same_v<Op::Jmp, InstType>)
 	{
 		_bytecodeStr[ln] = format("jmp {}", inst.pos);
 
 	}
-	else if constexpr (is_same_v<Inst::Invoke, InstType>)
+	else if constexpr (is_same_v<Op::Invoke, InstType>)
 	{
 		_bytecodeStr[ln] = format("{}{} = invoke {}", ValKindChar(ERefKind::Reg), _reg, inst.pos);
 	}
-	else if constexpr (is_same_v<Inst::Jz, InstType>)
+	else if constexpr (is_same_v<Op::Jz, InstType>)
 	{
 		_bytecodeStr[ln] = format("jz {}{}, {}", ValKindChar(inst.testKind), inst.test, inst.pos);
 	}
-	else if constexpr (is_same_v<Inst::ListSet, InstType>)
+	else if constexpr (is_same_v<Op::ListSet, InstType>)
 	{
 		_bytecodeStr[ln] = format("listset {}{}", ValKindChar(inst.dstKind), inst.dst);
 	}
-	else if constexpr (is_same_v<Inst::ListAdd, InstType>)
+	else if constexpr (is_same_v<Op::ListAdd, InstType>)
 	{
 		_bytecodeStr[ln] = format("listadd {}{}, {}{}", ValKindChar(inst.dstKind), inst.dst, ValKindChar(inst.srcKind), inst.src);
 	}
-	else if constexpr (is_same_v<Inst::ListIdx, InstType>)
+	else if constexpr (is_same_v<Op::Index, InstType>)
 	{
 		_bytecodeStr[ln] = format("listidx {}{}[{}{}]", ValKindChar(inst.dstKind), inst.dst, ValKindChar(inst.idxKind), inst.idx);
 	}
-	else if constexpr (is_same_v<Inst::ListLValueIdx, InstType>)
+	else if constexpr (is_same_v<Op::LValueIndex, InstType>)
 	{
 		_bytecodeStr[ln] = format("listlvalueidx {}{}[{}{}]", ValKindChar(inst.dstKind), inst.dst, ValKindChar(inst.idxKind), inst.idx);
 	}
@@ -359,7 +359,7 @@ bool BytecodeBuilder::BuildStmt(const TreeNode& stmt)
 bool BytecodeBuilder::BuildExp(const TreeNode& stmt, bool root)
 {
 	uint32_t regStack = _reg;
-	Inst::Assign inst;
+	Op::Assign inst;
 
 	if(stmt.self == EToken::Id || stmt.self.IsLiteral())
 	{
@@ -397,18 +397,18 @@ bool BytecodeBuilder::BuildExp(const TreeNode& stmt, bool root)
 
 		if(stmt.childs[0]->self.val == "print")
 		{//TODO new architecture
-			Inst::Invoke ivk{ .pos = 0xFFFF0000, .numPrms = (uint32_t)stmt.childs.size()-1 };
+			Op::Invoke ivk{ .pos = 0xFFFF0000, .numPrms = (uint32_t)stmt.childs.size()-1 };
 			PushBytecode(ivk);
 			return true;
 		}
 		else if(stmt.childs[0]->self.val == "println")
 		{
-			Inst::Invoke ivk{ .pos = 0xFFFF0000+1, .numPrms = (uint32_t)stmt.childs.size()-1 };
+			Op::Invoke ivk{ .pos = 0xFFFF0000+1, .numPrms = (uint32_t)stmt.childs.size()-1 };
 			PushBytecode(ivk);
 			return true;
 		}
 
-		Inst::Invoke ivk{ .pos = (uint32_t)_symTbl.GetSymbol(stmt.childs[0]->self.val).pos, .numPrms = (uint32_t)stmt.childs.size()-1 };
+		Op::Invoke ivk{ .pos = (uint32_t)_symTbl.GetSymbol(stmt.childs[0]->self.val).pos, .numPrms = (uint32_t)stmt.childs.size()-1 };
 		PushBytecode(ivk);
 		return true;
 	}
@@ -614,13 +614,13 @@ bool BytecodeBuilder::BuildList(const TreeNode& stmt)
 
 	_reg = regStack;
 
-	Inst::ListSet ls{ .dstKind = (uint8_t)ERefKind::Reg, .dst = (uint16_t)_reg };
+	Op::ListSet ls{ .dstKind = (uint8_t)ERefKind::Reg, .dst = (uint16_t)_reg };
 	PushBytecode(ls);
 
 	for(size_t i = 0; i<stmt.childs.size(); i++)
 	{
 		regStack++;
-		Inst::ListAdd la{ .dstKind = (uint8_t)ERefKind::Reg, .srcKind = (uint8_t)ERefKind::Reg, .dst = (uint16_t)_reg, .src = (uint16_t)regStack };
+		Op::ListAdd la{ .dstKind = (uint8_t)ERefKind::Reg, .srcKind = (uint8_t)ERefKind::Reg, .dst = (uint16_t)_reg, .src = (uint16_t)regStack };
 		PushBytecode(la);
 	}
 	return true;
@@ -644,12 +644,12 @@ bool BytecodeBuilder::BuildIndex(const TreeNode& stmt)
 
 	if(stmt.self == EToken::Index)
 	{
-		Inst::ListIdx li{ .dstKind = (uint8_t)ERefKind::Reg, .idxKind = (uint8_t)ERefKind::Reg, .dst = (uint16_t)_reg, .idx = (uint16_t)(_reg+1) };
+		Op::Index li{ .dstKind = (uint8_t)ERefKind::Reg, .idxKind = (uint8_t)ERefKind::Reg, .dst = (uint16_t)_reg, .idx = (uint16_t)(_reg+1) };
 		PushBytecode(li);
 	}
 	else
 	{
-		Inst::ListLValueIdx lli{ .dstKind = (uint8_t)ERefKind::Reg, .idxKind = (uint8_t)ERefKind::Reg, .dst = (uint16_t)_reg, .idx = (uint16_t)(_reg+1) };
+		Op::LValueIndex lli{ .dstKind = (uint8_t)ERefKind::Reg, .idxKind = (uint8_t)ERefKind::Reg, .dst = (uint16_t)_reg, .idx = (uint16_t)(_reg+1) };
 		PushBytecode(lli);
 	}
 
@@ -674,7 +674,7 @@ bool BytecodeBuilder::BuildFor(const TreeNode& stmt)
 	size_t condLine = _bytecode.size();
 	PushBytecode<EOpcode::Noop>();
 
-	Inst::Jz jz;
+	Op::Jz jz;
 	jz.testKind = (uint8_t)ERefKind::Reg;
 	jz.test = _reg;
 
@@ -685,7 +685,7 @@ bool BytecodeBuilder::BuildFor(const TreeNode& stmt)
 	size_t loopEnd = _bytecode.size();
 	BuildExp(update, true);
 
-	Inst::Jmp jmp{ .pos = (uint32_t)loopStart };
+	Op::Jmp jmp{ .pos = (uint32_t)loopStart };
 	PushBytecode(jmp);
 
 	size_t updateEnd = _bytecode.size();
@@ -694,13 +694,13 @@ bool BytecodeBuilder::BuildFor(const TreeNode& stmt)
 
 	for(auto& cl : _loopStack.top().contLines)
 	{
-		Inst::Jmp jmp{ .pos = (uint32_t)loopEnd };
+		Op::Jmp jmp{ .pos = (uint32_t)loopEnd };
 		FillBytecode(cl, jmp);
 	}
 
 	for(auto& bl : _loopStack.top().breakLines)
 	{
-		Inst::Jmp jmp{ .pos = (uint32_t)updateEnd };
+		Op::Jmp jmp{ .pos = (uint32_t)updateEnd };
 		FillBytecode(bl, jmp);
 	}
 
@@ -722,7 +722,7 @@ bool BytecodeBuilder::BuildIf(const TreeNode& stmt)
 	size_t condLine = _bytecode.size();
 	PushBytecode<EOpcode::Noop>();
 
-	Inst::Jz jz;
+	Op::Jz jz;
 	jz.testKind = (uint8_t)ERefKind::Reg;
 	jz.test = _reg;
 
@@ -743,7 +743,7 @@ bool BytecodeBuilder::BuildIf(const TreeNode& stmt)
 		}
 	}
 
-	Inst::Jmp jmp{ .pos = (uint32_t)_bytecode.size() };
+	Op::Jmp jmp{ .pos = (uint32_t)_bytecode.size() };
 	FillBytecode((int)skipLine, jmp);
 	return true;
 }
@@ -785,7 +785,7 @@ bool BytecodeBuilder::BuildFn(const TreeNode& stmt)
 		sym.params.push_back(prm);
 
 		auto idx = _symTbl.AddOrNot( { .name = p->self.val, .kind = ESymbol::Var } );
-		Inst::Assign as;
+		Op::Assign as;
 		as.dstKind = (uint8_t)ERefKind::LocalVar;
 		as.dst = idx.idx;
 		as.src1Kind = (uint8_t)ERefKind::Reg;
@@ -811,7 +811,7 @@ bool BytecodeBuilder::BuildFn(const TreeNode& stmt)
 	BuildBlockClose();
 	PushBytecode<EOpcode::Ret>();
 
-	Inst::Jmp jmp{ .pos = (uint32_t)_bytecode.size() };
+	Op::Jmp jmp{ .pos = (uint32_t)_bytecode.size() };
 	FillBytecode((int)skipLine, jmp);
 	return true;
 }

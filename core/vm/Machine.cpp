@@ -54,7 +54,7 @@ void Machine::Run(const Bytecode& code, int start /* = 0 */)
 		auto& inst = code._code[i];
 		if(inst == EOpcode::Assign)
 		{
-			const Inst::Assign& as = *(Inst::Assign*)inst.code.data();
+			const Op::Assign& as = *(Op::Assign*)inst.code.data();
 
 			if((ERefKind)as.dstKind == ERefKind::Const)
 			{
@@ -113,13 +113,13 @@ void Machine::Run(const Bytecode& code, int start /* = 0 */)
 		}
 		else if(inst == EOpcode::Jmp)
 		{
-			const Inst::Jmp& jmp = *(Inst::Jmp*)inst.code.data();
+			const Op::Jmp& jmp = *(Op::Jmp*)inst.code.data();
 			i = jmp.pos;
 			continue;
 		}
 		else if(inst == EOpcode::Invoke)
 		{
-			const Inst::Invoke& ivk = *(Inst::Invoke*)inst.code.data();
+			const Op::Invoke& ivk = *(Op::Invoke*)inst.code.data();
 
 			_rp -= (int)ivk.numPrms;
 			_rpStack.push(_rp);
@@ -188,7 +188,7 @@ void Machine::Run(const Bytecode& code, int start /* = 0 */)
 		}
 		else if(inst == EOpcode::Jz)
 		{
-			const Inst::Jz& jz = *(Inst::Jz*)inst.code.data();
+			const Op::Jz& jz = *(Op::Jz*)inst.code.data();
 			Variable* test = ResolveVar((ERefKind)jz.testKind, jz.test);
 			if(!test->num)
 			{
@@ -198,14 +198,14 @@ void Machine::Run(const Bytecode& code, int start /* = 0 */)
 		}
 		else if(inst == EOpcode::ListSet)
 		{
-			const Inst::ListSet& ls = *(Inst::ListSet*)inst.code.data();
+			const Op::ListSet& ls = *(Op::ListSet*)inst.code.data();
 			Variable* dst = ResolveVar((ERefKind)ls.dstKind, ls.dst);
 			dst->Clear();
 			dst->type = Variable::LIST;
 		}
 		else if(inst == EOpcode::ListAdd)
 		{
-			const Inst::ListAdd& la = *(Inst::ListAdd*)inst.code.data();
+			const Op::ListAdd& la = *(Op::ListAdd*)inst.code.data();
 			Variable* src = ResolveVar((ERefKind)la.srcKind, la.src);
 			Variable* dst = ResolveVar((ERefKind)la.dstKind, la.dst);
 			if(dst->type != Variable::LIST)
@@ -214,9 +214,9 @@ void Machine::Run(const Bytecode& code, int start /* = 0 */)
 			}
 			dst->arr.push_back(src->Clone());
 		}
-		else if(inst == EOpcode::ListIdx)
+		else if(inst == EOpcode::Index)
 		{
-			const Inst::ListIdx& li = *(Inst::ListIdx*)inst.code.data();
+			const Op::Index& li = *(Op::Index*)inst.code.data();
 			Variable* idx = ResolveVar((ERefKind)li.idxKind, li.idx);
 			Variable* dst = ResolveVar((ERefKind)li.dstKind, li.dst);
 
@@ -231,9 +231,9 @@ void Machine::Run(const Bytecode& code, int start /* = 0 */)
 
 			*dst = *dst->arr[idx->num];
 		}
-		else if(inst == EOpcode::ListLValueIdx)
+		else if(inst == EOpcode::LValueIndex)
 		{
-			const Inst::ListLValueIdx& lli = *(Inst::ListLValueIdx*)inst.code.data();
+			const Op::LValueIndex& lli = *(Op::LValueIndex*)inst.code.data();
 			Variable* idx = ResolveVar((ERefKind)lli.idxKind, lli.idx);
 			Variable* dst = ResolveVar((ERefKind)lli.dstKind, lli.dst);
 

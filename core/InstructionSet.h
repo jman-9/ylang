@@ -15,8 +15,8 @@ enum class EOpcode : uint16_t
 	Jz,
 	ListSet,
 	ListAdd,
-	ListIdx,
-	ListLValueIdx,
+	Index,
+	LValueIndex,
 };
 
 enum class ERefKind : uint8_t
@@ -29,7 +29,7 @@ enum class ERefKind : uint8_t
 	LocalVar,
 };
 
-namespace Inst
+namespace Op
 {
 
 struct Assign
@@ -78,7 +78,7 @@ struct ListAdd
 	uint16_t src = 0;
 };
 
-struct ListIdx
+struct Index
 {
 	uint8_t dstKind = (uint8_t)ERefKind::None;
 	uint8_t idxKind = (uint8_t)ERefKind::None;
@@ -86,7 +86,7 @@ struct ListIdx
 	uint16_t idx = 0;
 };
 
-struct ListLValueIdx
+struct LValueIndex
 {
 	uint8_t dstKind = (uint8_t)ERefKind::None;
 	uint8_t idxKind = (uint8_t)ERefKind::None;
