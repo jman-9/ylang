@@ -71,6 +71,7 @@ enum class EToken : uint8_t
 	UnaryPlus,
 	UnaryMinus,
 	List,
+	Dict,
 };
 
 

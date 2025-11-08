@@ -211,12 +211,12 @@ void BytecodeBuilder::FillBytecode(int ln)
 		_bytecodeStr[ln] = "ret";
 	}
 }
-template<class InstType>
-void BytecodeBuilder::FillBytecode(int ln, const InstType& inst)
+template<class OpType>
+void BytecodeBuilder::FillBytecode(int ln, const OpType& inst)
 {
 	_bytecode[ln].Fill(inst);
 
-	if constexpr (is_same_v<Op::Assign, InstType>)
+	if constexpr (is_same_v<Op::Assign, OpType>)
 	{
 		if(inst.dstKind && inst.src1Kind)
 		{
@@ -240,34 +240,42 @@ void BytecodeBuilder::FillBytecode(int ln, const InstType& inst)
 			throw 'n';
 		}
 	}
-	else if constexpr (is_same_v<Op::Jmp, InstType>)
+	else if constexpr (is_same_v<Op::Jmp, OpType>)
 	{
 		_bytecodeStr[ln] = format("jmp {}", inst.pos);
 
 	}
-	else if constexpr (is_same_v<Op::Invoke, InstType>)
+	else if constexpr (is_same_v<Op::Invoke, OpType>)
 	{
 		_bytecodeStr[ln] = format("{}{} = invoke {}", ValKindChar(ERefKind::Reg), _reg, inst.pos);
 	}
-	else if constexpr (is_same_v<Op::Jz, InstType>)
+	else if constexpr (is_same_v<Op::Jz, OpType>)
 	{
 		_bytecodeStr[ln] = format("jz {}{}, {}", ValKindChar(inst.testKind), inst.test, inst.pos);
 	}
-	else if constexpr (is_same_v<Op::ListSet, InstType>)
+	else if constexpr (is_same_v<Op::ListSet, OpType>)
 	{
 		_bytecodeStr[ln] = format("listset {}{}", ValKindChar(inst.dstKind), inst.dst);
 	}
-	else if constexpr (is_same_v<Op::ListAdd, InstType>)
+	else if constexpr (is_same_v<Op::ListAdd, OpType>)
 	{
 		_bytecodeStr[ln] = format("listadd {}{}, {}{}", ValKindChar(inst.dstKind), inst.dst, ValKindChar(inst.srcKind), inst.src);
 	}
-	else if constexpr (is_same_v<Op::Index, InstType>)
+	else if constexpr (is_same_v<Op::DictSet, OpType>)
 	{
-		_bytecodeStr[ln] = format("listidx {}{}[{}{}]", ValKindChar(inst.dstKind), inst.dst, ValKindChar(inst.idxKind), inst.idx);
+		_bytecodeStr[ln] = format("dictset {}{}", ValKindChar(inst.dstKind), inst.dst);
 	}
-	else if constexpr (is_same_v<Op::LValueIndex, InstType>)
+	else if constexpr (is_same_v<Op::ListAdd, OpType>)
 	{
-		_bytecodeStr[ln] = format("listlvalueidx {}{}[{}{}]", ValKindChar(inst.dstKind), inst.dst, ValKindChar(inst.idxKind), inst.idx);
+		_bytecodeStr[ln] = format("dictadd {}{}, {}{}:{}{}", ValKindChar(inst.dstKind), inst.dst, ValKindChar(inst.keyKind), inst.key, ValKindChar(inst.valKind), inst.val);
+	}
+	else if constexpr (is_same_v<Op::Index, OpType>)
+	{
+		_bytecodeStr[ln] = format("index {}{}[{}{}]", ValKindChar(inst.dstKind), inst.dst, ValKindChar(inst.idxKind), inst.idx);
+	}
+	else if constexpr (is_same_v<Op::LValueIndex, OpType>)
+	{
+		_bytecodeStr[ln] = format("lvalueindex {}{}[{}{}]", ValKindChar(inst.dstKind), inst.dst, ValKindChar(inst.idxKind), inst.idx);
 	}
 }
 template<EOpcode Op>
@@ -279,8 +287,8 @@ int BytecodeBuilder::PushBytecode()
 	return (int)_bytecode.size() - 1;
 }
 
-template<class InstType>
-int BytecodeBuilder::PushBytecode(const InstType& inst)
+template<class OpType>
+int BytecodeBuilder::PushBytecode(const OpType& inst)
 {
 	_bytecode.push_back(Instruction());
 	_bytecodeStr.push_back("");
@@ -416,6 +424,11 @@ bool BytecodeBuilder::BuildExp(const TreeNode& stmt, bool root)
 	if(stmt.self == EToken::List)
 	{
 		return BuildList(stmt);
+	}
+
+	if(stmt.self == EToken::Dict)
+	{
+		return BuildDict(stmt);
 	}
 
 
@@ -622,6 +635,45 @@ bool BytecodeBuilder::BuildList(const TreeNode& stmt)
 		regStack++;
 		Op::ListAdd la{ .dstKind = (uint8_t)ERefKind::Reg, .srcKind = (uint8_t)ERefKind::Reg, .dst = (uint16_t)_reg, .src = (uint16_t)regStack };
 		PushBytecode(la);
+	}
+	return true;
+}
+
+bool BytecodeBuilder::BuildDict(const TreeNode& stmt)
+{
+	if(stmt.self != EToken::Dict)
+		throw 'n';
+
+	uint32_t regStack = _reg;
+
+	_reg++;
+	for(size_t i = 0; i<stmt.childs.size(); i++)
+	{
+		if(!BuildExp(*stmt.childs[i], false))
+			throw 'n';
+		_reg++;
+		if(!BuildExp(*stmt.childs[i]->childs[0], false))
+			throw 'n';
+		_reg++;
+	}
+
+	_reg = regStack;
+
+	Op::DictSet ds{ .dstKind = (uint8_t)ERefKind::Reg, .dst = (uint16_t)_reg };
+	PushBytecode(ds);
+
+	regStack++;
+	for(size_t i = 0; i<stmt.childs.size(); i++)
+	{
+		Op::DictAdd da{
+			.dstKind = (uint8_t)ERefKind::Reg,
+			.keyKind = (uint8_t)ERefKind::Reg,
+			.valKind = (uint8_t)ERefKind::Reg,
+			.dst = (uint16_t)_reg,
+			.key = (uint16_t)regStack++,
+			.val = (uint16_t)regStack++,
+		};
+		PushBytecode(da);
 	}
 	return true;
 }

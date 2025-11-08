@@ -161,9 +161,10 @@ square(5) = 25
 
 * [ ] REPL
 * [ ] Recursion
-* [ ] List / Map
+* [ ] List / Dict
 * [ ] Formatted strings
 * [ ] Class
+* [ ] Memory Management
 * [ ] Automated tests
 * [ ] Documentation
 * ...and more

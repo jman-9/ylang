@@ -200,8 +200,20 @@ void Machine::Run(const Bytecode& code, int start /* = 0 */)
 		{
 			const Op::ListSet& ls = *(Op::ListSet*)inst.code.data();
 			Variable* dst = ResolveVar((ERefKind)ls.dstKind, ls.dst);
-			dst->Clear();
-			dst->type = Variable::LIST;
+
+			Variable* t = nullptr;
+			if(dst->type != Variable::REF)
+			{
+				t = dst;
+			}
+			else
+			{
+				auto t = dst->ref;
+				dst->Clear();
+			}
+			t->Clear();
+			t->list = new std::vector<Variable *>;
+			t->type = Variable::LIST;
 		}
 		else if(inst == EOpcode::ListAdd)
 		{
@@ -212,7 +224,43 @@ void Machine::Run(const Bytecode& code, int start /* = 0 */)
 			{
 				throw 'n';
 			}
-			dst->arr.push_back(src->Clone());
+			dst->list->push_back(src->Clone());
+		}
+		else if(inst == EOpcode::DictSet)
+		{
+			const Op::DictSet& ds = *(Op::DictSet*)inst.code.data();
+			Variable* dst = ResolveVar((ERefKind)ds.dstKind, ds.dst);
+
+			Variable* t = nullptr;
+			if(dst->type != Variable::REF)
+			{
+				t = dst;
+			}
+			else
+			{
+				t = dst->ref;
+				dst->Clear();
+			}
+			t->Clear();
+			t->dict = new std::unordered_map<std::string, Variable *>;
+			t->type = Variable::DICT;
+		}
+		else if(inst == EOpcode::DictAdd)
+		{
+			const Op::DictAdd& da = *(Op::DictAdd*)inst.code.data();
+			Variable* val = ResolveVar((ERefKind)da.valKind, da.val);
+			Variable* key = ResolveVar((ERefKind)da.keyKind, da.key);
+			Variable* dst = ResolveVar((ERefKind)da.dstKind, da.dst);
+			if(dst->type != Variable::DICT)
+			{
+				throw 'n';
+			}
+			if(key->type != Variable::STR)
+			{
+				throw 'n';
+			}
+
+			(*dst->dict)[key->str] = val->Clone();
 		}
 		else if(inst == EOpcode::Index)
 		{
@@ -220,16 +268,34 @@ void Machine::Run(const Bytecode& code, int start /* = 0 */)
 			Variable* idx = ResolveVar((ERefKind)li.idxKind, li.idx);
 			Variable* dst = ResolveVar((ERefKind)li.dstKind, li.dst);
 
-			if(dst->type != Variable::LIST)
+			if(idx->type == Variable::NUM)
 			{
-				throw 'n';
-			}
-			if(idx->type != Variable::NUM)
-			{
-				throw 'n';
-			}
+				if(dst->type != Variable::LIST)
+				{
+					throw 'n';
+				}
 
-			*dst = *dst->arr[idx->num];
+				*dst = *dst->list->at(idx->num);
+			}
+			else if(idx->type == Variable::STR)
+			{
+				if(dst->type != Variable::DICT)
+				{
+					throw 'n';
+				}
+
+				auto found = dst->dict->find(idx->str);
+				if(found == dst->dict->end())
+				{
+					throw 'n';
+				}
+
+				*dst = *found->second;
+			}
+			else
+			{
+				throw 'n';
+			}
 		}
 		else if(inst == EOpcode::LValueIndex)
 		{
@@ -237,19 +303,51 @@ void Machine::Run(const Bytecode& code, int start /* = 0 */)
 			Variable* idx = ResolveVar((ERefKind)lli.idxKind, lli.idx);
 			Variable* dst = ResolveVar((ERefKind)lli.dstKind, lli.dst);
 
-			if(dst->type != Variable::LIST)
+			if(idx->type == Variable::NUM)
 			{
-				throw 'n';
+				if(dst->type != Variable::LIST)
+				{
+					throw 'n';
+				}
+
+				auto t = dst->list->at(idx->num);
+				dst->Clear();
+				dst->type = Variable::REF;
+				dst->ref = t;
 			}
-			if(idx->type != Variable::NUM)
+			else if(idx->type == Variable::STR)
+			{
+				if(dst->type != Variable::DICT)
+				{
+					throw 'n';
+				}
+
+				Variable* t = nullptr;
+				auto found = dst->dict->find(idx->str);
+				if(found == dst->dict->end())
+				{
+					auto inserted = dst->dict->insert({idx->str, new Variable()});
+					if(!inserted.second)
+					{
+						throw 'n';
+					}
+					t = inserted.first->second;
+				}
+				else
+				{
+					t = found->second;
+				}
+
+				dst->Clear();
+				dst->type = Variable::REF;
+				dst->ref = t;
+			}
+			else
 			{
 				throw 'n';
 			}
 
-			auto t = dst->arr[idx->num];
-			dst->Clear();
-			dst->type = Variable::REF;
-			dst->ref = t;
+
 		}
 
 		i++;

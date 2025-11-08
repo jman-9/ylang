@@ -15,6 +15,8 @@ enum class EOpcode : uint16_t
 	Jz,
 	ListSet,
 	ListAdd,
+	DictSet,
+	DictAdd,
 	Index,
 	LValueIndex,
 };
@@ -76,6 +78,25 @@ struct ListAdd
 	uint8_t srcKind = (uint8_t)ERefKind::None;
 	uint16_t dst = 0;
 	uint16_t src = 0;
+};
+
+struct DictSet
+{
+	uint8_t dstKind = (uint8_t)ERefKind::None;
+	uint8_t rsvd = 0;
+	uint16_t dst = 0;
+};
+
+struct DictAdd
+{
+	uint8_t dstKind = (uint8_t)ERefKind::None;
+	uint8_t keyKind = (uint8_t)ERefKind::None;
+	uint8_t valKind = (uint8_t)ERefKind::None;
+	uint8_t rsvd = 0;
+	uint16_t dst = 0;
+	uint16_t key = 0;
+	uint16_t val = 0;
+	uint16_t rsvd2 = 0;
 };
 
 struct Index

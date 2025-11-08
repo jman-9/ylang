@@ -1,8 +1,10 @@
 #pragma once
 #include "../Token.h"
 #include <stdint.h>
-#include <vector>
 #include <string>
+#include <vector>
+#include <unordered_map>
+
 
 
 namespace yvm
@@ -19,7 +21,7 @@ struct Variable
 		FLOAT,
 		OBJECT,
 		LIST,
-		MAP,
+		DICT,
 		REF,
 	};
 
@@ -29,7 +31,8 @@ struct Variable
 	std::string str = "";
 	double _float = 0.0;
 	void* obj = nullptr;
-	std::vector<Variable*> arr;
+	std::vector<Variable*>* list;
+	std::unordered_map<std::string, Variable*>* dict;
 	Variable* ref = nullptr;
 
 	void Clear();

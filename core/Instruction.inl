@@ -39,38 +39,46 @@ void Instruction::Fill()
 	kind = (uint8_t)Op;
 }
 
-template<class InstType>
-void Instruction::Fill(const InstType& inst)
+template<class OpType>
+void Instruction::Fill(const OpType& inst)
 {
-	if constexpr (std::is_same_v<Op::Assign, InstType>)
+	if constexpr (std::is_same_v<Op::Assign, OpType>)
 	{
 		kind = (uint8_t)EOpcode::Assign;
 	}
-	else if constexpr (std::is_same_v<Op::Jmp, InstType>)
+	else if constexpr (std::is_same_v<Op::Jmp, OpType>)
 	{
 		kind = (uint8_t)EOpcode::Jmp;
 	}
-	else if constexpr (std::is_same_v<Op::Invoke, InstType>)
+	else if constexpr (std::is_same_v<Op::Invoke, OpType>)
 	{
 		kind = (uint8_t)EOpcode::Invoke;
 	}
-	else if constexpr (std::is_same_v<Op::Jz, InstType>)
+	else if constexpr (std::is_same_v<Op::Jz, OpType>)
 	{
 		kind = (uint8_t)EOpcode::Jz;
 	}
-	else if constexpr (std::is_same_v<Op::ListAdd, InstType>)
-	{
-		kind = (uint8_t)EOpcode::ListAdd;
-	}
-	else if constexpr (std::is_same_v<Op::ListSet, InstType>)
+	else if constexpr (std::is_same_v<Op::ListSet, OpType>)
 	{
 		kind = (uint8_t)EOpcode::ListSet;
 	}
-	else if constexpr (std::is_same_v<Op::Index, InstType>)
+	else if constexpr (std::is_same_v<Op::ListAdd, OpType>)
+	{
+		kind = (uint8_t)EOpcode::ListAdd;
+	}
+	else if constexpr (std::is_same_v<Op::DictSet, OpType>)
+	{
+		kind = (uint8_t)EOpcode::DictSet;
+	}
+	else if constexpr (std::is_same_v<Op::DictAdd, OpType>)
+	{
+		kind = (uint8_t)EOpcode::DictAdd;
+	}
+	else if constexpr (std::is_same_v<Op::Index, OpType>)
 	{
 		kind = (uint8_t)EOpcode::Index;
 	}
-	else if constexpr (std::is_same_v<Op::LValueIndex, InstType>)
+	else if constexpr (std::is_same_v<Op::LValueIndex, OpType>)
 	{
 		kind = (uint8_t)EOpcode::LValueIndex;
 	}

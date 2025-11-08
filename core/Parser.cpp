@@ -304,7 +304,51 @@ TreeNode* Parser::ParsePrimaryExp()
 				return nullptr;
 			}
 			node->childs.push_back(child);
+			child->parent = node;
 			if(GetCur().kind == EToken::RBracket)
+			{//push
+				MoveNext();
+				break;
+			}
+
+			MoveNext();
+		}
+		return node;
+	}
+	else if(cur.kind == EToken::LBrace)
+	{
+		TreeNode* node = new TreeNode();
+		node->self = cur;
+		node->self.kind = EToken::Dict;
+		MoveNext();
+
+		for( ; ; )
+		{
+			if(GetCur().kind == EToken::RBrace)
+			{//push
+				MoveNext();
+				break;
+			}
+
+			TreeNode* child = ParseExpLoop(EToken::Colon);
+			if(!child)
+			{//todo leak
+				_errors.push_back(ErrorBuilder::SyntaxError(cur.line, ':'));
+				return nullptr;
+			}
+			node->childs.push_back(child);
+			child->parent = node;
+			MoveNext();
+
+			child = ParseExpLoop(EToken::Comma, EToken::RBrace);
+			if(!child)
+			{//todo leak
+				_errors.push_back(ErrorBuilder::SyntaxError(cur.line, ','));
+				return nullptr;
+			}
+			node->childs.back()->childs.push_back(child);
+			child->parent = node->childs.back();
+			if(GetCur().kind == EToken::RBrace)
 			{//push
 				MoveNext();
 				break;
@@ -447,6 +491,27 @@ TreeNode* Parser::ParseOpExp()
 	return node;
 }
 
+TreeNode* Parser::ParseDictExp()
+{
+	auto& cur = GetCur();
+	auto found = s_opMap.find(cur.kind);
+	if(found == s_opMap.end())
+	{
+		return nullptr;
+	}
+
+	MoveNext();
+
+	TreeNode* rhs = ParseExp(false);
+	if(!rhs) return nullptr;
+
+	TreeNode* node = new TreeNode();
+	node->self = cur;
+	node->childs.push_back(rhs);
+	rhs->parent = node;
+	return node;
+}
+
 
 TreeNode* Parser::ParseCompoundStmt(const std::set<EToken>& allowed /* = std::set<EToken>() */)
 {
@@ -484,8 +549,15 @@ TreeNode* Parser::ParseCompoundStmt(const std::set<EToken>& allowed /* = std::se
 
 TreeNode* Parser::ParseStmt(const std::set<EToken>& allowed /* = std::set<EToken>() */)
 {
-	TreeNode* ast = ParseExpLoop(EToken::Semicolon);
-	if(ast)
+	TreeNode* ast;
+
+	if(ast = ParseCompoundStmt(allowed)) return ast;
+
+	if(ast = ParseIf(allowed)) return ast;
+	if(ast = ParseFor(allowed)) return ast;
+	if(ast = ParseFn()) return ast;
+
+	if(ast = ParseExpLoop(EToken::Semicolon))
 	{
 		if(GetCur().kind != EToken::Semicolon)
 		{//todo leak
@@ -503,12 +575,6 @@ TreeNode* Parser::ParseStmt(const std::set<EToken>& allowed /* = std::set<EToken
 			return ParseStmt();
 		}
 	}
-
-	if(ast = ParseCompoundStmt(allowed)) return ast;
-
-	if(ast = ParseIf(allowed)) return ast;
-	if(ast = ParseFor(allowed)) return ast;
-	if(ast = ParseFn()) return ast;
 
 	if(IsEnd()) return nullptr;
 

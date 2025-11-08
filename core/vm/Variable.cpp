@@ -13,7 +13,8 @@ void Variable::Clear()
 	str = "";
 	_float = 0.0;
 	obj = nullptr;
-	arr.clear();
+	list = nullptr;
+	dict = nullptr;
 	ref = nullptr;
 }
 

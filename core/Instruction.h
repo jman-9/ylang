@@ -14,8 +14,8 @@ struct Instruction
 
 	template<EOpcode Op>
 	void Fill();
-	template<class InstType>
-	void Fill(const InstType& inst);
+	template<class OpType>
+	void Fill(const OpType& inst);
 };
 
 #include "Instruction.inl"

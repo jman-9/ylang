@@ -145,15 +145,16 @@ protected:
 	bool BuildContinue(const TreeNode& stmt);
 	bool BuildBreak(const TreeNode& stmt);
 	bool BuildList(const TreeNode& stmt);
+	bool BuildDict(const TreeNode& stmt);
 	bool BuildIndex(const TreeNode& stmt);
 
 private:
 	template<EOpcode Op>
 	void FillBytecode(int ln);
-	template<class InstType>
-	void FillBytecode(int ln, const InstType& inst);
+	template<class OpType>
+	void FillBytecode(int ln, const OpType& inst);
 	template<EOpcode Op>
 	int PushBytecode();
-	template<class InstType>
-	int PushBytecode(const InstType& inst);
+	template<class OpType>
+	int PushBytecode(const OpType& inst);
 };

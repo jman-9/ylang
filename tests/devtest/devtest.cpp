@@ -177,6 +177,17 @@ println(a[0][1]);
 println(a[2]);
 a[2] = "hello, list";
 println(a[2]);
+
+a = { 'abc': 123, 'def':456 };
+println( a['abc'] );
+println( a['def'] );
+a[ 'def' ] = 999;
+println( a['def'] );
+a[ 'abc' ] = 'hello, dict';
+a[ 'abc' ] = [1,2,3];
+println( a['abc'] );
+a[ 'new' ] = [1,2,3];
+println( a['new'][1] );
 )TEST";
 
 int main()

@@ -16,7 +16,7 @@ AddExp   -> MulExp | AddExp ('+' | '-') MulExp
 MulExp   -> PrefixExp | MulExp ('*' | '/' | '%') PrefixExp
 PrefixExp -> ('!' | '~' | '+' | '-') PrefixExp | PostfixExp
 PostfixExp → PrimaryExp { '(' [Args] ')' | '[' Exp ']' | '.' Id }
-PrimaryExp -> '('Exp')' | Id | Literal | ListExp
+PrimaryExp -> '('Exp')' | Id | Literal | ListExp | DictExp
 
 Code -> {Stmt}
 Stmt -> Exp ';' | CompoundStmt | IfStmt | ForStmt | FnStmt | ReturnStmt | KeyStmt ';'
@@ -28,5 +28,8 @@ ReturnStmt -> 'return' [Exp] ';'
 KeyStmt -> 'continue' | 'break'
 Params -> Id {',' Id}
 
-ListExp -> '[' [Elems] ']'
-Elems -> Exp {',' Exp} [',']
+ListExp -> '[' [ListElems] ']'
+ListElems -> Exp {',' Exp} [',']
+
+DictExp -> '{' [DictElems] '}'
+DictElems -> Exp ':' Exp {',' Exp ':' Exp} [',']
