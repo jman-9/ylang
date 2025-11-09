@@ -265,7 +265,7 @@ void BytecodeBuilder::FillBytecode(int ln, const OpType& inst)
 	{
 		_bytecodeStr[ln] = format("dictset {}{}", ValKindChar(inst.dstKind), inst.dst);
 	}
-	else if constexpr (is_same_v<Op::ListAdd, OpType>)
+	else if constexpr (is_same_v<Op::DictAdd, OpType>)
 	{
 		_bytecodeStr[ln] = format("dictadd {}{}, {}{}:{}{}", ValKindChar(inst.dstKind), inst.dst, ValKindChar(inst.keyKind), inst.key, ValKindChar(inst.valKind), inst.val);
 	}
@@ -402,8 +402,6 @@ bool BytecodeBuilder::BuildExp(const TreeNode& stmt, bool root)
 
 	if(stmt.self == EToken::Invoke)
 	{
-		regStack = _reg;
-
 		if(stmt.childs[0]->self == EToken::Dot)
 		{	//TODO generalize
 			if(!BuildExp(*stmt.childs[0], false))

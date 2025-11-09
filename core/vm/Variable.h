@@ -40,11 +40,23 @@ struct Variable
 	Attribute* attr = nullptr;
 
 	void Clear();
+	void SetNum(int64_t num);
+	void SetStr(const std::string& str);
+	void SetList(const std::vector<Variable*>& list = std::vector<Variable*>());
 	Variable* Clone();
 
 	bool Assign(EToken op, const Variable& rval);
 	bool CalcAndAssign(const Variable& lhs, EToken calcOp, const Variable& rhs);
 	bool CalcUnaryAndAssign(EToken unaryOp, const Variable& rhs);
+
+	std::string ToStr() const;
+
+	bool operator==(Type cmp) const;
+	bool operator!=(Type cmp) const;
+
+	static Variable* NewNum(int64_t num = 0);
+	static Variable* NewStr(const std::string& str = "");
+	static Variable* NewList(const std::vector<Variable*>& list = std::vector<Variable*>());
 };
 
 struct Attribute

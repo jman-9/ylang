@@ -6,6 +6,29 @@ using namespace std;
 namespace yvm
 {
 
+
+Variable* Variable::NewNum(int64_t num)
+{
+	auto v = new Variable;
+	v->SetNum(num);
+	return v;
+}
+
+Variable* Variable::NewStr(const string& str)
+{
+	auto v = new Variable;
+	v->SetStr(str);
+	return v;
+}
+
+Variable* Variable::NewList(const vector<Variable*>& list /*= std::vector<Variable>()*/)
+{
+	auto v = new Variable;
+	v->SetList(list);
+	return v;
+}
+
+
 void Variable::Clear()
 {
 	type = NONE;
@@ -17,6 +40,27 @@ void Variable::Clear()
 	dict = nullptr;
 	ref = nullptr;
 	attr = nullptr;
+}
+
+void Variable::SetNum(int64_t argNum)
+{
+	Clear();
+	num = argNum;
+	type = NUM;
+}
+
+void Variable::SetStr(const string& argStr)
+{
+	Clear();
+	str = argStr;
+	type = STR;
+}
+
+void Variable::SetList(const vector<Variable *>& argList /* = std::vector<Variable *>() */)
+{
+	Clear();
+	type = LIST;
+	list = new vector<Variable*>(argList);
 }
 
 Variable* Variable::Clone()
@@ -166,6 +210,22 @@ bool Variable::CalcAndAssign(const Variable& lhs, EToken calcOp, const Variable&
 			}
 			type = STR;
 		}
+		else if(calcOp == EToken::Equal || calcOp == EToken::NotEqual)
+		{
+			if(lhs == STR && rhs == STR)
+			{
+				switch(calcOp)
+				{
+				case EToken::Equal:			num = lhs.str == rhs.str; break;
+				case EToken::NotEqual:		num = lhs.str != rhs.str; break;
+				}
+			}
+			else
+			{
+				type = NUM;
+				num = 0;
+			}
+		}
 		else if(calcOp == EToken::Dot)
 		{
 			if(rhs.type != STR)
@@ -281,6 +341,69 @@ bool Variable::CalcUnaryAndAssign(EToken unaryOp, const Variable& rhs)
 	type = NUM;
 
 	return true;
+}
+
+string Variable::ToStr() const
+{
+	switch(type)
+	{
+	case NUM:
+		return to_string(num);
+	case FLOAT:
+		return to_string(_float);
+	case STR:
+		return str;
+	case OBJECT:
+		return "obj(wip)";
+	case LIST:
+		{
+			string r = "[";
+			if(!list->empty())
+			{
+				for(auto v: *list)
+				{
+					string t = v->ToStr();
+					if(*v == STR) t = "'" + t + "'";
+					r += t + ", ";
+				}
+				r.pop_back();
+				r.pop_back();
+			}
+			r += "]";
+			return r;
+		}
+	case DICT:
+		{
+			string r = "{";
+			if(!dict->empty())
+			{
+				for(auto [k, v]: *dict)
+				{
+					string t = v->ToStr();
+					if(*v == STR) t = "'" + t + "'";
+					r += format("'{}': {}, ", k, t);
+				}
+				r.pop_back();
+				r.pop_back();
+			}
+			r += "}";
+			return r;
+		}
+	case REF:
+		return "ref: " + ref->ToStr();
+	case ATTR:
+		return "attr(wip): " + attr->name;
+	}
+	return "";
+}
+
+bool Variable::operator==(Type cmp) const
+{
+	return type == cmp;
+}
+bool Variable::operator!=(Type cmp) const
+{
+	return type != cmp;
 }
 
 }

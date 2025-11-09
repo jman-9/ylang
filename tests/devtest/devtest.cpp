@@ -170,29 +170,16 @@ else
 
 const char* testcode2 =
 R"TEST(
-/*
-a = [[1,2],2,3];
-println(a[0][1]);
-a[0][1] = 9;
-println(a[0][1]);
-println(a[2]);
-a[2] = "hello, list";
-println(a[2]);
+a = { 'a' : 'orange', 'b' : 'apple' };
+if(a['a'] == 'orange')
+{
+     println('I like orange');
+}
+else
+{
+     println('I hate orange');
+}
 
-a = { 'abc': 123, 'def':456 };
-println( a['abc'] );
-println( a['def'] );
-a[ 'def' ] = 999;
-println( a['def'] );
-a[ 'abc' ] = 'hello, dict';
-a[ 'abc' ] = [1,2,3];
-println( a['abc'] );
-a[ 'new' ] = [1,2,3];
-println( a['new'][1] );*/
-
-a = [];
-a.add(111);
-println(a[0]);
 )TEST";
 
 int main()

@@ -68,11 +68,6 @@ bool SemanticAnalyzer::AnalyzeExp(const TreeNode& stmt)
 		{
 			if(name->self.val == "print" || name->self.val == "println")
 			{//TODO builtin table
-				if(stmt.childs.size() - 1 != 1)
-				{
-					_errors.push_back(ErrorBuilder::Default(name->self.line, format("'{}': not supported function", name->self.val)));
-					return false;
-				}
 			}
 			else
 			{

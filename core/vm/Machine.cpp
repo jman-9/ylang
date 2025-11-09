@@ -128,36 +128,25 @@ void Machine::Run(const Bytecode& code, int start /* = 0 */)
 			{// todo new architecture
 				if(ivk.pos == 0xFFFF0000)
 				{
-					auto v = ResolveVar(ERefKind::Reg, _rp);
-
-					if(v->type == Variable::NUM)
-					{
-						cout << v->num;
+					if(ivk.numPrms == 0)
+					{//noop
 					}
-					else if(v->type == Variable::STR)
+					else
 					{
-						cout << v->str;
-					}
-					else if(v->type == Variable::LIST)
-					{//TODO print list
-						cout << "LIST";
+						auto v = ResolveVar(ERefKind::Reg, _rp);
+						cout << v->ToStr();
 					}
 				}
 				else if(ivk.pos == 0xFFFF0000 + 1)
 				{
-					auto v = ResolveVar(ERefKind::Reg, _rp);
-
-					if(v->type == Variable::NUM)
+					if(ivk.numPrms == 0)
 					{
-						cout << v->num << "\n";
+						cout << "\n";
 					}
-					else if(v->type == Variable::STR)
+					else
 					{
-						cout << v->str << "\n";
-					}
-					else if(v->type == Variable::LIST)
-					{//TODO print list
-						cout << "LIST" << "\n";
+						auto v = ResolveVar(ERefKind::Reg, _rp);
+						cout << v->ToStr() << "\n";
 					}
 				}
 				else
@@ -361,11 +350,159 @@ void Machine::Run(const Bytecode& code, int start /* = 0 */)
 				throw 'n';
 			}
 
+			Variable* ret = nullptr;
+			if(dst->attr->owner.type == Variable::STR)
+			{
+				if(dst->attr->name == "len")
+				{
+					ret = Variable::NewNum(dst->attr->owner.str.size());
+				}
+				else if(dst->attr->name == "find")
+				{
+					if(cal.numArgs == 1)
+					{
+						auto s = ResolveVar(ERefKind::Reg, _rp);
+						if(*s != Variable::STR)
+						{
+							throw 'n';
+						}
+
+						size_t pos = dst->attr->owner.str.find(s->str);
+						ret = Variable::NewNum(pos == string::npos ? -1 : pos);
+					}
+					else if(cal.numArgs == 2)
+					{
+						auto s = ResolveVar(ERefKind::Reg, _rp);
+						auto i = ResolveVar(ERefKind::Reg, _rp);
+						if(*s != Variable::STR)
+						{
+							throw 'n';
+						}
+						if(*i != Variable::NUM)
+						{
+							throw 'n';
+						}
+
+						size_t pos = dst->attr->owner.str.find(s->str, s->num);
+						ret = Variable::NewNum(pos == string::npos ? -1 : pos);
+					}
+					else
+					{
+						throw 'n';
+					}
+				}
+				else if(dst->attr->name == "substr")
+				{
+					if(cal.numArgs == 1)
+					{
+						auto s = ResolveVar(ERefKind::Reg, _rp);
+						if(*s != Variable::NUM)
+						{
+							throw 'n';
+						}
+
+						ret = Variable::NewStr(dst->attr->owner.str.substr(s->num));
+					}
+					else if(cal.numArgs == 2)
+					{
+						auto s = ResolveVar(ERefKind::Reg, _rp);
+						auto l = ResolveVar(ERefKind::Reg, _rp);
+						if(*s != Variable::NUM)
+						{
+							throw 'n';
+						}
+						if(*l != Variable::NUM)
+						{
+							throw 'n';
+						}
+
+						ret = Variable::NewStr(dst->attr->owner.str.substr(s->num, l->num));
+					}
+					else
+					{
+						throw 'n';
+					}
+				}
+				else if(dst->attr->name == "replace")
+				{
+					auto o = ResolveVar(ERefKind::Reg, _rp);
+					auto n = ResolveVar(ERefKind::Reg, _rp);
+					if(*o != Variable::STR)
+					{
+						throw 'n';
+					}
+					if(*n != Variable::STR)
+					{
+						throw 'n';
+					}
+
+					string r = dst->attr->owner.str;
+					if(!o->str.empty())
+					{
+						size_t pos = 0;
+						for(size_t pos=0; (pos = r.find(o->str, pos)) != std::string::npos; ) {
+							r.replace(pos, o->str.length(), n->str);
+							pos += n->str.length();
+						}
+						ret = Variable::NewStr(r);
+					}
+				}
+				else if(dst->attr->name == "split")
+				{
+					if(cal.numArgs == 0)
+					{
+						const string& src = dst->attr->owner.str;
+						size_t start = src.find_first_not_of(" \t\n\r");
+						size_t end = 0;
+						ret = Variable::NewList();
+
+						for( ; start != string::npos; )
+						{
+							end = src.find_first_of(" \t\n\r", start);
+							ret->list->push_back(Variable::NewStr(src.substr(start, end - start)));
+							start = src.find_first_not_of(" \t\n\r", end);
+						}
+					}
+					else if(cal.numArgs == 1)
+					{
+						auto d = ResolveVar(ERefKind::Reg, _rp);
+						if(*d != Variable::STR)
+						{
+							throw 'n';
+						}
+
+						if(d->str.empty())
+						{
+							ret = Variable::NewStr(dst->attr->owner.str);
+						}
+						else
+						{
+							size_t start = 0;
+							size_t end = 0;
+							ret = Variable::NewList();
+
+							const string& src = dst->attr->owner.str;
+							for( ; (end = src.find(d->str, start)) != std::string::npos; )
+							{
+								ret->list->push_back(Variable::NewStr(src.substr(start, end - start)));
+								start = end + d->str.length();
+							}
+							ret->list->push_back(Variable::NewStr(src.substr(start, end - start)));
+						}
+					}
+					else
+					{
+						throw 'n';
+					}
+				}
+				else
+				{
+					throw 'n';
+				}
+			}
 			if(dst->attr->owner.type == Variable::LIST)
 			{
-				int a = 1;
-
-				if(dst->attr->name == "add")
+				if(dst->attr->name == "append")
 				{
 					if(cal.numArgs != 1)
 					{
@@ -376,7 +513,24 @@ void Machine::Run(const Bytecode& code, int start /* = 0 */)
 
 					dst->attr->owner.list->push_back(v->Clone());
 				}
-				else if(dst->attr->name == "add")
+				else if(dst->attr->name == "insert")
+				{
+					if(cal.numArgs != 2)
+					{
+						throw 'n';
+					}
+
+					auto i = ResolveVar(ERefKind::Reg, _rp);
+					auto v = ResolveVar(ERefKind::Reg, _rp);
+
+					if(*v != Variable::NUM)
+					{
+						throw 'n';
+					}
+
+					dst->attr->owner.list->insert(dst->attr->owner.list->begin() + i->num, v->Clone());
+				}
+				else if(dst->attr->name == "pop")
 				{
 					if(cal.numArgs != 1)
 					{
@@ -384,13 +538,121 @@ void Machine::Run(const Bytecode& code, int start /* = 0 */)
 					}
 
 					auto v = ResolveVar(ERefKind::Reg, _rp);
+					if(v->type != Variable::NUM)
+					{
+						throw 'n';
+					}
 
-					dst->attr->owner.list->push_back(v->Clone());
+					// todo leak
+					ret = dst->attr->owner.list->at(v->num);
+					dst->attr->owner.list->erase(dst->attr->owner.list->begin() + v->num);
+				}
+				else if(dst->attr->name == "pop_front")
+				{
+					// todo leak
+					ret = dst->attr->owner.list->front();
+					dst->attr->owner.list->erase(dst->attr->owner.list->begin());
+				}
+				else if(dst->attr->name == "pop_back")
+				{
+					// todo leak
+					ret = dst->attr->owner.list->back();
+					dst->attr->owner.list->pop_back();
+				}
+				else if(dst->attr->name == "len")
+				{
+					// todo leak
+					ret = new Variable;
+					ret->type = Variable::NUM;
+					ret->num = (int64_t)dst->attr->owner.list->size();
+				}
+				else
+				{
+					throw 'n';
+				}
+			}
+			else if(dst->attr->owner.type == Variable::DICT)
+			{
+				if(dst->attr->name == "keys")
+				{
+					ret = new Variable;
+					ret->type = Variable::LIST;
+					ret->list = new vector<Variable*>;
+
+					for(auto& [k, _] : *dst->attr->owner.dict)
+					{
+						ret->list->push_back(new Variable{ .type = Variable::STR, .str = k });
+					}
+				}
+				else if(dst->attr->name == "values")
+				{
+					ret = new Variable;
+					ret->type = Variable::LIST;
+					ret->list = new vector<Variable*>;
+
+					for(auto& [_, v] : *dst->attr->owner.dict)
+					{
+						ret->list->push_back(v);
+					}
+				}
+				else if(dst->attr->name == "items")
+				{
+					ret = new Variable;
+					ret->type = Variable::LIST;
+					ret->list = new vector<Variable*>;
+
+					for(auto& [k, v] : *dst->attr->owner.dict)
+					{
+						Variable* pair = new Variable;
+						pair->type = Variable::LIST;
+						pair->list = new vector<Variable*>;
+						Variable* kv = new Variable;
+						kv->type = Variable::STR;
+						kv->str = k;
+						pair->list->push_back(kv);
+						pair->list->push_back(v);
+
+						ret->list->push_back(pair);
+					}
+				}
+				else if(dst->attr->name == "len")
+				{
+					// todo leak
+					ret = new Variable;
+					ret->type = Variable::NUM;
+					ret->num = (int64_t)dst->attr->owner.dict->size();
+				}
+				else if(dst->attr->name == "pop")
+				{
+					if(cal.numArgs != 1)
+					{
+						throw 'n';
+					}
+
+					auto v = ResolveVar(ERefKind::Reg, _rp);
+					if(v->type != Variable::STR)
+					{
+						throw 'n';
+					}
+
+					auto found = dst->attr->owner.dict->find(v->str);
+					if(found != dst->attr->owner.dict->end())
+					{
+						ret = found->second;
+						dst->attr->owner.dict->erase(found);
+					}
+				}
+				else
+				{
+					throw 'n';
 				}
 			}
 
 			_rp = _rpStack.top();
 			_rpStack.pop();
+
+			auto v = ResolveVar(ERefKind::Reg, _rp);
+			*v = ret ? *ret : Variable();
 		}
 
 		i++;

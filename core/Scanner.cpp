@@ -271,7 +271,7 @@ bool Scanner::Scan(const string& orgCode)
 		acceptedLine = 0;
 	}
 
-	if(accepted != &_transTbl)
+	if(accepted != &_transTbl && !Token::IsWhiteSpace(accepted->tok))
 		_tokens.push_back({ accepted->tok, acceptedLine, accepted->tokStr });
 
 	ProcessIdKeywords();
