@@ -1,4 +1,5 @@
 #include "ylang.h"
+#include <string.h>
 #include <iostream>
 #include <format>
 #include <filesystem>
