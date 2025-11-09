@@ -16,6 +16,7 @@ void Variable::Clear()
 	list = nullptr;
 	dict = nullptr;
 	ref = nullptr;
+	attr = nullptr;
 }
 
 Variable* Variable::Clone()
@@ -164,6 +165,20 @@ bool Variable::CalcAndAssign(const Variable& lhs, EToken calcOp, const Variable&
 					throw 'n';	//TODO impl
 			}
 			type = STR;
+		}
+		else if(calcOp == EToken::Dot)
+		{
+			if(rhs.type != STR)
+			{
+				throw 'n';
+			}
+
+			Attribute* newAttr = new Attribute();
+			newAttr->owner = lhs;
+			newAttr->name = rhs.str;
+			Clear();
+			type = ATTR;
+			attr = newAttr;
 		}
 		else
 		{//TODO impl

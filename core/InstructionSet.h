@@ -19,6 +19,7 @@ enum class EOpcode : uint16_t
 	DictAdd,
 	Index,
 	LValueIndex,
+	Call,
 };
 
 enum class ERefKind : uint8_t
@@ -113,6 +114,13 @@ struct LValueIndex
 	uint8_t idxKind = (uint8_t)ERefKind::None;
 	uint16_t dst = 0;
 	uint16_t idx = 0;
+};
+
+struct Call
+{
+	uint8_t dstKind = (uint8_t)ERefKind::None;
+	uint16_t dst = 0;
+	uint8_t numArgs = 0;
 };
 
 }

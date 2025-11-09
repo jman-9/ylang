@@ -10,6 +10,8 @@
 namespace yvm
 {
 
+struct Attribute;
+
 struct Variable
 {
 	enum Type
@@ -23,6 +25,7 @@ struct Variable
 		LIST,
 		DICT,
 		REF,
+		ATTR,
 	};
 
 	Type type = NONE;
@@ -34,6 +37,7 @@ struct Variable
 	std::vector<Variable*>* list;
 	std::unordered_map<std::string, Variable*>* dict;
 	Variable* ref = nullptr;
+	Attribute* attr = nullptr;
 
 	void Clear();
 	Variable* Clone();
@@ -41,6 +45,12 @@ struct Variable
 	bool Assign(EToken op, const Variable& rval);
 	bool CalcAndAssign(const Variable& lhs, EToken calcOp, const Variable& rhs);
 	bool CalcUnaryAndAssign(EToken unaryOp, const Variable& rhs);
+};
+
+struct Attribute
+{
+	Variable owner;
+	std::string name;
 };
 
 }

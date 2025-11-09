@@ -436,6 +436,11 @@ TreeNode* Parser::ParsePostfixExp()
 		}
 
 		TreeNode* id = ParsePrimaryExp();
+		if(id->self == EToken::Id)
+		{//to change attr str
+			id->self.kind = EToken::Str;
+		}
+
 		TreeNode* node = new TreeNode;
 		node->self = acc;
 		node->childs.push_back(id);

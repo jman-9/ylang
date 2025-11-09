@@ -346,8 +346,51 @@ void Machine::Run(const Bytecode& code, int start /* = 0 */)
 			{
 				throw 'n';
 			}
+		}
+		else if(inst == EOpcode::Call)
+		{
+			const Op::Call& cal = *(Op::Call*)inst.code.data();
 
+			_rp = _rp - cal.numArgs - 1;
+			_rpStack.push(_rp);
 
+			Variable* dst = ResolveVar((ERefKind)cal.dstKind, cal.dst);
+
+			if(dst->type != Variable::ATTR)
+			{
+				throw 'n';
+			}
+
+			if(dst->attr->owner.type == Variable::LIST)
+			{
+				int a = 1;
+
+				if(dst->attr->name == "add")
+				{
+					if(cal.numArgs != 1)
+					{
+						throw 'n';
+					}
+
+					auto v = ResolveVar(ERefKind::Reg, _rp);
+
+					dst->attr->owner.list->push_back(v->Clone());
+				}
+				else if(dst->attr->name == "add")
+				{
+					if(cal.numArgs != 1)
+					{
+						throw 'n';
+					}
+
+					auto v = ResolveVar(ERefKind::Reg, _rp);
+
+					dst->attr->owner.list->push_back(v->Clone());
+				}
+			}
+
+			_rp = _rpStack.top();
+			_rpStack.pop();
 		}
 
 		i++;

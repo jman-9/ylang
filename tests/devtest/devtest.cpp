@@ -170,6 +170,7 @@ else
 
 const char* testcode2 =
 R"TEST(
+/*
 a = [[1,2],2,3];
 println(a[0][1]);
 a[0][1] = 9;
@@ -187,7 +188,11 @@ a[ 'abc' ] = 'hello, dict';
 a[ 'abc' ] = [1,2,3];
 println( a['abc'] );
 a[ 'new' ] = [1,2,3];
-println( a['new'][1] );
+println( a['new'][1] );*/
+
+a = [];
+a.add(111);
+println(a[0]);
 )TEST";
 
 int main()

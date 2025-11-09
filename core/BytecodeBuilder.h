@@ -147,6 +147,7 @@ protected:
 	bool BuildList(const TreeNode& stmt);
 	bool BuildDict(const TreeNode& stmt);
 	bool BuildIndex(const TreeNode& stmt);
+	bool BuildDot(const TreeNode& stmt);
 
 private:
 	template<EOpcode Op>
