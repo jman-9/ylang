@@ -1,15 +1,19 @@
-# ylang 0.0.1 — *it runs*
+# ylang 0.0.2 — *it works*
 
-A lightweight, C-like, retro-styled programming language
+A lightweight, C-like, retro-styled and Pythonic programming language
 
 ---
 
 ## Overview
 
-`ylang` is a lightweight, C-like language designed with a simple and retro style.
+`ylang` is a lightweight, C-like language designed with a simple and retro style —
+combining C’s syntax with Python-like dynamic semantics.
+
 
 It implements a complete compilation pipeline — from scanning to bytecode generation — and execution on its own virtual machine, named `yvm` — keeping it small, structured, and clear.
 
+It now supports REPL, dynamic resolution via dot(`.`) operator,
+and core collections (list, dict).
 
 
 ## Architecture
@@ -27,23 +31,25 @@ Source (.y)
 
 **VM Features:**
 
-* Variable & arithmetic operations
+* Dynamic variables (number, string, list, dictionary)
 * Control statements: if/for/break/continue/return
-* User functions
-* Dynamically typed variables
-
+* User functions and recursion
+* dot(`.`) operator for dynamic member resolution
+* Built-in methods for list, dict, and string
+* Stack-based virtual machine execution
 
 
 ## Project Structure
 
 ```
 ylang/
-├── core/                 # ylang core - Scanner, Parser, Semantic, Bytecode, etc
-│   └── vm/               # yvm - Machine 
-├── tests/                # test programs
-├── tools/                # tools
-│   └── ylang/            # ylang CLI
-└── examples/             # Example scripts (.y)
+├─ core/                 # ylang core - Scanner, Parser, Semantic, Bytecode, etc
+│   └─ vm/               # yvm - Machine 
+├─ examples/             # Example scripts (.y)
+├─ tests/                # test programs
+└─ tools/                # tools
+    └─ ylang/            # ylang CLI
+
 
 ```
 
@@ -53,9 +59,9 @@ ylang/
 
 ### Prerequisites
 
-* CMake ≥ 3.16
+* CMake ≥ 3.26
 * C++20 compatible compiler
-* Visual Studio 2022 (Windows) or GCC/Clang (Linux)
+* Visual Studio 2022 (Windows) or GCC/Clang (Linux, macOS)
 
 ### Windows (Visual Studio 2022)
 
@@ -86,62 +92,106 @@ make
 
 ## Usage
 
+### Script Mode
+
 Run with source file:
 
 ```bash
-ylang examples/hello.y
+λ ylang examples/07_string.y
 ```
 
 Example result:
 
 ```
-Hello, ylang!
+=== string example ===
+11
+6
+hello
+hello ylang
+['a', 'b', 'c', 'd']
+['apple', 'banana', '', 'grape']
+```
+
+### Interactive Mode (REPL)
+
+`ylang` provides an interactive REPL (Read–Eval–Print Loop)
+that supports multi-line functions, maintains global state,  
+and runs code interactively.
+
+```text
+λ ylang
+ylang 0.0.2
+
+>> fn avg(list) {
+..     sum = 0;
+..     for (x = 0; x < list.len(); x += 1) {
+..         sum += list[x];
+..     }
+..     return sum / list.len();
+.. }
+
+>> nums = [3, 6, 10, 5];
+>> println("average = " + avg(nums));
+average = 6
+
+>> fn greet(person) {
+..     return "hello " + person['name'] + ", age " + person['age'];
+.. }
+
+>> alice = { 'name': 'Alice', 'age': 30 };
+>> println(greet(alice));
+hello Alice, age 30
 ```
 
 
 
 ## Examples
 
-| File                                  | Description           |
-| ------------------------------------- | --------------------- |
-| [hello.y](examples/hello.y)           | Basic print           |
-| [cond.y](examples/cond.y)             | Conditional test      |
-| [forloop.y](examples/forloop.y)       | Simple loop & sum     |
-| [forctrl.y](examples/forctrl.y)       | Break & Continue      |
-| [squarefunc.y](examples/squarefunc.y) | Basic function call   | 
-| [chaincall.y](examples/chaincall.y)   | Chained function call |
-| [perfect.y](examples/perfect.y)       | Perfect number check  |
-| [times.y](examples/times.y)           | Multiplication table  |
+| File                                      | Description                     |
+| ------------------------------------------| ------------------------------- |
+| [01_control.y](examples/01_control.y)     | if / for / break / continue     |
+| [02_function.y](examples/02_function.y)   | user function and recursion     |
+| [03_fibonacci.y](examples/03_fibonacci.y) | recursive fibonacci             |
+| [04_list.y](examples/04_list.y)           | list example                    |
+| [05_dict.y](examples/05_dict.y)           | dictionary example              | 
+| [06_list_dict.y](examples/06_list_dict.y) | list-dict combined example      |
+| [07_string.y](examples/07_string.y)       | string example                  |
+| [08_perfect.y](examples/08_perfect.y)     | perfect number calculation demo |
 
 ## Quick Example
-```y
-x = 10;
-y = 20;
-println("sum = " + (x + y));
+```rust
+println("=== quick example ===");
 
-for(i=1; i<6; i+=1) {
-    if(i == 3) {
-        println("halfway!");
-        continue;
-    }
-    println(i);
+fn add(x, y) {
+    return x + y;
 }
 
-fn square(n) {
-    return n * n;
-}
+msg = "hello ylang";
+words = msg.split();
+println(words);                // ['hello', 'ylang']
 
-println("square(5) = " + square(5));
+nums = [10, 20, 30];
+nums.append(add(40, 2));       // use user-defined function
+print("list: ");
+println(nums);                 // [10, 20, 30, 42]
+
+user = {'name': "alice", 'age': 25, 'scores': nums};
+println(user);                 // {'name': 'alice', 'age': 25, 'scores': [10, 20, 30, 42]}
+println(user.keys());          // ['name', 'age', 'scores']
+println(user['scores'].len()); // 4
+
+msg2 = msg.replace("ylang", "world");
+println(msg2);                 // hello world
 ```
 Output:
-```
-sum = 30
-1
-2
-halfway!
+```bash
+=== quick example ===
+['hello', 'ylang']
+list: [10, 20, 30, 42]
+{'name': 'alice', 'age': 25, 'scores': [10, 20, 30, 42]}
+['name', 'age', 'scores']
 4
-5
-square(5) = 25
+hello world
 ```
 
 
@@ -152,19 +202,23 @@ square(5) = 25
 
 * **Language:** *C++20*
 * **Build System:** CMake
-* **Runtime:** Custom Stack-Based Virtual Machine
+* **Runtime:** Stack-based VM (yvm)
+* **Typing:** Dynamic
 * **Platform:** Cross-platform
 
 
 
 ## Future Work
 
-* [ ] REPL
-* [ ] Recursion
-* [ ] List / Dict
+* [x] REPL
+* [x] Recursion
+* [x] List / Dict
+* [ ] Floating-point
 * [ ] Formatted strings
 * [ ] Class
 * [ ] Memory Management
+* [ ] Module & Import system
+* [ ] Optimized VM dispatch
 * [ ] Automated tests
 * [ ] Documentation
 * ...and more
@@ -175,3 +229,11 @@ square(5) = 25
 
 This project is licensed under the **MIT License** — see the [LICENSE](LICENSE) file for details.
 
+
+
+## Version History
+
+| Version    | Highlights                                                            |
+| ---------- | --------------------------------------------------------------------- |
+| **0.0.1** | Basic VM, arithmetic, control flow, user functions                    |
+| **0.0.2** | Dynamic resolution via dot operator and core collections (list, dict) |
