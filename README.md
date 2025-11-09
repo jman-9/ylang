@@ -115,7 +115,7 @@ hello ylang
 ### Interactive Mode (REPL)
 
 `ylang` provides an interactive REPL (Read–Eval–Print Loop)
-that supports multi-line functions, maintains global state,  
+that supports multi-line functions, global state, 
 and runs code interactively.
 
 ```text
