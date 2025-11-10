@@ -192,8 +192,7 @@ TreeNodeSptr Parser::ParseExpLoop(EToken endToken /* = EToken::None */, EToken e
 				}
 			}
 
-			node->childs.insert(node->childs.begin(), 1, ast);
-			ast->parent = node;
+			node->PushFrontChild(ast);
 			ast = node;
 		}
 		else
@@ -202,15 +201,9 @@ TreeNodeSptr Parser::ParseExpLoop(EToken endToken /* = EToken::None */, EToken e
 			{
 				if(CompPrec(curNode->self, node->self) >= 0)
 				{
-					TreeNodeSptr parent = curNode->parent;
-					node->childs.insert(node->childs.begin(), 1, curNode);
-					curNode->parent = node;
-					if(parent)
-					{
-						parent->childs.pop_back();
-						parent->childs.push_back(node);
-						node->parent = parent;
-					}
+					TreeNode* parent = curNode->parent;
+					node->PushFrontChild(curNode);
+					if(parent) parent->ReplaceBackChild(node);
 					break;
 				}
 
@@ -280,8 +273,7 @@ TreeNodeSptr Parser::ParsePrimaryExp()
 		}
 		MoveNext();
 
-		node->childs.push_back(child);
-		child->parent = node;
+		node->PushBackChild(child);
 		return node;
 	}
 	else if(cur.kind == EToken::LBracket)
@@ -305,8 +297,7 @@ TreeNodeSptr Parser::ParsePrimaryExp()
 				_errors.push_back(ErrorBuilder::SyntaxError(cur.line, ','));
 				return nullptr;
 			}
-			node->childs.push_back(child);
-			child->parent = node;
+			node->PushBackChild(child);
 			if(GetCur().kind == EToken::RBracket)
 			{//push
 				MoveNext();
@@ -338,8 +329,7 @@ TreeNodeSptr Parser::ParsePrimaryExp()
 				_errors.push_back(ErrorBuilder::SyntaxError(cur.line, ':'));
 				return nullptr;
 			}
-			node->childs.push_back(child);
-			child->parent = node;
+			node->PushBackChild(child);
 			MoveNext();
 
 			child = ParseExpLoop(EToken::Comma, EToken::RBrace);
@@ -348,8 +338,7 @@ TreeNodeSptr Parser::ParsePrimaryExp()
 				_errors.push_back(ErrorBuilder::SyntaxError(cur.line, ','));
 				return nullptr;
 			}
-			node->childs.back()->childs.push_back(child);
-			child->parent = node->childs.back();
+			node->childs.back()->PushBackChild(child);
 			if(GetCur().kind == EToken::RBrace)
 			{//push
 				MoveNext();
@@ -386,11 +375,7 @@ TreeNodeSptr Parser::ParsePostfixExp()
 		for( ; ; )
 		{
 			TreeNodeSptr arg = ParseExpLoop(EToken::Comma, EToken::RParen);
-			if(arg)
-			{
-				args->childs.push_back(arg);
-				arg->parent = args;
-			}
+			if(arg) args->PushBackChild(arg);
 
 			MoveNext();
 			if(GetPrev().kind == EToken::RParen)
@@ -421,8 +406,7 @@ TreeNodeSptr Parser::ParsePostfixExp()
 			return nullptr;
 		}
 
-		idx->childs.push_back(val);
-		val->parent = idx;
+		idx->PushBackChild(val);
 		return idx;
 	}
 	else if(cur.kind == EToken::Dot)
@@ -445,8 +429,7 @@ TreeNodeSptr Parser::ParsePostfixExp()
 
 		TreeNodeSptr node = NewNode();
 		node->self = acc;
-		node->childs.push_back(id);
-		id->parent = node;
+		node->PushBackChild(id);
 		return node;
 	}
 
@@ -472,8 +455,7 @@ TreeNodeSptr Parser::ParsePrefixExp()
 	if(cur.kind == EToken::Plus) node->self.kind = EToken::UnaryPlus;
 	if(cur.kind == EToken::Minus) node->self.kind = EToken::UnaryMinus;
 
-	node->childs.push_back(rhs);
-	rhs->parent = node;
+	node->PushBackChild(rhs);
 	return node;
 }
 
@@ -493,8 +475,7 @@ TreeNodeSptr Parser::ParseOpExp()
 
 	TreeNodeSptr node = NewNode();
 	node->self = cur;
-	node->childs.push_back(rhs);
-	rhs->parent = node;
+	node->PushBackChild(rhs);
 	return node;
 }
 
@@ -514,8 +495,7 @@ TreeNodeSptr Parser::ParseDictExp()
 
 	TreeNodeSptr node = NewNode();
 	node->self = cur;
-	node->childs.push_back(rhs);
-	rhs->parent = node;
+	node->PushBackChild(rhs);
 	return node;
 }
 
@@ -545,8 +525,7 @@ TreeNodeSptr Parser::ParseCompoundStmt(const std::set<EToken>& allowed /* = std:
 			return nullptr;
 		}
 
-		compound->childs.push_back(stmt);
-		stmt->parent = compound;
+		compound->PushBackChild(stmt);
 	}
 
 	MoveNext();
@@ -615,8 +594,7 @@ TreeNodeSptr Parser::ParseStmt(const std::set<EToken>& allowed /* = std::set<ETo
 		TreeNodeSptr ret = ParseExpLoop();
 		if(ret)
 		{
-			ast->childs.push_back(ret);
-			ret->parent = ast;
+			ast->PushBackChild(ret);
 		}
 
 		if(GetCur().kind != EToken::Semicolon)
@@ -666,8 +644,7 @@ TreeNodeSptr Parser::ParseIf(const std::set<EToken>& allowed /* = std::set<EToke
 
 	TreeNodeSptr ifNode = NewNode();
 	ifNode->self = _if;
-	ifNode->childs.push_back(exp);
-	exp->parent = ifNode;
+	ifNode->PushBackChild(exp);
 
 	TreeNodeSptr _true = ParseStmt(allowed);
 	if(!_true)
@@ -676,8 +653,7 @@ TreeNodeSptr Parser::ParseIf(const std::set<EToken>& allowed /* = std::set<EToke
 		return nullptr;
 	}
 
-	ifNode->childs.push_back(_true);
-	_true->parent = ifNode;
+	ifNode->PushBackChild(_true);
 
 	if(GetCur().kind == EToken::Else)
 	{
@@ -690,8 +666,7 @@ TreeNodeSptr Parser::ParseIf(const std::set<EToken>& allowed /* = std::set<EToke
 			return nullptr;
 		}
 
-		ifNode->childs.push_back(_false);
-		_false->parent = ifNode;
+		ifNode->PushBackChild(_false);
 	}
 
 	return ifNode;
@@ -758,12 +733,9 @@ TreeNodeSptr Parser::ParseFor(const std::set<EToken>& allowed /* = std::set<ETok
 
 	TreeNodeSptr forNode = NewNode();
 	forNode->self = _for;
-	forNode->childs.push_back(init);
-	forNode->childs.push_back(cond);
-	forNode->childs.push_back(update);
-	init->parent = forNode;
-	cond->parent = forNode;
-	update->parent = forNode;
+	forNode->PushBackChild(init);
+	forNode->PushBackChild(cond);
+	forNode->PushBackChild(update);
 
 	set<EToken> localAllowed = allowed;
 	localAllowed.insert(s_allowedFor.begin(), s_allowedFor.end());
@@ -775,8 +747,7 @@ TreeNodeSptr Parser::ParseFor(const std::set<EToken>& allowed /* = std::set<ETok
 		return nullptr;
 	}
 
-	forNode->childs.push_back(loop);
-	loop->parent = forNode;
+	forNode->PushBackChild(loop);
 	return forNode;
 }
 
@@ -819,8 +790,7 @@ TreeNodeSptr Parser::ParseFn()
 		{
 			TreeNodeSptr param = NewNode();
 			param->self = GetCur();
-			params->childs.push_back(param);
-			param->parent = params;
+			params->PushBackChild(param);
 			MoveNext();
 			if(GetCur().kind == EToken::Comma)
 			{
@@ -850,9 +820,8 @@ TreeNodeSptr Parser::ParseFn()
 
 	TreeNodeSptr fnNode = NewNode();
 	fnNode->self = fn;
-	fnNode->childs.push_back(params);
-	fnNode->childs.push_back(body);
-	body->parent = fnNode;
+	fnNode->PushBackChild(params);
+	fnNode->PushBackChild(body);
 	return fnNode;
 }
 
@@ -868,8 +837,7 @@ TreeNodeSptr Parser::Parse()
 		{//todo leak
 			return nullptr;
 		}
-		root->childs.push_back(ast);
-		ast->parent = root;
+		root->PushBackChild(ast);
 	}
 	return root;
 }

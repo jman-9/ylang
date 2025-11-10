@@ -10,8 +10,54 @@ using TreeNodeSptr = std::shared_ptr<TreeNode>;
 struct TreeNode
 {
 	Token self;
-	TreeNodeSptr parent = nullptr;
+	TreeNode* parent;
 	std::vector<TreeNodeSptr> childs;
+
+	inline void PushFrontChild(TreeNodeSptr node)
+	{
+		childs.insert(childs.begin(), 1, node);
+		node->parent = this;
+	}
+
+	inline void PushBackChild(TreeNodeSptr node)
+	{
+		childs.push_back(node);
+		node->parent = this;
+	}
+
+	inline void PopFrontChild()
+	{
+		if(childs.empty()) return;
+
+		childs.front()->parent = nullptr;
+		childs.erase(childs.begin());
+	}
+
+	inline void PopBackChild()
+	{
+		if(childs.empty()) return;
+
+		childs.back()->parent = nullptr;
+		childs.pop_back();
+	}
+
+	inline void ReplaceFrontChild(TreeNodeSptr node)
+	{
+		if(childs.empty()) return;
+
+		childs.front()->parent = nullptr;
+		childs.front() = node;
+		node->parent = this;
+	}
+
+	inline void ReplaceBackChild(TreeNodeSptr node)
+	{
+		if(childs.empty()) return;
+
+		childs.back()->parent = nullptr;
+		childs.back() = node;
+		node->parent = this;
+	}
 
 	static TreeNodeSptr New()
 	{
