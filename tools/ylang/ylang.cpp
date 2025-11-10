@@ -26,7 +26,7 @@ static std::vector<Error> Build(const std::string& src, Bytecode& retBytecode)
 		}
 
 		Parser p(s._tokens);
-		TreeNode* ast = p.Parse();
+		auto ast = p.Parse();
 		if(!p._errors.empty())
 		{
 			errs.insert(errs.end(), p._errors.begin(), p._errors.end());
@@ -171,7 +171,7 @@ bool ylang::StartRepl()
 			}
 
 			Parser p(s._tokens);
-			TreeNode* ast = p.Parse();
+			auto ast = p.Parse();
 			if(!ast || !p._errors.empty())
 			{
 				errs.insert(errs.end(), p._errors.begin(), p._errors.end());
@@ -189,7 +189,7 @@ bool ylang::StartRepl()
 			Bytecode c;
 			if(!bb.Build(*ast, c)) throw 'n';
 			replMachine.Run(c, pc);
-			pc = c._code.size();
+			pc = (int)c._code.size();
 			run = true;
 		} while(0);
 

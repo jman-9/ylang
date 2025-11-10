@@ -463,8 +463,8 @@ bool BytecodeBuilder::BuildExp(const TreeNode& stmt, bool root)
 	}
 
 
-	TreeNode* lhs = !stmt.childs.empty() ? stmt.childs.front() : nullptr;
-	TreeNode* rhs = stmt.childs.size() > 1 ? stmt.childs.back() : nullptr;
+	TreeNode* lhs = !stmt.childs.empty() ? stmt.childs.front().get() : nullptr;
+	TreeNode* rhs = stmt.childs.size() > 1 ? stmt.childs.back().get() : nullptr;
 
 
 	if(!lhs)

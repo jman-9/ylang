@@ -205,7 +205,7 @@ int main()
 	else
 	{
 		Parser p(s._tokens);
-		TreeNode* ast = p.Parse();
+		auto ast = p.Parse();
 		if(!ast)
 		{
 			for(auto e : p._errors)
