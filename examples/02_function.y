@@ -11,5 +11,5 @@ fn fact(n) {
     return n * fact(n - 1);
 }
 
-println("square of 2 : " + square(4));
+println("square of 4 : " + square(4));
 println("factorial of 5 : " + fact(5));
