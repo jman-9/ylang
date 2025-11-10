@@ -13,7 +13,7 @@ public:
 	Scanner();
 	virtual ~Scanner();
 
-	bool Scan(const std::string& code);
+	bool Scan(const std::string& code, int lineStartNum = 1);
 
 	std::vector<Token> _tokens;
 	std::vector<Error> _errors;
@@ -31,7 +31,6 @@ protected:
 	void Init();
 
 	void ProcessIdKeywords();
-	bool ProcessStringTokens();
 
 	uint32_t AdvanceNewLine(const std::string& code, int pos);
 	uint32_t AdvanceComment(const std::string& code, int start, uint32_t& retLines, Error& retError);

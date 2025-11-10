@@ -70,90 +70,6 @@ void Scanner::Init()
 }
 
 
-bool Scanner::ProcessStringTokens()
-{
-	for(auto& t : _tokens)
-	{
-		if(t.kind != EToken::Str) continue;
-
-		string after = "";
-		for(int i = 0; i < t.val.size(); )
-		{
-			char c = t.val[i];
-			if(c == '\\')
-			{
-				if(++i >= t.val.size())
-				{
-					_errors.push_back(ErrorBuilder::UnexpectedEof(t.line));
-					return false;
-				}
-				c = t.val[i];
-				if(c == '\'' || c == '"' || c == '?' || c == '\\')
-				{//noop
-				}
-				else if(c == 'a')
-				{
-					c = 0x07;
-				}
-				else if(c == 'b')
-				{
-					c = 0x08;
-				}
-				else if(c == 'f')
-				{
-					c = 0x0C;
-				}
-				else if(c == 'n')
-				{
-					c = 0x0A;
-				}
-				else if(c == 'r')
-				{
-					c = 0x0D;
-				}
-				else if(c == 't')
-				{
-					c = 0x09;
-				}
-				else if(c == 'v')
-				{
-					c = 0x0B;
-				}
-				else if(c == 'x')
-				{//hexa
-					_errors.push_back(ErrorBuilder::UnsupportedCharacterEscapeSequence(t.line, c));
-					return false;
-				}
-				else if('0' <= c && c <= '7')
-				{//octa
-					_errors.push_back(ErrorBuilder::UnsupportedCharacterEscapeSequence(t.line, c));
-					return false;
-				}
-				else if(c == 'u' || c == 'U')
-				{//unicode
-					_errors.push_back(ErrorBuilder::UnsupportedCharacterEscapeSequence(t.line, c));
-					return false;
-				}
-				else
-				{
-					_errors.push_back(ErrorBuilder::UnrecognizedCharacterEscapeSequence(t.line, c));
-					return false;
-				}
-			}
-
-			after.push_back(c);
-			i++;
-		}
-		#ifdef DEBUG_OUT
-			cout << "before: " << t.val << endl;
-			cout << "after: " << after << endl;
-		#endif
-		t.val = after;
-	}
-
-	return true;
-}
-
 void Scanner::ProcessIdKeywords()
 {
 	for(auto& t : _tokens)
@@ -171,12 +87,11 @@ void Scanner::ProcessIdKeywords()
 	}
 }
 
-
-bool Scanner::Scan(const string& orgCode)
+bool Scanner::Scan(const std::string& originCode, int lineStartNum /* = 1 */)
 {
-	string code = orgCode;
+	string code = originCode;
 
-	uint32_t lineNum = 1;
+	uint32_t lineNum = lineStartNum;
 	int i = 0;
 	uint32_t acceptedLine = 0;
 	const TransTbl* accepted = &_transTbl;
@@ -275,7 +190,7 @@ bool Scanner::Scan(const string& orgCode)
 		_tokens.push_back({ accepted->tok, acceptedLine, accepted->tokStr });
 
 	ProcessIdKeywords();
-	return ProcessStringTokens();
+	return true;
 }
 
 

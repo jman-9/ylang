@@ -1,10 +1,12 @@
 #include "core/Scanner.h"
+#include "core/StringInterpolator.h"
 #include "core/Parser.h"
 #include "core/SemanticAnalyzer.h"
 #include "core/BytecodeBuilder.h"
 #include "core/vm/Machine.h"
 #include <iostream>
 #include <format>
+
 using namespace std;
 
 const char* lextestcode =
@@ -170,16 +172,9 @@ else
 
 const char* testcode2 =
 R"TEST(
-a = { 'a' : 'orange', 'b' : 'apple' };
-if(a['a'] == 'orange')
-{
-     println('I like orange');
-}
-else
-{
-     println('I hate orange');
-}
-
+fn abc() { return 10002; }
+a = 10;
+println("{}\nhahaha\n {{{a+a+a}}} }} \nhahaha\n {abc()} {{");
 )TEST";
 
 int main()
@@ -204,7 +199,25 @@ int main()
 	}
 	else
 	{
-		Parser p(s._tokens);
+		StringInterpolator si;
+		vector<Token> processed;
+		for(auto& t : s._tokens)
+		{
+			if(t != EToken::Str)
+			{
+				processed.push_back(t);
+				continue;
+			}
+
+			auto interpolated = si.Interpolate(t);
+			if(interpolated.empty())
+			{//todo error
+				throw 'n';
+			}
+			processed.insert(processed.end(), interpolated.begin(), interpolated.end());
+		}
+
+		Parser p(processed);
 		auto ast = p.Parse();
 		if(!ast)
 		{

@@ -1,5 +1,6 @@
 #include "ylang.h"
 #include "core/Scanner.h"
+#include "core/StringInterpolator.h"
 #include "core/Parser.h"
 #include "core/SemanticAnalyzer.h"
 #include "core/BytecodeBuilder.h"
@@ -8,6 +9,7 @@
 #include <format>
 #include <filesystem>
 #include <fstream>
+
 using namespace std;
 
 
@@ -25,7 +27,25 @@ static std::vector<Error> Build(const std::string& src, Bytecode& retBytecode)
 			break;
 		}
 
-		Parser p(s._tokens);
+		StringInterpolator si;
+		vector<Token> processed;
+		for(auto& t : s._tokens)
+		{
+			if(t != EToken::Str)
+			{
+				processed.push_back(t);
+				continue;
+			}
+
+			auto interpolated = si.Interpolate(t);
+			if(interpolated.empty())
+			{//todo error
+				throw 'n';
+			}
+			processed.insert(processed.end(), interpolated.begin(), interpolated.end());
+		}
+
+		Parser p(processed);
 		auto ast = p.Parse();
 		if(!p._errors.empty())
 		{
@@ -170,7 +190,25 @@ bool ylang::StartRepl()
 				break;
 			}
 
-			Parser p(s._tokens);
+			StringInterpolator si;
+			vector<Token> processed;
+			for(auto& t : s._tokens)
+			{
+				if(t != EToken::Str)
+				{
+					processed.push_back(t);
+					continue;
+				}
+
+				auto interpolated = si.Interpolate(t);
+				if(interpolated.empty())
+				{//todo error
+					throw 'n';
+				}
+				processed.insert(processed.end(), interpolated.begin(), interpolated.end());
+			}
+
+			Parser p(processed);
 			auto ast = p.Parse();
 			if(!ast || !p._errors.empty())
 			{

@@ -43,7 +43,10 @@ struct TreeNode
 
 	inline void ReplaceFrontChild(TreeNodeSptr node)
 	{
-		if(childs.empty()) return;
+		if(childs.empty())
+		{//TODO
+			throw 'n';
+		}
 
 		childs.front()->parent = nullptr;
 		childs.front() = node;
@@ -52,7 +55,10 @@ struct TreeNode
 
 	inline void ReplaceBackChild(TreeNodeSptr node)
 	{
-		if(childs.empty()) return;
+		if(childs.empty())
+		{//TODO
+			throw 'n';
+		}
 
 		childs.back()->parent = nullptr;
 		childs.back() = node;

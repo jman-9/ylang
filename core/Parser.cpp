@@ -479,26 +479,6 @@ TreeNodeSptr Parser::ParseOpExp()
 	return node;
 }
 
-TreeNodeSptr Parser::ParseDictExp()
-{
-	auto& cur = GetCur();
-	auto found = s_opMap.find(cur.kind);
-	if(found == s_opMap.end())
-	{
-		return nullptr;
-	}
-
-	MoveNext();
-
-	TreeNodeSptr rhs = ParseExp(false);
-	if(!rhs) return nullptr;
-
-	TreeNodeSptr node = NewNode();
-	node->self = cur;
-	node->PushBackChild(rhs);
-	return node;
-}
-
 
 TreeNodeSptr Parser::ParseCompoundStmt(const std::set<EToken>& allowed /* = std::set<EToken>() */)
 {
