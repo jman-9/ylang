@@ -313,6 +313,13 @@ bool BytecodeBuilder::Build(const TreeNode& code, Bytecode& retCode)
 			return false;
 	}
 
+	auto main = _symTbl.GetSymbol("main");
+	if(main.kind == ESymbol::Fn)
+	{
+		Op::Invoke ivk{ .pos = (uint32_t)main.pos, .numPrms = (uint32_t)main.params.size() };
+		PushBytecode(ivk);
+	}
+
 	map<int, Token> sorted;
 	for(auto& c : _constTbl._constMap)
 	{

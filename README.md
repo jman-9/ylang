@@ -1,6 +1,6 @@
-# ylang 0.0.2 — *it works*
+# ylang 0.0.2
 
-A lightweight, C-like, retro-styled and Pythonic programming language
+A programming language — retro, C-like and Pythonic
 
 ---
 
@@ -168,19 +168,21 @@ fn add(x, y) {
 
 msg = "hello ylang";
 words = msg.split();
-println(words);                // ['hello', 'ylang']
+println(words);                    // ['hello', 'ylang']
 
 nums = [10, 20, 30];
-nums.append(add(40, 2));       // use user-defined function
-println("list: {nums}");       // [10, 20, 30, 42]
+nums.append(add(40, 2));           // use user-defined function
+println("list: {nums}");           // [10, 20, 30, 42]
 
-user = {'name': "alice", 'age': 25, 'scores': nums};
-println(user);                 // {'name': 'alice', 'age': 25, 'scores': [10, 20, 30, 42]}
-println(user.keys());          // ['name', 'age', 'scores']
-println(user['scores'].len()); // 4
+fn main() {
+    user = {'name': "alice", 'age': 25, 'scores': nums};
+    println(user);                 // {'name': 'alice', 'age': 25, 'scores': [10, 20, 30, 42]}
+    println(user.keys());          // ['name', 'age', 'scores']
+    println(user['scores'].len()); // 4
 
-msg2 = msg.replace("ylang", "world");
-println(msg2);                 // hello world
+    msg2 = msg.replace("ylang", "world");
+    println(msg2);                 // hello world
+}
 ```
 Output:
 ```bash
@@ -214,6 +216,7 @@ hello world
 * [x] List / Dict
 * [x] Floating-point
 * [x] f-string
+* [x] main() entrypoint
 * [ ] String formatting
 * [ ] Class
 * [ ] Memory management
@@ -236,4 +239,4 @@ This project is licensed under the **MIT License** — see the [LICENSE](LICENSE
 | Version    | Highlights                                                            |
 | ---------- | --------------------------------------------------------------------- |
 | **0.0.1** | Basic VM, arithmetic, control flow, user functions                    |
-| **0.0.2** | Dynamic resolution, collections(list/dict), f-string, floating-point  |
+| **0.0.2** | Dynamic resolution, collections(list/dict), f-string, floating-point, main() entrypoint |

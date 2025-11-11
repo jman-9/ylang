@@ -172,17 +172,29 @@ else
 
 const char* testcode2 =
 R"TEST(
-a = .1;
-a = 1.;
-a = 1.1;
-a = 0110391.1;
-a = 1E+9;
-a = .1E+9;
-a = 129.1349E-9;
-a = 129.1349E9;
-a = 129.E8;
-fn abc() { return 0.; }
-println("{}\nhahaha\n {{{a+a+a}}} }} \nhahaha\n {abc()} {{");
+println("=== quick example ===");
+
+fn add(x, y) {
+    return x + y;
+}
+
+msg = "hello ylang";
+words = msg.split();
+println(words);                    // ['hello', 'ylang']
+
+nums = [10, 20, 30];
+nums.append(add(40, 2));           // use user-defined function
+println("list: {nums}");           // [10, 20, 30, 42]
+
+fn main() {
+    user = {'name': "alice", 'age': 25, 'scores': nums};
+    println(user);                 // {'name': 'alice', 'age': 25, 'scores': [10, 20, 30, 42]}
+    println(user.keys());          // ['name', 'age', 'scores']
+    println(user['scores'].len()); // 4
+
+    msg2 = msg.replace("ylang", "world");
+    println(msg2);                 // hello world
+}
 )TEST";
 
 int main()
