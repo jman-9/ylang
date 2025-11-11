@@ -140,7 +140,7 @@ void Machine::Run(const Bytecode& code, int start /* = 0 */)
 					}
 					else
 					{
-						auto v = ResolveVar(ERefKind::Reg, _rp);
+						auto v = ResolveVar(ERefKind::Reg, 0);
 						cout << v->ToStr();
 					}
 				}
@@ -152,7 +152,7 @@ void Machine::Run(const Bytecode& code, int start /* = 0 */)
 					}
 					else
 					{
-						auto v = ResolveVar(ERefKind::Reg, _rp);
+						auto v = ResolveVar(ERefKind::Reg, 0);
 						cout << v->ToStr() << "\n";
 					}
 				}
@@ -368,7 +368,7 @@ void Machine::Run(const Bytecode& code, int start /* = 0 */)
 				{
 					if(cal.numArgs == 1)
 					{
-						auto s = ResolveVar(ERefKind::Reg, _rp);
+						auto s = ResolveVar(ERefKind::Reg, 1);
 						if(*s != Variable::STR)
 						{
 							throw 'n';
@@ -379,8 +379,8 @@ void Machine::Run(const Bytecode& code, int start /* = 0 */)
 					}
 					else if(cal.numArgs == 2)
 					{
-						auto s = ResolveVar(ERefKind::Reg, _rp);
-						auto i = ResolveVar(ERefKind::Reg, _rp);
+						auto i = ResolveVar(ERefKind::Reg, 1);
+						auto s = ResolveVar(ERefKind::Reg, 2);
 						if(*s != Variable::STR)
 						{
 							throw 'n';
@@ -402,7 +402,7 @@ void Machine::Run(const Bytecode& code, int start /* = 0 */)
 				{
 					if(cal.numArgs == 1)
 					{
-						auto s = ResolveVar(ERefKind::Reg, _rp);
+						auto s = ResolveVar(ERefKind::Reg, 1);
 						if(*s != Variable::INT)
 						{
 							throw 'n';
@@ -412,8 +412,8 @@ void Machine::Run(const Bytecode& code, int start /* = 0 */)
 					}
 					else if(cal.numArgs == 2)
 					{
-						auto s = ResolveVar(ERefKind::Reg, _rp);
-						auto l = ResolveVar(ERefKind::Reg, _rp);
+						auto s = ResolveVar(ERefKind::Reg, 1);
+						auto l = ResolveVar(ERefKind::Reg, 2);
 						if(*s != Variable::INT)
 						{
 							throw 'n';
@@ -432,8 +432,8 @@ void Machine::Run(const Bytecode& code, int start /* = 0 */)
 				}
 				else if(dst->attr->name == "replace")
 				{
-					auto o = ResolveVar(ERefKind::Reg, _rp);
-					auto n = ResolveVar(ERefKind::Reg, _rp);
+					auto o = ResolveVar(ERefKind::Reg, 1);
+					auto n = ResolveVar(ERefKind::Reg, 2);
 					if(*o != Variable::STR)
 					{
 						throw 'n';
@@ -472,7 +472,7 @@ void Machine::Run(const Bytecode& code, int start /* = 0 */)
 					}
 					else if(cal.numArgs == 1)
 					{
-						auto d = ResolveVar(ERefKind::Reg, _rp);
+						auto d = ResolveVar(ERefKind::Reg, 1);
 						if(*d != Variable::STR)
 						{
 							throw 'n';
@@ -516,7 +516,7 @@ void Machine::Run(const Bytecode& code, int start /* = 0 */)
 						throw 'n';
 					}
 
-					auto v = ResolveVar(ERefKind::Reg, _rp);
+					auto v = ResolveVar(ERefKind::Reg, 1);
 
 					dst->attr->owner.list->push_back(v->Clone());
 				}
@@ -527,8 +527,8 @@ void Machine::Run(const Bytecode& code, int start /* = 0 */)
 						throw 'n';
 					}
 
-					auto i = ResolveVar(ERefKind::Reg, _rp);
-					auto v = ResolveVar(ERefKind::Reg, _rp);
+					auto i = ResolveVar(ERefKind::Reg, 1);
+					auto v = ResolveVar(ERefKind::Reg, 2);
 
 					if(*v != Variable::INT)
 					{
@@ -544,7 +544,7 @@ void Machine::Run(const Bytecode& code, int start /* = 0 */)
 						throw 'n';
 					}
 
-					auto v = ResolveVar(ERefKind::Reg, _rp);
+					auto v = ResolveVar(ERefKind::Reg, 1);
 					if(v->type != Variable::INT)
 					{
 						throw 'n';
@@ -636,7 +636,7 @@ void Machine::Run(const Bytecode& code, int start /* = 0 */)
 						throw 'n';
 					}
 
-					auto v = ResolveVar(ERefKind::Reg, _rp);
+					auto v = ResolveVar(ERefKind::Reg, 1);
 					if(v->type != Variable::STR)
 					{
 						throw 'n';
@@ -655,10 +655,8 @@ void Machine::Run(const Bytecode& code, int start /* = 0 */)
 				}
 			}
 
-			_rp = _rpStack.top();
 			_rpStack.pop();
-
-			auto v = ResolveVar(ERefKind::Reg, _rp);
+			auto v = ResolveVar(ERefKind::Reg, 0);
 			*v = ret ? *ret : Variable();
 		}
 
