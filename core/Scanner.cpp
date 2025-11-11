@@ -26,7 +26,6 @@ void Scanner::Init()
 	_transTbl.next[','] = { ",", EToken::Comma, };
 	_transTbl.next[';'] = { ";", EToken::Semicolon, };
 	_transTbl.next[':'] = { ":", EToken::Colon, };
-	_transTbl.next['.'] = { ".", EToken::Dot, };
 	_transTbl.next['('] = { "(", EToken::LParen, };
 	_transTbl.next[')'] = { ")", EToken::RParen, };
 	_transTbl.next['{'] = { "{", EToken::LBrace, };
@@ -46,6 +45,18 @@ void Scanner::Init()
 	_transTbl.next['='] = { "=", EToken::Assign, };
 	_transTbl.next['>'] = { ">", EToken::Greater, };
 	_transTbl.next['<'] = { "<", EToken::Less, };
+
+	_transTbl.next['.'] = { ".", EToken::Dot, };
+	_transTbl.next['.'].next['0'] = { "", EToken::None, };
+	_transTbl.next['.'].next['1'] = { "", EToken::None, };
+	_transTbl.next['.'].next['2'] = { "", EToken::None, };
+	_transTbl.next['.'].next['3'] = { "", EToken::None, };
+	_transTbl.next['.'].next['4'] = { "", EToken::None, };
+	_transTbl.next['.'].next['5'] = { "", EToken::None, };
+	_transTbl.next['.'].next['6'] = { "", EToken::None, };
+	_transTbl.next['.'].next['7'] = { "", EToken::None, };
+	_transTbl.next['.'].next['8'] = { "", EToken::None, };
+	_transTbl.next['.'].next['9'] = { "", EToken::None, };
 
 	_transTbl.next['+'].next['+'] = { "++", EToken::PlusPlus, };
 	_transTbl.next['-'].next['-'] = { "--", EToken::MinusMinus, };
@@ -93,6 +104,7 @@ bool Scanner::Scan(const std::string& originCode, int lineStartNum /* = 1 */)
 
 	uint32_t lineNum = lineStartNum;
 	int i = 0;
+	int off = 0;
 	uint32_t acceptedLine = 0;
 	const TransTbl* accepted = &_transTbl;
 
@@ -125,14 +137,21 @@ bool Scanner::Scan(const std::string& originCode, int lineStartNum /* = 1 */)
 			continue;
 		}
 
-		char cur = code[i];
+		char cur = code[i+off];
 		auto next = accepted->next.find(cur);
 		if(next != accepted->next.end())
 		{
 			accepted = &next->second;
-			acceptedLine = lineNum;
-			i++;
-			continue;
+			if(accepted->tok == EToken::None)
+			{
+				off = 0;
+			}
+			else
+			{
+				acceptedLine = lineNum;
+				off++;
+				continue;
+			}
 		}
 
 		if(Token::IsWhiteSpace(accepted->tok))
@@ -145,7 +164,8 @@ bool Scanner::Scan(const std::string& originCode, int lineStartNum /* = 1 */)
 
 			if(!sz && err.IsNoError()) { tok = EToken::RawStr; sz = AdvanceRawString(code, i, parsed, lines, err); }
 			if(!sz && err.IsNoError()) { tok = EToken::Str; sz = AdvanceString(code, i, parsed, err); }
-			if(!sz && err.IsNoError()) { tok = EToken::Num; sz = AdvanceNumber(code, i, err); }
+			if(!sz && err.IsNoError()) { tok = EToken::Float; sz = AdvanceFloating(code, i, err); }
+			if(!sz && err.IsNoError()) { tok = EToken::Int; sz = AdvanceInteger(code, i, err); }
 			if(!sz && err.IsNoError()) { tok = EToken::Id; sz = AdvanceId(code, i, err); }
 
 			if(sz && err.IsNoError())
@@ -184,6 +204,8 @@ bool Scanner::Scan(const std::string& originCode, int lineStartNum /* = 1 */)
 
 		accepted = &_transTbl;
 		acceptedLine = 0;
+		i += off;
+		off = 0;
 	}
 
 	if(accepted != &_transTbl && !Token::IsWhiteSpace(accepted->tok))
@@ -382,7 +404,65 @@ uint32_t Scanner::AdvanceString(const std::string& code, int start, std::string&
 	return end - start + 1;
 }
 
-uint32_t Scanner::AdvanceNumber(const std::string& code, int start, Error& retError)
+uint32_t Scanner::AdvanceFloating(const std::string& code, int start, Error& retError)
+{
+	retError = ErrorBuilder::NoError();
+
+	if(start >= code.size()) return 0;
+
+	char first = code[start];
+	if(!isdigit(first) && first != '.')
+		return 0;
+
+	int i = start + 1;
+	int end = -1;
+	bool isFloat = false;
+
+	if(i >= code.size())
+	{//not float
+		return 0;
+	}
+	else if(isdigit(first))
+	{
+		for(; i<code.size(); i++)
+		{
+			if(isdigit(code[i]))
+				continue;
+
+			if(code[i] == '.')
+			{
+				i++;
+				isFloat = true;
+				break;
+			}
+		}
+	}
+	else
+	{
+		if(isdigit(code[i]))
+			isFloat = true;
+	}
+
+	if(!isFloat)
+	{
+		return 0;
+	}
+
+	for(; i<code.size(); i++)
+	{
+		if(!isdigit(code[i]))
+			break;
+	}
+
+	end = i;
+
+#ifdef DEBUG_OUT
+	cout << "num: " << code.substr(start, end - start) << endl;
+#endif
+	return end - start;
+}
+
+uint32_t Scanner::AdvanceInteger(const std::string& code, int start, Error& retError)
 {
 	retError = ErrorBuilder::NoError();
 

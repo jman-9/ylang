@@ -45,7 +45,14 @@ void Machine::Run(const Bytecode& code, int start /* = 0 */)
 	_consts.clear();
 	for(auto& c : code._consts)
 	{
-		_consts.push_back({ .type = (Variable::Type)c.type, .num = c.num, .str = c.str, ._float = c._float });
+		switch(c.type)
+		{
+		case Constant::INT:		_consts.push_back({ .type = Variable::INT, ._int = c._int }); break;
+		case Constant::FLOAT:	_consts.push_back({ .type = Variable::FLOAT, ._float = c._float }); break;
+		case Constant::STR:		_consts.push_back({ .type = Variable::STR, .str = c.str }); break;
+		default: //TODO
+			throw 'n';
+		}
 	}
 
 	int i;
@@ -179,7 +186,7 @@ void Machine::Run(const Bytecode& code, int start /* = 0 */)
 		{
 			const Op::Jz& jz = *(Op::Jz*)inst.code.data();
 			Variable* test = ResolveVar((ERefKind)jz.testKind, jz.test);
-			if(!test->num)
+			if(!test->_int)
 			{
 				i = jz.pos;
 				continue;
@@ -257,14 +264,14 @@ void Machine::Run(const Bytecode& code, int start /* = 0 */)
 			Variable* idx = ResolveVar((ERefKind)li.idxKind, li.idx);
 			Variable* dst = ResolveVar((ERefKind)li.dstKind, li.dst);
 
-			if(idx->type == Variable::NUM)
+			if(idx->type == Variable::INT)
 			{
 				if(dst->type != Variable::LIST)
 				{
 					throw 'n';
 				}
 
-				*dst = *dst->list->at(idx->num);
+				*dst = *dst->list->at(idx->_int);
 			}
 			else if(idx->type == Variable::STR)
 			{
@@ -292,14 +299,14 @@ void Machine::Run(const Bytecode& code, int start /* = 0 */)
 			Variable* idx = ResolveVar((ERefKind)lli.idxKind, lli.idx);
 			Variable* dst = ResolveVar((ERefKind)lli.dstKind, lli.dst);
 
-			if(idx->type == Variable::NUM)
+			if(idx->type == Variable::INT)
 			{
 				if(dst->type != Variable::LIST)
 				{
 					throw 'n';
 				}
 
-				auto t = dst->list->at(idx->num);
+				auto t = dst->list->at(idx->_int);
 				dst->Clear();
 				dst->type = Variable::REF;
 				dst->ref = t;
@@ -378,12 +385,12 @@ void Machine::Run(const Bytecode& code, int start /* = 0 */)
 						{
 							throw 'n';
 						}
-						if(*i != Variable::NUM)
+						if(*i != Variable::INT)
 						{
 							throw 'n';
 						}
 
-						size_t pos = dst->attr->owner.str.find(s->str, s->num);
+						size_t pos = dst->attr->owner.str.find(s->str, s->_int);
 						ret = Variable::NewNum(pos == string::npos ? -1 : pos);
 					}
 					else
@@ -396,27 +403,27 @@ void Machine::Run(const Bytecode& code, int start /* = 0 */)
 					if(cal.numArgs == 1)
 					{
 						auto s = ResolveVar(ERefKind::Reg, _rp);
-						if(*s != Variable::NUM)
+						if(*s != Variable::INT)
 						{
 							throw 'n';
 						}
 
-						ret = Variable::NewStr(dst->attr->owner.str.substr(s->num));
+						ret = Variable::NewStr(dst->attr->owner.str.substr(s->_int));
 					}
 					else if(cal.numArgs == 2)
 					{
 						auto s = ResolveVar(ERefKind::Reg, _rp);
 						auto l = ResolveVar(ERefKind::Reg, _rp);
-						if(*s != Variable::NUM)
+						if(*s != Variable::INT)
 						{
 							throw 'n';
 						}
-						if(*l != Variable::NUM)
+						if(*l != Variable::INT)
 						{
 							throw 'n';
 						}
 
-						ret = Variable::NewStr(dst->attr->owner.str.substr(s->num, l->num));
+						ret = Variable::NewStr(dst->attr->owner.str.substr(s->_int, l->_int));
 					}
 					else
 					{
@@ -523,12 +530,12 @@ void Machine::Run(const Bytecode& code, int start /* = 0 */)
 					auto i = ResolveVar(ERefKind::Reg, _rp);
 					auto v = ResolveVar(ERefKind::Reg, _rp);
 
-					if(*v != Variable::NUM)
+					if(*v != Variable::INT)
 					{
 						throw 'n';
 					}
 
-					dst->attr->owner.list->insert(dst->attr->owner.list->begin() + i->num, v->Clone());
+					dst->attr->owner.list->insert(dst->attr->owner.list->begin() + i->_int, v->Clone());
 				}
 				else if(dst->attr->name == "pop")
 				{
@@ -538,14 +545,14 @@ void Machine::Run(const Bytecode& code, int start /* = 0 */)
 					}
 
 					auto v = ResolveVar(ERefKind::Reg, _rp);
-					if(v->type != Variable::NUM)
+					if(v->type != Variable::INT)
 					{
 						throw 'n';
 					}
 
 					// todo leak
-					ret = dst->attr->owner.list->at(v->num);
-					dst->attr->owner.list->erase(dst->attr->owner.list->begin() + v->num);
+					ret = dst->attr->owner.list->at(v->_int);
+					dst->attr->owner.list->erase(dst->attr->owner.list->begin() + v->_int);
 				}
 				else if(dst->attr->name == "pop_front")
 				{
@@ -563,8 +570,8 @@ void Machine::Run(const Bytecode& code, int start /* = 0 */)
 				{
 					// todo leak
 					ret = new Variable;
-					ret->type = Variable::NUM;
-					ret->num = (int64_t)dst->attr->owner.list->size();
+					ret->type = Variable::INT;
+					ret->_int = (int64_t)dst->attr->owner.list->size();
 				}
 				else
 				{
@@ -619,8 +626,8 @@ void Machine::Run(const Bytecode& code, int start /* = 0 */)
 				{
 					// todo leak
 					ret = new Variable;
-					ret->type = Variable::NUM;
-					ret->num = (int64_t)dst->attr->owner.dict->size();
+					ret->type = Variable::INT;
+					ret->_int = (int64_t)dst->attr->owner.dict->size();
 				}
 				else if(dst->attr->name == "pop")
 				{

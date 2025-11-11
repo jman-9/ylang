@@ -321,10 +321,15 @@ bool BytecodeBuilder::Build(const TreeNode& code, Bytecode& retCode)
 	for(auto& [idx, tok] : sorted)
 	{
 		Constant c;
-		if(tok == EToken::Num)
-		{//todo float
-			c.type = Constant::NUM;
-			c.num = stoll(tok.val, nullptr, 0);
+		if(tok == EToken::Int)
+		{
+			c.type = Constant::INT;
+			c._int = stoll(tok.val, nullptr, 0);
+		}
+		else if(tok == EToken::Float)
+		{
+			c.type = Constant::FLOAT;
+			c._float = stod(tok.val);
 		}
 		else
 		{

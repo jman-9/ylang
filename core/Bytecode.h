@@ -10,14 +10,14 @@ struct Constant
 	{
 		NONE,
 
-		NUM,
-		STR,
+		INT,
 		FLOAT,
+		STR,
 	};
 
 	Type type;
 
-	int64_t num;
+	int64_t _int;
 	std::string str;
 	double _float;
 };

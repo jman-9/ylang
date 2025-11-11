@@ -32,7 +32,7 @@ Variable* Variable::NewList(const vector<Variable*>& list /*= std::vector<Variab
 void Variable::Clear()
 {
 	type = NONE;
-	num = 0;
+	_int = 0;
 	str = "";
 	_float = 0.0;
 	obj = nullptr;
@@ -45,8 +45,8 @@ void Variable::Clear()
 void Variable::SetNum(int64_t argNum)
 {
 	Clear();
-	num = argNum;
-	type = NUM;
+	_int = argNum;
+	type = INT;
 }
 
 void Variable::SetStr(const string& argStr)
@@ -105,11 +105,11 @@ bool Variable::Assign(EToken op, const Variable& rval)
 		{
 			if(op == EToken::PlusAssign)
 			{
-				if(type == NUM)
+				if(type == INT)
 				{
 					Clear();
 					type = STR;
-					str = format("{}{}", num, rval.str);
+					str = format("{}{}", _int, rval.str);
 				}
 				else if(type == FLOAT)
 				{
@@ -119,8 +119,8 @@ bool Variable::Assign(EToken op, const Variable& rval)
 				}
 				else if(type == STR)
 				{//TODO
-					if(rval.type == NUM)
-						str = to_string(rval.num);
+					if(rval.type == INT)
+						str = to_string(rval._int);
 					else if(rval.type == FLOAT)
 						str = to_string(rval._float);
 					else if(rval.type == STR)
@@ -137,13 +137,13 @@ bool Variable::Assign(EToken op, const Variable& rval)
 		}
 		else if(type == FLOAT || rval.type == FLOAT)
 		{
-			if(type == NUM)
+			if(type == INT)
 			{
 				type = FLOAT;
-				_float = (double)num;
+				_float = (double)_int;
 			}
 
-			double rfloat = rval.type == FLOAT ? rval._float : (double)rval.num;
+			double rfloat = rval.type == FLOAT ? rval._float : (double)rval._int;
 
 			switch(op)
 			{
@@ -158,22 +158,22 @@ bool Variable::Assign(EToken op, const Variable& rval)
 		{
 			if(type == NONE)
 			{
-				type = NUM;
-				num = 0;
+				type = INT;
+				_int = 0;
 			}
 
 			switch(op)
 			{
-			case EToken::PlusAssign:	num += rval.num; break;
-			case EToken::MinusAssign:	num -= rval.num; break;
-			case EToken::MulAssign:		num *= rval.num; break;
-			case EToken::DivAssign:		num /= rval.num; break;
-			case EToken::ModAssign:		num %= rval.num; break;
-			case EToken::AndAssign:		num &= rval.num; break;
-			case EToken::OrAssign:		num |= rval.num; break;
-			case EToken::XorAssign:		num ^= rval.num; break;
-			case EToken::LShiftAssign:	num <<= rval.num; break;
-			case EToken::RShiftAssign:	num >>= rval.num; break;
+			case EToken::PlusAssign:	_int += rval._int; break;
+			case EToken::MinusAssign:	_int -= rval._int; break;
+			case EToken::MulAssign:		_int *= rval._int; break;
+			case EToken::DivAssign:		_int /= rval._int; break;
+			case EToken::ModAssign:		_int %= rval._int; break;
+			case EToken::AndAssign:		_int &= rval._int; break;
+			case EToken::OrAssign:		_int |= rval._int; break;
+			case EToken::XorAssign:		_int ^= rval._int; break;
+			case EToken::LShiftAssign:	_int <<= rval._int; break;
+			case EToken::RShiftAssign:	_int >>= rval._int; break;
 			}
 		}
 	}
@@ -189,9 +189,9 @@ bool Variable::CalcAndAssign(const Variable& lhs, EToken calcOp, const Variable&
 	{//todo refactor
 		if(calcOp == EToken::Plus)
 		{
-			if(lhs.type == NUM)
+			if(lhs.type == INT)
 			{
-				str = format("{}{}", lhs.num, rhs.str);
+				str = format("{}{}", lhs._int, rhs.str);
 			}
 			else if(lhs.type == FLOAT)
 			{
@@ -199,8 +199,8 @@ bool Variable::CalcAndAssign(const Variable& lhs, EToken calcOp, const Variable&
 			}
 			else if(lhs.type == STR)
 			{//TODO impl
-				if(rhs.type == NUM)
-					str = lhs.str + to_string(rhs.num);
+				if(rhs.type == INT)
+					str = lhs.str + to_string(rhs._int);
 				else if(rhs.type == FLOAT)
 					str = lhs.str + to_string(rhs._float);
 				else if(rhs.type == STR)
@@ -216,14 +216,14 @@ bool Variable::CalcAndAssign(const Variable& lhs, EToken calcOp, const Variable&
 			{
 				switch(calcOp)
 				{
-				case EToken::Equal:			num = lhs.str == rhs.str; break;
-				case EToken::NotEqual:		num = lhs.str != rhs.str; break;
+				case EToken::Equal:			_int = lhs.str == rhs.str; break;
+				case EToken::NotEqual:		_int = lhs.str != rhs.str; break;
 				}
 			}
 			else
 			{
-				type = NUM;
-				num = 0;
+				type = INT;
+				_int = 0;
 			}
 		}
 		else if(calcOp == EToken::Dot)
@@ -248,8 +248,8 @@ bool Variable::CalcAndAssign(const Variable& lhs, EToken calcOp, const Variable&
 	}
 	else if(lhs.type == FLOAT || rhs.type == FLOAT)
 	{
-		double lfloat = lhs.type == FLOAT ? lhs._float : (double)lhs.num;
-		double rfloat = rhs.type == FLOAT ? rhs._float : (double)rhs.num;
+		double lfloat = lhs.type == FLOAT ? lhs._float : (double)lhs._int;
+		double rfloat = rhs.type == FLOAT ? rhs._float : (double)rhs._int;
 
 		if(calcOp == EToken::Slash && rfloat == 0.0)
 		{//TODO div 0
@@ -264,17 +264,17 @@ bool Variable::CalcAndAssign(const Variable& lhs, EToken calcOp, const Variable&
 		case EToken::Slash:			_float = lfloat / rfloat; break;
 		default:
 			{
-				type = NUM;
+				type = INT;
 				switch(calcOp)
 				{
-				case EToken::And:			num = lfloat && rfloat; break;
-				case EToken::Or:			num = lfloat || rfloat; break;
-				case EToken::Greater:		num = lfloat > rfloat; break;
-				case EToken::Less:			num = lfloat < rfloat; break;
-				case EToken::GreaterEqual:	num = lfloat >= rfloat; break;
-				case EToken::LessEqual:		num = lfloat <= rfloat; break;
-				case EToken::Equal:			num = lfloat == rfloat; break;
-				case EToken::NotEqual:		num = lfloat != rfloat; break;
+				case EToken::And:			_int = lfloat && rfloat; break;
+				case EToken::Or:			_int = lfloat || rfloat; break;
+				case EToken::Greater:		_int = lfloat > rfloat; break;
+				case EToken::Less:			_int = lfloat < rfloat; break;
+				case EToken::GreaterEqual:	_int = lfloat >= rfloat; break;
+				case EToken::LessEqual:		_int = lfloat <= rfloat; break;
+				case EToken::Equal:			_int = lfloat == rfloat; break;
+				case EToken::NotEqual:		_int = lfloat != rfloat; break;
 				default:
 					throw 'n';
 				}
@@ -284,38 +284,38 @@ bool Variable::CalcAndAssign(const Variable& lhs, EToken calcOp, const Variable&
 	}
 	else
 	{
-		int64_t lnum = lhs.num;
-		int64_t rnum = rhs.num;
+		int64_t leftInt = lhs._int;
+		int64_t rightInt = rhs._int;
 
-		if(calcOp == EToken::Slash && rnum == 0)
+		if(calcOp == EToken::Slash && rightInt == 0)
 		{//TODO div 0
 			throw 'n';
 		}
 
 		switch(calcOp)
 		{
-		case EToken::Plus:			num = lnum + rnum; break;
-		case EToken::Minus:			num = lnum - rnum; break;
-		case EToken::Star:			num = lnum * rnum; break;
-		case EToken::Slash:			num = lnum / rnum; break;
-		case EToken::Percent:		num = lnum % rnum; break;
-		case EToken::And:			num = (lnum != 0) && (rnum != 0); break;
-		case EToken::Or:			num = (lnum != 0) || (rnum != 0); break;
-		case EToken::Greater:		num = lnum > rnum; break;
-		case EToken::Less:			num = lnum < rnum; break;
-		case EToken::GreaterEqual:	num = lnum >= rnum; break;
-		case EToken::LessEqual:		num = lnum <= rnum; break;
-		case EToken::Equal:			num = lnum == rnum; break;
-		case EToken::NotEqual:		num = lnum != rnum; break;
-		case EToken::Amp:			num = lnum & rnum; break;
-		case EToken::Pipe:			num = lnum | rnum; break;
-		case EToken::Caret:			num = lnum ^ rnum; break;
-		case EToken::LShift:		num = lnum << rnum; break;
-		case EToken::RShift:		num = lnum >> rnum; break;
+		case EToken::Plus:			_int = leftInt + rightInt; break;
+		case EToken::Minus:			_int = leftInt - rightInt; break;
+		case EToken::Star:			_int = leftInt * rightInt; break;
+		case EToken::Slash:			_int = leftInt / rightInt; break;
+		case EToken::Percent:		_int = leftInt % rightInt; break;
+		case EToken::And:			_int = (leftInt != 0) && (rightInt != 0); break;
+		case EToken::Or:			_int = (leftInt != 0) || (rightInt != 0); break;
+		case EToken::Greater:		_int = leftInt > rightInt; break;
+		case EToken::Less:			_int = leftInt < rightInt; break;
+		case EToken::GreaterEqual:	_int = leftInt >= rightInt; break;
+		case EToken::LessEqual:		_int = leftInt <= rightInt; break;
+		case EToken::Equal:			_int = leftInt == rightInt; break;
+		case EToken::NotEqual:		_int = leftInt != rightInt; break;
+		case EToken::Amp:			_int = leftInt & rightInt; break;
+		case EToken::Pipe:			_int = leftInt | rightInt; break;
+		case EToken::Caret:			_int = leftInt ^ rightInt; break;
+		case EToken::LShift:		_int = leftInt << rightInt; break;
+		case EToken::RShift:		_int = leftInt >> rightInt; break;
 		default:
 			throw 'n';
 		}
-		type = NUM;
+		type = INT;
 	}
 
 	return true;
@@ -331,14 +331,14 @@ bool Variable::CalcUnaryAndAssign(EToken unaryOp, const Variable& rhs)
 
 	switch(unaryOp)
 	{
-	case EToken::UnaryPlus: num = +rhs.num; break;
-	case EToken::UnaryMinus: num = -rhs.num; break;
-	case EToken::Not: num = (int64_t)(!rhs.num); break;
-	case EToken::Tilde: num = ~rhs.num; break;
+	case EToken::UnaryPlus: _int = +rhs._int; break;
+	case EToken::UnaryMinus: _int = -rhs._int; break;
+	case EToken::Not: _int = (int64_t)(!rhs._int); break;
+	case EToken::Tilde: _int = ~rhs._int; break;
 	default:
 		throw 'n';
 	}
-	type = NUM;
+	type = INT;
 
 	return true;
 }
@@ -347,8 +347,8 @@ string Variable::ToStr() const
 {
 	switch(type)
 	{
-	case NUM:
-		return to_string(num);
+	case INT:
+		return to_string(_int);
 	case FLOAT:
 		return to_string(_float);
 	case STR:

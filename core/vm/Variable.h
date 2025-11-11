@@ -18,9 +18,9 @@ struct Variable
 	{
 		NONE,
 
-		NUM,
-		STR,
+		INT,
 		FLOAT,
+		STR,
 		OBJECT,
 		LIST,
 		DICT,
@@ -30,9 +30,9 @@ struct Variable
 
 	Type type = NONE;
 
-	int64_t num = 0;
-	std::string str = "";
+	int64_t _int = 0;
 	double _float = 0.0;
+	std::string str = "";
 	void* obj = nullptr;
 	std::vector<Variable*>* list;
 	std::unordered_map<std::string, Variable*>* dict;

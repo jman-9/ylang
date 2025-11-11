@@ -53,7 +53,8 @@ enum class EToken : uint8_t
 	LShiftAssign,
 	RShiftAssign,
 	Id,
-	Num,
+	Int,
+	Float,
 	Str,
 	RawStr,
 

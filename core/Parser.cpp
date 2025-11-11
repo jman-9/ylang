@@ -98,7 +98,8 @@ static bool InitParser()
 
  	s_precMap[ EToken::LParen ] = 200;
  	s_precMap[ EToken::Id ] = 200;
- 	s_precMap[ EToken::Num ] = 200;
+ 	s_precMap[ EToken::Int ] = 200;
+	s_precMap[ EToken::Float ] = 200;
  	s_precMap[ EToken::Str ] = 200;
  	s_precMap[ EToken::RawStr ] = 200;
 	s_precMap[ EToken::List ] = 200;
@@ -674,7 +675,7 @@ TreeNodeSptr Parser::ParseFor(const std::set<EToken>& allowed /* = std::set<ETok
 	if(!init)
 	{
 		init = NewNode();
-		init->self = { EToken::Num, _for.line, "1" };
+		init->self = { EToken::Int, _for.line, "1" };
 	}
 	if(GetCur().kind != EToken::Semicolon)
 	{	//TODO 메모리 릭
@@ -688,7 +689,7 @@ TreeNodeSptr Parser::ParseFor(const std::set<EToken>& allowed /* = std::set<ETok
 	if(!cond)
 	{
 		cond = NewNode();
-		cond->self = { EToken::Num, _for.line, "1" };
+		cond->self = { EToken::Int, _for.line, "1" };
 	}
 	if(GetCur().kind != EToken::Semicolon)
 	{//TODO 메모리 릭
@@ -702,7 +703,7 @@ TreeNodeSptr Parser::ParseFor(const std::set<EToken>& allowed /* = std::set<ETok
 	if(!update)
 	{
 		update = NewNode();
-		update->self = { EToken::Num, _for.line, "1" };
+		update->self = { EToken::Int, _for.line, "1" };
 	}
 	if(GetCur().kind != EToken::RParen)
 	{//TODO 메모리 릭

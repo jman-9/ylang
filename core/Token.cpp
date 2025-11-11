@@ -112,7 +112,7 @@ bool Token::IsWhiteSpace(EToken tok)
 
 bool Token::IsLiteral(EToken tok)
 {
-	return tok == EToken::Num || tok == EToken::Str || tok == EToken::RawStr;
+	return tok == EToken::Int || tok == EToken::Float || tok == EToken::Str || tok == EToken::RawStr;
 }
 
 bool Token::IsPrefixUnary(EToken tok)

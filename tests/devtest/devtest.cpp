@@ -172,8 +172,11 @@ else
 
 const char* testcode2 =
 R"TEST(
-a = 0xA;
-fn abc() { return 0x10002; }
+a = .1;
+a = 1.;
+a = 1.1;
+a = 0110391.1;
+fn abc() { return 0.; }
 println("{}\nhahaha\n {{{a+a+a}}} }} \nhahaha\n {abc()} {{");
 )TEST";
 
