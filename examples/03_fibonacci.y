@@ -8,6 +8,6 @@ fn fib(n) {
 }
 
 for (i = 0; i < 10; i = i + 1) {
-    print(fib(i) + " ");
+    print("{fib(i)} ");
 }
 println();

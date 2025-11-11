@@ -176,6 +176,11 @@ a = .1;
 a = 1.;
 a = 1.1;
 a = 0110391.1;
+a = 1E+9;
+a = .1E+9;
+a = 129.1349E-9;
+a = 129.1349E9;
+a = 129.E8;
 fn abc() { return 0.; }
 println("{}\nhahaha\n {{{a+a+a}}} }} \nhahaha\n {abc()} {{");
 )TEST";

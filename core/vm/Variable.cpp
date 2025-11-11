@@ -118,15 +118,8 @@ bool Variable::Assign(EToken op, const Variable& rval)
 					str = format("{}{}", _float, rval.str);
 				}
 				else if(type == STR)
-				{//TODO
-					if(rval.type == INT)
-						str = to_string(rval._int);
-					else if(rval.type == FLOAT)
-						str = to_string(rval._float);
-					else if(rval.type == STR)
-						str += rval.str;
-					else
-						throw 'n';	//TODO impl
+				{
+					str += rval.ToStr();
 				}
 			}
 			else
@@ -198,15 +191,8 @@ bool Variable::CalcAndAssign(const Variable& lhs, EToken calcOp, const Variable&
 				str = format("{}{}", lhs._float, rhs.str);
 			}
 			else if(lhs.type == STR)
-			{//TODO impl
-				if(rhs.type == INT)
-					str = lhs.str + to_string(rhs._int);
-				else if(rhs.type == FLOAT)
-					str = lhs.str + to_string(rhs._float);
-				else if(rhs.type == STR)
-					str = lhs.str + rhs.str;
-				else
-					throw 'n';	//TODO impl
+			{
+				str = lhs.str + rhs.ToStr();
 			}
 			type = STR;
 		}

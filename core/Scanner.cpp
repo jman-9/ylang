@@ -414,9 +414,16 @@ uint32_t Scanner::AdvanceFloating(const std::string& code, int start, Error& ret
 	if(!isdigit(first) && first != '.')
 		return 0;
 
+	enum class EFloat
+	{
+		NONE,
+		FLOAT,
+		EXP,
+	};
+
 	int i = start + 1;
 	int end = -1;
-	bool isFloat = false;
+	EFloat type = EFloat::NONE;
 
 	if(i >= code.size())
 	{//not float
@@ -432,32 +439,83 @@ uint32_t Scanner::AdvanceFloating(const std::string& code, int start, Error& ret
 			if(code[i] == '.')
 			{
 				i++;
-				isFloat = true;
+				type = EFloat::FLOAT;
 				break;
+			}
+			else if(code[i] == 'e' || code[i] == 'E')
+			{
+				i++;
+				type = EFloat::EXP;
+				break;
+			}
+			else
+			{//integer
+				return 0;
 			}
 		}
 	}
 	else
 	{
 		if(isdigit(code[i]))
-			isFloat = true;
+			type = EFloat::FLOAT;
 	}
 
-	if(!isFloat)
+	if(type == EFloat::NONE)
 	{
 		return 0;
 	}
 
-	for(; i<code.size(); i++)
+	if(type == EFloat::FLOAT)
 	{
-		if(!isdigit(code[i]))
-			break;
+		for(; i<code.size(); i++)
+		{
+			if(!isdigit(code[i]))
+				break;
+		}
+
+		if(i < code.size() && (code[i] == 'e' || code[i] == 'E'))
+		{
+			i++;
+			type = EFloat::EXP;
+		}
+	}
+
+	if(type == EFloat::EXP)
+	{
+		if(i >= code.size())
+		{//TODO err
+			throw 'n';
+		}
+		else if(!isdigit(code[i]) && code[i] != '+' && code[i] != '-')
+		{//TODO err
+			throw 'n';
+		}
+
+		if(code[i] == '+' || code[i] == '-')
+		{
+			i++;
+		}
+
+		if(i >= code.size())
+		{//TODO err
+			throw 'n';
+		}
+		else if(!isdigit(code[i]))
+		{//TODO err
+			throw 'n';
+		}
+
+		for(; i<code.size(); i++)
+		{
+			if(!isdigit(code[i]))
+				break;
+		}
 	}
 
 	end = i;
 
 #ifdef DEBUG_OUT
-	cout << "num: " << code.substr(start, end - start) << endl;
+	cout << "float: " << code.substr(start, end - start) << endl;
 #endif
 	return end - start;
 }

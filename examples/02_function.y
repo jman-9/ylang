@@ -12,4 +12,4 @@ fn fact(n) {
 }
 
 println("square of 4 : " + square(4));
-println("factorial of 5 : " + fact(5));
+println("factorial of 5 : {fact(5)}");

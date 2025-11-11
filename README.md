@@ -131,7 +131,7 @@ ylang 0.0.2
 .. }
 
 >> nums = [3, 6, 10, 5];
->> println("average = " + avg(nums));
+>> println("average = {avg(nums)}");
 average = 6
 
 >> fn greet(person) {
@@ -172,8 +172,7 @@ println(words);                // ['hello', 'ylang']
 
 nums = [10, 20, 30];
 nums.append(add(40, 2));       // use user-defined function
-print("list: ");
-println(nums);                 // [10, 20, 30, 42]
+println("list: {nums}");       // [10, 20, 30, 42]
 
 user = {'name': "alice", 'age': 25, 'scores': nums};
 println(user);                 // {'name': 'alice', 'age': 25, 'scores': [10, 20, 30, 42]}
@@ -213,11 +212,12 @@ hello world
 * [x] REPL
 * [x] Recursion
 * [x] List / Dict
-* [ ] Floating-point
-* [ ] Formatted strings
+* [x] Floating-point
+* [x] f-string
+* [ ] String formatting
 * [ ] Class
-* [ ] Memory Management
-* [ ] Module & Import system
+* [ ] Memory management
+* [ ] Module & import system
 * [ ] Optimized VM dispatch
 * [ ] Automated tests
 * [ ] Documentation
@@ -236,4 +236,4 @@ This project is licensed under the **MIT License** — see the [LICENSE](LICENSE
 | Version    | Highlights                                                            |
 | ---------- | --------------------------------------------------------------------- |
 | **0.0.1** | Basic VM, arithmetic, control flow, user functions                    |
-| **0.0.2** | Dynamic resolution via dot operator and core collections (list, dict) |
+| **0.0.2** | Dynamic resolution, collections(list/dict), f-string, floating-point  |
