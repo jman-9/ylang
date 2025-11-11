@@ -136,6 +136,7 @@ protected:
 	void BuildBlockClose();
 
 	bool BuildStmt(const TreeNode& stmt);
+	bool BuildInclude(const TreeNode& stmt);
 	bool BuildFor(const TreeNode& stmt);
 	bool BuildIf(const TreeNode& stmt);
 	bool BuildFn(const TreeNode& stmt);
@@ -147,7 +148,6 @@ protected:
 	bool BuildList(const TreeNode& stmt);
 	bool BuildDict(const TreeNode& stmt);
 	bool BuildIndex(const TreeNode& stmt);
-	bool BuildDot(const TreeNode& stmt);
 
 private:
 	template<EOpcode Op>

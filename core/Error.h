@@ -2,6 +2,7 @@
 #include <stdint.h>
 #include <string>
 
+
 enum class EErr
 {
 	NoError,
@@ -16,6 +17,7 @@ enum class EErr
 	Missing,
 	LValueError,
 	ExpectedExpression,
+	Expected,
 };
 
 struct Error
@@ -46,4 +48,5 @@ namespace ErrorBuilder
 	Error Missing(uint32_t line, char c);
 	Error LValueError(uint32_t line, const std::string& s);
 	Error ExpectedExpression(uint32_t line, const std::string& s);
+	Error Expected(uint32_t line, const std::string& s);
 }

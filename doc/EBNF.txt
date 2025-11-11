@@ -19,12 +19,13 @@ PostfixExp → PrimaryExp { '(' [Args] ')' | '[' Exp ']' | '.' Id }
 PrimaryExp -> '('Exp')' | Id | Literal | ListExp | DictExp
 
 Code -> {Stmt}
-Stmt -> Exp ';' | CompoundStmt | IfStmt | ForStmt | FnStmt | ReturnStmt | KeyStmt ';'
+Stmt -> Exp ';' | CompoundStmt | IncludeStmt | IfStmt | ForStmt | FnStmt | ReturnStmt | KeyStmt ';'
 CompoundStmt -> '{'{Stmt}'}'
+IncludeStmt -> 'include' Id
 IfStmt -> 'if' '('Exp')' Stmt ['else' Stmt]
 ForStmt -> 'for' '('[Exp]';' [Exp]';' [Exp]')' Stmt
 FnStmt -> 'fn' Id '('[Params]')' (Exp | CompoundStmt)
-ReturnStmt -> 'return' [Exp] ';'
+ReturnStmt -> 'return' [Exp]
 KeyStmt -> 'continue' | 'break'
 Params -> Id {',' Id}
 

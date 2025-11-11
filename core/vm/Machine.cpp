@@ -659,6 +659,19 @@ void Machine::Run(const Bytecode& code, int start /* = 0 */)
 			auto v = ResolveVar(ERefKind::Reg, 0);
 			*v = ret ? *ret : Variable();
 		}
+		else if(inst == EOpcode::Inc)
+		{
+			const Op::Inc& inc = *(Op::Inc*)inst.code.data();
+			Variable* name = ResolveVar(ERefKind::Const, inc.inc);
+
+			if(!name || *name != Variable::STR)
+			{
+				throw 'n';
+			}
+
+			_modMgr.Load(name->str);
+		}
+
 
 		i++;
 	}

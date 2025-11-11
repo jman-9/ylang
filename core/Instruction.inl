@@ -86,6 +86,10 @@ void Instruction::Fill(const OpType& inst)
 	{
 		kind = (uint8_t)EOpcode::Call;
 	}
+	else if constexpr (std::is_same_v<Op::Inc, OpType>)
+	{
+		kind = (uint8_t)EOpcode::Inc;
+	}
 	else
 	{
 		throw 'n';

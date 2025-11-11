@@ -58,6 +58,7 @@ enum class EToken : uint8_t
 	Str,
 	RawStr,
 
+	Include,
 	If,
 	Else,
 	For,

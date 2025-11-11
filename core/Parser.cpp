@@ -2,7 +2,7 @@
 using namespace std;
 
 
-#define NewNode() (TreeNode::New())
+#define NewNode TreeNode::New
 
 static map<EToken, int> s_opMap;
 static map<EToken, int> s_precMap;
@@ -520,6 +520,7 @@ TreeNodeSptr Parser::ParseStmt(const std::set<EToken>& allowed /* = std::set<ETo
 
 	if(ast = ParseCompoundStmt(allowed)) return ast;
 
+	if(ast = ParseInclude()) return ast;
 	if(ast = ParseIf(allowed)) return ast;
 	if(ast = ParseFor(allowed)) return ast;
 	if(ast = ParseFn()) return ast;
@@ -591,6 +592,27 @@ TreeNodeSptr Parser::ParseStmt(const std::set<EToken>& allowed /* = std::set<ETo
 	//todo correct message
 	_errors.push_back(ErrorBuilder::SyntaxError(GetCur().line, "tbd"));
 	return nullptr;
+}
+
+TreeNodeSptr Parser::ParseInclude()
+{
+	if(GetCur().kind != EToken::Include)
+	{
+		return nullptr;
+	}
+
+	TreeNodeSptr inc = NewNode(GetCur());
+	MoveNext();
+
+	if(GetCur().kind != EToken::Id)
+	{
+		_errors.push_back(ErrorBuilder::Expected(inc->self.line, "INCLUDE_NAME"));
+		return nullptr;
+	}
+
+	inc->PushBackChild(NewNode(GetCur()));
+	MoveNext();
+	return inc;
 }
 
 TreeNodeSptr Parser::ParseIf(const std::set<EToken>& allowed /* = std::set<EToken>() */)
@@ -813,6 +835,12 @@ TreeNodeSptr Parser::Parse()
 
 	for( ; !IsEnd(); )
 	{
+		if(GetCur() == EToken::Semicolon)
+		{
+			MoveNext();
+			continue;
+		}
+
 		TreeNodeSptr ast = ParseStmt();
 		if(!ast)
 		{//todo leak

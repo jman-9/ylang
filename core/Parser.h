@@ -27,6 +27,7 @@ protected:
 	TreeNodeSptr ParseOpExp();
 	TreeNodeSptr ParseCompoundStmt(const std::set<EToken>& allowed = std::set<EToken>());
 	TreeNodeSptr ParseStmt(const std::set<EToken>& allowed = std::set<EToken>());
+	TreeNodeSptr ParseInclude();
 	TreeNodeSptr ParseIf(const std::set<EToken>& allowed = std::set<EToken>());
 	TreeNodeSptr ParseFor(const std::set<EToken>& allowed = std::set<EToken>());
 	TreeNodeSptr ParseFn();

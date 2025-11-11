@@ -172,29 +172,7 @@ else
 
 const char* testcode2 =
 R"TEST(
-println("=== quick example ===");
-
-fn add(x, y) {
-    return x + y;
-}
-
-msg = "hello ylang";
-words = msg.split();
-println(words);                    // ['hello', 'ylang']
-
-nums = [10, 20, 30];
-nums.append(add(40, 2));           // use user-defined function
-println("list: {nums}");           // [10, 20, 30, 42]
-
-fn main() {
-    user = {'name': "alice", 'age': 25, 'scores': nums};
-    println(user);                 // {'name': 'alice', 'age': 25, 'scores': [10, 20, 30, 42]}
-    println(user.keys());          // ['name', 'age', 'scores']
-    println(user['scores'].len()); // 4
-
-    msg2 = msg.replace("ylang", "world");
-    println(msg2);                 // hello world
-}
+include sys;
 )TEST";
 
 int main()

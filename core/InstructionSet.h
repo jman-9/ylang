@@ -20,6 +20,7 @@ enum class EOpcode : uint16_t
 	Index,
 	LValueIndex,
 	Call,
+	Inc,
 };
 
 enum class ERefKind : uint8_t
@@ -122,5 +123,12 @@ struct Call
 	uint16_t dst = 0;
 	uint8_t numArgs = 0;
 };
+
+struct Inc
+{
+	uint16_t inc = 0;
+	uint16_t rsvd = 0;
+};
+
 
 }

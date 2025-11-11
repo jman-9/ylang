@@ -88,6 +88,7 @@ void Scanner::ProcessIdKeywords()
 		if(t.kind != EToken::Id) continue;
 
 		if(0) {}
+		else if(t.val == "include") t.kind = EToken::Include;
 		else if(t.val == "if") t.kind = EToken::If;
 		else if(t.val == "else") t.kind = EToken::Else;
 		else if(t.val == "for") t.kind = EToken::For;

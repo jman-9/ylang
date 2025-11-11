@@ -10,7 +10,7 @@ using TreeNodeSptr = std::shared_ptr<TreeNode>;
 struct TreeNode
 {
 	Token self;
-	TreeNode* parent;
+	TreeNode* parent = nullptr;
 	std::vector<TreeNodeSptr> childs;
 
 	inline void PushFrontChild(TreeNodeSptr node)
@@ -65,8 +65,10 @@ struct TreeNode
 		node->parent = this;
 	}
 
-	static TreeNodeSptr New()
+	static TreeNodeSptr New(const Token& tok = Token())
 	{
-		return std::make_shared<TreeNode>();
+		auto tn = std::make_shared<TreeNode>();
+		tn->self = tok;
+		return tn;
 	}
 };

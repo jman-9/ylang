@@ -281,6 +281,10 @@ void BytecodeBuilder::FillBytecode(int ln, const OpType& inst)
 	{
 		_bytecodeStr[ln] = format("call {}{}(...)", ValKindChar(ERefKind::Reg), _reg, ValKindChar(inst.dstKind), inst.dst);
 	}
+	else if constexpr (is_same_v<Op::Inc, OpType>)
+	{
+		_bytecodeStr[ln] = format("include {}{}", ValKindChar(ERefKind::Const), inst.inc);
+	}
 	else
 	{
 		throw 'n';
@@ -372,6 +376,7 @@ bool BytecodeBuilder::BuildStmt(const TreeNode& stmt)
 {
 	switch(stmt.self.kind)
 	{
+	case EToken::Include : return BuildInclude(stmt);
 	case EToken::For : return BuildFor(stmt);
 	case EToken::If : return BuildIf(stmt);
 	case EToken::Fn : return BuildFn(stmt);
@@ -382,6 +387,16 @@ bool BytecodeBuilder::BuildStmt(const TreeNode& stmt)
 	default: ;
 	}
 	return BuildExp(stmt, true);
+}
+
+bool BytecodeBuilder::BuildInclude(const TreeNode& stmt)
+{
+	auto& incName = *stmt.childs[0];
+
+	int idx = _constTbl.AddOrNot(incName.self);
+	Op::Inc inc { .inc = (uint16_t)idx };
+	PushBytecode(inc);
+	return true;
 }
 
 bool BytecodeBuilder::BuildExp(const TreeNode& stmt, bool root)

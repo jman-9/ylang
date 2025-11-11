@@ -50,6 +50,7 @@ static bool Init()
 	s_tokenStrMap[EToken::XorAssign] = "^=";
 	s_tokenStrMap[EToken::LShiftAssign] = "<<=";
 	s_tokenStrMap[EToken::RShiftAssign] = ">>=";
+	s_tokenStrMap[EToken::Include] = "include";
 	s_tokenStrMap[EToken::If] = "if";
 	s_tokenStrMap[EToken::Else] = "else";
 	s_tokenStrMap[EToken::For] = "for";
@@ -61,6 +62,8 @@ static bool Init()
 	s_tokenStrMap[EToken::Index] = "???";
 	s_tokenStrMap[EToken::UnaryPlus] = "+";
 	s_tokenStrMap[EToken::UnaryMinus] = "-";
+	s_tokenStrMap[EToken::List] = "list";
+	s_tokenStrMap[EToken::Dict] = "dict";
 	return true;
 }
 static bool init = Init();

@@ -84,4 +84,9 @@ Error ExpectedExpression(uint32_t line, const std::string& _for)
 	return { line, EErr::ExpectedExpression, format("expected expression for '{}'", _for) };
 }
 
+Error Expected(uint32_t line, const std::string& s)
+{
+	return { line, EErr::Expected, format("expected : '{}'", s) };
+}
+
 }

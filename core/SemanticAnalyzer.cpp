@@ -26,6 +26,7 @@ bool SemanticAnalyzer::AnalyzeStmt(const TreeNode& stmt)
 {
 	switch(stmt.self.kind)
 	{
+	case EToken::Include : return AnalyzeInclude(stmt);
 	case EToken::For : return AnalyzeFor(stmt);
 	case EToken::If : return AnalyzeIf(stmt);
 	case EToken::Fn : return AnalyzeFn(stmt);
@@ -117,6 +118,24 @@ bool SemanticAnalyzer::AnalyzeExp(const TreeNode& stmt)
 		}
 	}
 
+	return true;
+}
+
+bool SemanticAnalyzer::AnalyzeInclude(const TreeNode& stmt)
+{
+	if(stmt.self != EToken::Include)
+		//todo trace
+		throw 'n';
+
+	if(stmt.childs.size() != 1)
+	{//todo
+		return false;
+	}
+
+	if(stmt.childs.front()->self != EToken::Id)
+	{//todo
+		return false;
+	}
 	return true;
 }
 

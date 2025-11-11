@@ -22,6 +22,7 @@ protected:
 
 	bool AnalyzeStmt(const TreeNode& stmt);
 	bool AnalyzeExp(const TreeNode& stmt);
+	bool AnalyzeInclude(const TreeNode& stmt);
 	bool AnalyzeFor(const TreeNode& stmt);
 	bool AnalyzeIf(const TreeNode& stmt);
 	bool AnalyzeFn(const TreeNode& stmt);
