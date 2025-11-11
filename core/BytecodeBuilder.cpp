@@ -324,7 +324,7 @@ bool BytecodeBuilder::Build(const TreeNode& code, Bytecode& retCode)
 		if(tok == EToken::Num)
 		{//todo float
 			c.type = Constant::NUM;
-			c.num = stoll(tok.val);
+			c.num = stoll(tok.val, nullptr, 0);
 		}
 		else
 		{

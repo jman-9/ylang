@@ -172,8 +172,8 @@ else
 
 const char* testcode2 =
 R"TEST(
-fn abc() { return 10002; }
-a = 10;
+a = 0xA;
+fn abc() { return 0x10002; }
 println("{}\nhahaha\n {{{a+a+a}}} }} \nhahaha\n {abc()} {{");
 )TEST";
 
