@@ -171,7 +171,7 @@ bool Scanner::Scan(const std::string& originCode, int lineStartNum /* = 1 */)
 
 			if(sz && err.IsNoError())
 			{
-				if(parsed.empty()) parsed = code.substr(i, sz);
+				if(parsed.empty() && tok != EToken::Str && tok != EToken::RawStr) parsed = code.substr(i, sz);
 				_tokens.push_back({ tok, lineNum, parsed });
 
 				i += sz;

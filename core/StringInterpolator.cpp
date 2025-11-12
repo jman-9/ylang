@@ -51,16 +51,30 @@ bool StringInterpolator::ReplaceAllEscapeChars(string& inoutSrc)
 				c = 0x0B;
 			}
 			else if(c == 'x')
-			{//hexa
-				//TODO error
-				//_errors.push_back(ErrorBuilder::UnsupportedCharacterEscapeSequence(t.line, c));
-				return false;
+			{
+				int first = ++i;
+				for( ; i - first < 2; i++)
+				{
+					if('A' <= inoutSrc[i] && inoutSrc[i] <= 'F') continue;
+					if('a' <= inoutSrc[i] && inoutSrc[i] <= 'f') continue;
+					if('0' <= inoutSrc[i] && inoutSrc[i] <= '9') continue;
+					break;
+				}
+				if(i - first == 0)
+				{//TODO error
+					throw 'n';
+				}
+				string sub = inoutSrc.substr(first, i - first);
+				c = (char)(stoi(sub, nullptr, 16) & 0xFF);
+				i--;
 			}
 			else if('0' <= c && c <= '7')
-			{//octa
-			 //TODO error
-				//_errors.push_back(ErrorBuilder::UnsupportedCharacterEscapeSequence(t.line, c));
-				return false;
+			{
+				int first = i++;
+				for( ; ('0' <= inoutSrc[i] && inoutSrc[i] <= '7') && (i - first < 3); i++) {}
+				string sub = inoutSrc.substr(first, i - first);
+				c = (char)(stoi(sub, nullptr, 8) & 0xFF);
+				i--;
 			}
 			else if(c == 'u' || c == 'U')
 			{//unicode
