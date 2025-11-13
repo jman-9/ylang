@@ -44,13 +44,12 @@ Source (.y)
 ```
 ylang/
 ├─ core/                 # ylang core - Scanner, Parser, Semantic, Bytecode, etc
+│   ├─ contract/         # contract layer
 │   └─ vm/               # yvm - Machine 
 ├─ examples/             # Example scripts (.y)
 ├─ tests/                # test programs
 └─ tools/                # tools
     └─ ylang/            # ylang CLI
-
-
 ```
 
 

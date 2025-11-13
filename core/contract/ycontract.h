@@ -23,14 +23,78 @@
 #define CLOSE_LIB(lib) dlclose(lib)
 #endif
 
+#include <stdint.h>
+#include <string>
+#include <vector>
+
+
+enum class YEObj : uint32_t
+{
+	None,
+
+	Int64,
+	Double,
+	Str,
+	List,
+	Dict,
+	Object,
+};
+
+
 
 struct YObj
 {
-    void* data = nullptr;
+	void* o = nullptr;
+	YEObj tp = YEObj::None;
+
+	int64_t ToInt64() const;
+	double ToDouble() const;
+	std::string ToStr() const;
+	std::vector<YObj> ToList() const;
+
+	bool FromInt64(int64_t n);
+	bool FromDouble(double d);
+	bool FromStr(const std::string& s);
+	//bool FromList() const;
+};
+
+
+struct YStr
+{
+	int len = 0;
+	char* str = nullptr;
+
+	void FromStr(const std::string& s);
+};
+
+struct YList
+{
+	int sz = 0;
+	YObj* list = nullptr;
+};
+
+struct YDict
+{
+	int sz = 0;
+	YObj* keys = nullptr;
+	YObj* vals = nullptr;
+};
+
+struct YArgs
+{
+	int numArgs = 0;
+	YObj* args = nullptr;
+
+	void Reset(int num);
 };
 
 struct YRet
 {
-    int code;
-    YObj* obj = nullptr;
+	int code = 0;
+	YList vals;
+	YObj single;
 };
+
+using YModFn = YRet (*)(YArgs*);
+
+#include "ycontract.inl"

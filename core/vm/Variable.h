@@ -1,5 +1,6 @@
 #pragma once
 #include "../Token.h"
+#include "../contract/ycontract.h"
 #include <stdint.h>
 #include <string>
 #include <vector>
@@ -49,7 +50,11 @@ struct Variable
 	bool CalcAndAssign(const Variable& lhs, EToken calcOp, const Variable& rhs);
 	bool CalcUnaryAndAssign(EToken unaryOp, const Variable& rhs);
 
+	YObj ToContract() const;
 	std::string ToStr() const;
+	void FromInt64(int64_t n);
+	void FromDouble(double d);
+	void FromStr(const std::string& s);
 
 	bool operator==(Type cmp) const;
 	bool operator!=(Type cmp) const;

@@ -329,6 +329,54 @@ bool Variable::CalcUnaryAndAssign(EToken unaryOp, const Variable& rhs)
 	return true;
 }
 
+YObj Variable::ToContract() const
+{
+	auto ToYStr = [](const string& s) -> YStr*
+	{
+		YStr* ys = new YStr;
+		ys->str = new char[s.size()];
+		memcpy(ys->str, s.data(), s.size());
+		ys->len = (int)s.size();
+		return ys;
+	};
+	auto ToList = [this]() -> YList*
+	{
+		YList* yl = new YList;
+		yl->sz = (int)list->size();
+		yl->list = new YObj[yl->sz];
+		for(int i=0; i<yl->sz; i++)
+		{
+			yl->list[i] = list->at(i)->ToContract();
+		}
+		return yl;
+	};
+	auto ToDict = [this, ToYStr]() -> YDict*
+	{
+		YDict* yd = new YDict;
+		yd->sz = (int)dict->size();
+		yd->keys = new YObj[yd->sz];
+		yd->vals = new YObj[yd->sz];
+		auto it = dict->begin();
+		for(int i=0; i<yd->sz; i++, it++)
+		{
+			yd->keys[i] = { (void*)ToYStr(it->first), YEObj::Str };
+			yd->vals[i] = it->second->ToContract();
+		}
+		return yd;
+	};
+
+	switch(type)
+	{
+	case INT: return { (void*)(intptr_t)_int, YEObj::Int64 };
+	case FLOAT: return { (void*)(intptr_t)_float, YEObj::Double };
+	case STR: return { (void*)ToYStr(str), YEObj::Str };
+	case LIST: return { (void*)ToList(), YEObj::List };
+	case DICT: return { (void*)ToDict(), YEObj::Dict };
+	default: throw 'n';
+	}
+	return YObj();
+}
+
 string Variable::ToStr() const
 {
 	switch(type)
@@ -381,6 +429,25 @@ string Variable::ToStr() const
 		return "attr(wip): " + attr->name;
 	}
 	return "";
+}
+
+void Variable::FromInt64(int64_t n)
+{
+	Clear();
+	type = INT;
+	_int = n;
+}
+void Variable::FromDouble(double d)
+{
+	Clear();
+	type = FLOAT;
+	_float = d;
+}
+void Variable::FromStr(const std::string& s)
+{
+	Clear();
+	type = STR;
+	str = s;
 }
 
 bool Variable::operator==(Type cmp) const
