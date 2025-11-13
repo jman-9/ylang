@@ -1,7 +1,6 @@
 #pragma once
 #include "../Bytecode.h"
 #include "Variable.h"
-#include "ModuleManager.h"
 #include <vector>
 #include <stack>
 
@@ -27,8 +26,6 @@ protected:
 	std::stack<uint32_t> _retStack;
 	int _sp;
 	int _rp;
-
-	ModuleManager _modMgr;
 };
 
 }

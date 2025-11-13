@@ -669,7 +669,7 @@ void Machine::Run(const Bytecode& code, int start /* = 0 */)
 				throw 'n';
 			}
 
-			_modMgr.Load(name->str);
+			int a = 1;
 		}
 
 

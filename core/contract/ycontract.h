@@ -1,9 +1,7 @@
-#include "ModuleManager.h"
-#include <format>
-using namespace std;
-
+#pragma once
 
 #if defined(_WIN32)
+#define EXPORT __declspec(dllexport)
 #define NOGDI
 #define NOMINMAX
 #define NOCRYPT
@@ -18,47 +16,21 @@ using namespace std;
 #define LOAD_SYM(lib, sym) GetProcAddress((HMODULE)lib, sym)
 #define CLOSE_LIB(lib) FreeLibrary((HMODULE)lib)
 #else
+#define EXPORT __attribute__((visibility("default")))
 #include <dlfcn.h>
 #define LOAD_LIB(name) dlopen(name, RTLD_NOW)
 #define LOAD_SYM(lib, sym) dlsym(lib, sym)
 #define CLOSE_LIB(lib) dlclose(lib)
 #endif
 
-using YModFn = YResult (*)(YObject*);
 
-
-
-
-namespace yvm
+struct YObj
 {
+    void* data = nullptr;
+};
 
-ModuleManager::ModuleManager()
+struct YRet
 {
-
-}
-
-ModuleManager::~ModuleManager()
-{
-
-}
-
-bool ModuleManager::Load(const string& mod)
-{//todo cwd
-	string modPath = format("y.{}.dll", mod);
-
-	void* handle = LOAD_LIB(modPath.c_str());
-	if (!handle)
-	{
-		throw 'n';
-	}
-
-	YModFn v = (YModFn)LOAD_SYM(handle, "version");
-	YModFn p = (YModFn)LOAD_SYM(handle, "platform");
-
-	auto r = v(nullptr);
-
-	int a = 1;
-	return true;
-}
-
-}
+    int code;
+    YObj* obj = nullptr;
+};
