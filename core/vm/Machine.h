@@ -1,8 +1,10 @@
 #pragma once
 #include "../Bytecode.h"
+#include "module/ModuleManager.h"
 #include "Variable.h"
 #include <vector>
 #include <stack>
+
 
 namespace yvm
 {
@@ -26,6 +28,8 @@ protected:
 	std::stack<uint32_t> _retStack;
 	int _sp;
 	int _rp;
+
+	ymod::ModuleManager _modMgr;
 };
 
 }

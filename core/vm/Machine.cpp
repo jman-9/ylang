@@ -1,26 +1,9 @@
 #include "Machine.h"
-#include "module/Module.h"
 #include "primitives/Primitives.h"
+#include "builtin/BuiltinGarage.h"
 #include <format>
 #include <iostream>
 using namespace std;
-
-
-
-YRet Sin(YArgs* args)
-{//TODO int value check
-	auto a1 = (yvm::Variable*)args->args[0].o;
-	double x = a1->_float;
-	double v = sin(x);
-	YRet yr;
-	yr.single.FromDouble(v);
-
-	auto vr = new yvm::Variable;
-	vr->SetFloat(v);
-	yr.single.o = (void*)vr;
-	yr.single.tp = YEObj::YVar;
-	return yr;
-}
 
 
 namespace yvm
@@ -35,6 +18,8 @@ Machine::Machine()
 	_cspStack.push(0);
 	_regs.resize(1000);
 	_stack.resize(5000);
+
+	ybuiltin::Garage::RegisterAll(_modMgr);
 }
 
 
@@ -467,15 +452,15 @@ void Machine::Run(const Bytecode& code, int start /* = 0 */)
 				throw 'n';
 			}
 
-			ymod::Module m;
-			m.name = "math";
-			m.builtin = true;
-			m.funcTbl[ "sin" ] = { "sin", false, 1, Sin};
+			const ymod::Module& mod = _modMgr.GetModule(name->_str);
+			if(mod.IsNull())
+			{//TODO
+				throw 'n';
+			}
 
 			auto v = ResolveVar(ERefKind::LocalVar, _sp);
-			v->SetModule(m);
+			v->SetModule(mod);
 		}
-
 
 		i++;
 	}

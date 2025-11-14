@@ -31,6 +31,8 @@ struct Module
 	bool builtin = false;
 	ModuleFuncTable funcTbl;
 	ModulePropTable propTbl;
+
+	bool IsNull() const;
 };
 
 }

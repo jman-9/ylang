@@ -8,7 +8,8 @@ namespace ymod
 class ModuleManager
 {
 public:
-	void IncludeModule(const Module& module);
+	bool RegisterModule(const Module& module);
+	const Module& GetModule(const std::string& name) const;
 
 protected:
 	std::unordered_map<std::string, Module> _modMap;
