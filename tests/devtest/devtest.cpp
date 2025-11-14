@@ -180,6 +180,55 @@ println(a.len());
 println(a.split());
 a = a.replace('world', 'ylang');
 println(a);
+
+println("=== list example ===");
+
+a = [1, 2, 3];
+println(a.len());
+
+a.append(4);
+a.insert(1, 99);
+println(a);
+
+a.pop(2);
+println(a);
+
+a.pop_front();
+a.pop_back();
+println(a);
+
+println("=== dict example ===");
+
+d = {'x': 10, 'y': 20, 'z': 30};
+println(d.len());
+
+println(d.keys());
+println(d.values());
+println(d.items());
+
+println(d['y']);
+d.pop("y");
+println(d);
+
+d['w'] = 50;
+println(d);
+
+println("=== list-dict mixed example ===");
+
+users = {
+    'alice': [10, 20, 30],
+    'bob': [5, 15, 25]
+};
+
+println(users.keys());
+
+users['alice'].append(40);
+println(users['alice']);
+
+v = users['bob'].pop_back();
+println(v);
+
+
 )TEST";
 
 int main()

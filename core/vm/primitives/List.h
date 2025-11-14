@@ -2,11 +2,11 @@
 #include "contract/ycontract.h"
 #include "module/Module.h"
 
-namespace Str
+namespace yvm::primitive::List
 {
 
 inline const ymod::Module& GetModule();
 
 }
 
-#include "Str.inl"
+#include "List.inl"

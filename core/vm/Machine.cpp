@@ -1,6 +1,6 @@
 #include "Machine.h"
 #include "module/Module.h"
-#include "Str.h"
+#include "primitives/Primitives.h"
 #include <format>
 #include <iostream>
 using namespace std;
@@ -371,159 +371,86 @@ void Machine::Run(const Bytecode& code, int start /* = 0 */)
 			_rpStack.push(_rp);
 
 			Variable* dst = ResolveVar((ERefKind)cal.dstKind, cal.dst);
-
 			if(dst->_type != Variable::ATTR)
 			{
 				throw 'n';
 			}
 
-			Variable* ret = nullptr;
-			if(dst->_attr->owner._type == Variable::MODULE || dst->_attr->owner._type == Variable::STR)
+			const ymod::Module* mod = primitive::GetModule(dst->_attr->owner._type);
+			if(!mod)
 			{
-				const ymod::Module& mod = dst->_attr->owner._type == Variable::MODULE ?
-					dst->_attr->owner._mod : Str::GetModule();
-
-				auto found = mod.funcTbl.find(dst->_attr->name);
-				if(found == mod.funcTbl.end())
+				if(dst->_attr->owner._type != Variable::MODULE)
 				{//TODO
 					throw 'n';
 				}
+				mod = &dst->_attr->owner._mod;
+			}
 
-				if(cal.numArgs < found->second.numPrms)
-				{//TODO
-					throw 'n';
-				}
+			auto found = mod->funcTbl.find(dst->_attr->name);
+			if(found == mod->funcTbl.end())
+			{//TODO
+				throw 'n';
+			}
 
-				YArgs ya;
-				int off = 0;
-				if(found->second.needSelf)
-				{
-					off = 1;
-					ya.Reset(found->second.numPrms + 1);
-					ya.args[0].tp = YEObj::YVar;
-					ya.args[0].o = &dst->_attr->owner;
-				}
-				else
-				{
-					off = 0;
-					ya.Reset(found->second.numPrms);
-				}
+			if(cal.numArgs < found->second.numPrms)
+			{//TODO
+				throw 'n';
+			}
 
-				if(mod.builtin)
-				{
-					for(int i=0; i<found->second.numPrms; i++)
-					{//TODO int value check
-						auto arg = ResolveVar(ERefKind::Reg, i+1);
-						YObj yo { (void*)arg, YEObj::YVar };
-						ya.args[i+off] = yo;
-					}
-				}
-				else
-				{
-					for(int i=0; i<found->second.numPrms; i++)
-					{//TODO int value check
-						auto arg = ResolveVar(ERefKind::Reg, i+1);
-						ya.args[i+off] = arg->ToContract();
-					}
-				}
-				auto yr = found->second.func(&ya);
-				if(yr.code)
-				{//TODO
-					throw 'n';
-				}
-				if(mod.builtin)
-				{
-					if(yr.single.tp != YEObj::None)//TODO real val
-					{
-						ret = (Variable*)yr.single.o;
-					}
-					else if(yr.vals.sz != 0)
-					{//TODO
-					}
-					else
-					{//TODO
-						throw 'n';
-					}
-				}
-				else
-				{//TODO
+			YArgs ya;
+			int off = 0;
+			if(found->second.needSelf)
+			{
+				off = 1;
+				ya.Reset(found->second.numPrms + 1);
+				ya.args[0].tp = YEObj::YVar;
+				ya.args[0].o = &dst->_attr->owner;
+			}
+			else
+			{
+				off = 0;
+				ya.Reset(found->second.numPrms);
+			}
+
+			if(mod->builtin)
+			{
+				for(int i=0; i<found->second.numPrms; i++)
+				{//TODO int value check
+					auto arg = ResolveVar(ERefKind::Reg, i+1);
+					YObj yo { (void*)arg, YEObj::YVar };
+					ya.args[i+off] = yo;
 				}
 			}
-			else if(dst->_attr->owner._type == Variable::DICT)
+			else
 			{
-				if(dst->_attr->name == "keys")
-				{
-					ret = new Variable;
-					ret->_type = Variable::LIST;
-					ret->_list = new vector<Variable*>;
-
-					for(auto& [k, _] : *dst->_attr->owner._dict)
-					{
-						ret->_list->push_back(new Variable{ ._type = Variable::STR, ._str = k });
-					}
+				for(int i=0; i<found->second.numPrms; i++)
+				{//TODO int value check
+					auto arg = ResolveVar(ERefKind::Reg, i+1);
+					ya.args[i+off] = arg->ToContract();
 				}
-				else if(dst->_attr->name == "values")
-				{
-					ret = new Variable;
-					ret->_type = Variable::LIST;
-					ret->_list = new vector<Variable*>;
+			}
 
-					for(auto& [_, v] : *dst->_attr->owner._dict)
-					{
-						ret->_list->push_back(v);
-					}
+			Variable* ret = nullptr;
+			auto yr = found->second.func(&ya);
+			if(yr.code)
+			{//TODO
+				throw 'n';
+			}
+			if(mod->builtin)
+			{
+				if(yr.single.tp != YEObj::None)//TODO real val
+				{
+					ret = (Variable*)yr.single.o;
 				}
-				else if(dst->_attr->name == "items")
-				{
-					ret = new Variable;
-					ret->_type = Variable::LIST;
-					ret->_list = new vector<Variable*>;
-
-					for(auto& [k, v] : *dst->_attr->owner._dict)
-					{
-						Variable* pair = new Variable;
-						pair->_type = Variable::LIST;
-						pair->_list = new vector<Variable*>;
-						Variable* kv = new Variable;
-						kv->_type = Variable::STR;
-						kv->_str = k;
-						pair->_list->push_back(kv);
-						pair->_list->push_back(v);
-
-						ret->_list->push_back(pair);
-					}
-				}
-				else if(dst->_attr->name == "len")
-				{
-					// todo leak
-					ret = new Variable;
-					ret->_type = Variable::INT;
-					ret->_int = (int64_t)dst->_attr->owner._dict->size();
-				}
-				else if(dst->_attr->name == "pop")
-				{
-					if(cal.numArgs != 1)
-					{
-						throw 'n';
-					}
-
-					auto v = ResolveVar(ERefKind::Reg, 1);
-					if(v->_type != Variable::STR)
-					{
-						throw 'n';
-					}
-
-					auto found = dst->_attr->owner._dict->find(v->_str);
-					if(found != dst->_attr->owner._dict->end())
-					{
-						ret = found->second;
-						dst->_attr->owner._dict->erase(found);
-					}
+				else if(yr.vals.sz != 0)
+				{//TODO
 				}
 				else
-				{
-					throw 'n';
+				{//TODO no return
 				}
+			}
+			else
+			{//TODO
 			}
 
 			_rpStack.pop();

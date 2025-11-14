@@ -4,7 +4,7 @@
 #include <string>
 
 
-namespace Str
+namespace yvm::primitive::Str
 {
 using namespace yvm;
 using namespace ymod;
