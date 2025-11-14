@@ -32,6 +32,8 @@ enum class YEObj : uint32_t
 {
 	None,
 
+	YVar,	// for zero-copy
+
 	Self,
 	Int64,
 	Double,

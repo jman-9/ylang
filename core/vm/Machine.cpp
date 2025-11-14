@@ -1,16 +1,24 @@
 #include "Machine.h"
 #include "module/Module.h"
+#include "Str.h"
 #include <format>
 #include <iostream>
 using namespace std;
 
 
+
 YRet Sin(YArgs* args)
 {//TODO int value check
-	double x = args->args[0].ToDouble();
+	auto a1 = (yvm::Variable*)args->args[0].o;
+	double x = a1->_float;
 	double v = sin(x);
 	YRet yr;
 	yr.single.FromDouble(v);
+
+	auto vr = new yvm::Variable;
+	vr->SetFloat(v);
+	yr.single.o = (void*)vr;
+	yr.single.tp = YEObj::YVar;
 	return yr;
 }
 
@@ -370,10 +378,13 @@ void Machine::Run(const Bytecode& code, int start /* = 0 */)
 			}
 
 			Variable* ret = nullptr;
-			if(dst->_attr->owner._type == Variable::MODULE)
+			if(dst->_attr->owner._type == Variable::MODULE || dst->_attr->owner._type == Variable::STR)
 			{
-				auto found = dst->_attr->owner._mod.funcTbl.find(dst->_attr->name);
-				if(found == dst->_attr->owner._mod.funcTbl.end())
+				const ymod::Module& mod = dst->_attr->owner._type == Variable::MODULE ?
+					dst->_attr->owner._mod : Str::GetModule();
+
+				auto found = mod.funcTbl.find(dst->_attr->name);
+				if(found == mod.funcTbl.end())
 				{//TODO
 					throw 'n';
 				}
@@ -384,247 +395,58 @@ void Machine::Run(const Bytecode& code, int start /* = 0 */)
 				}
 
 				YArgs ya;
-				ya.Reset(found->second.numPrms);
-				for(int i=0; i<found->second.numPrms; i++)
-				{//TODO int value check
-					auto arg = ResolveVar(ERefKind::Reg, i+1);
-					ya.args[i] = arg->ToContract();
+				int off = 0;
+				if(found->second.needSelf)
+				{
+					off = 1;
+					ya.Reset(found->second.numPrms + 1);
+					ya.args[0].tp = YEObj::YVar;
+					ya.args[0].o = &dst->_attr->owner;
+				}
+				else
+				{
+					off = 0;
+					ya.Reset(found->second.numPrms);
+				}
+
+				if(mod.builtin)
+				{
+					for(int i=0; i<found->second.numPrms; i++)
+					{//TODO int value check
+						auto arg = ResolveVar(ERefKind::Reg, i+1);
+						YObj yo { (void*)arg, YEObj::YVar };
+						ya.args[i+off] = yo;
+					}
+				}
+				else
+				{
+					for(int i=0; i<found->second.numPrms; i++)
+					{//TODO int value check
+						auto arg = ResolveVar(ERefKind::Reg, i+1);
+						ya.args[i+off] = arg->ToContract();
+					}
 				}
 				auto yr = found->second.func(&ya);
 				if(yr.code)
 				{//TODO
 					throw 'n';
 				}
-				if(yr.single.tp != YEObj::None)//TODO real val
+				if(mod.builtin)
 				{
-					ret = Variable::New(yr.single);
-				}
-				else if(yr.vals.sz != 0)
-				{//TODO
-				}
-				else
-				{//TODO
-					throw 'n';
-				}
-			}
-			else if(dst->_attr->owner._type == Variable::STR)
-			{
-				if(dst->_attr->name == "len")
-				{
-					ret = Variable::NewNum(dst->_attr->owner._str.size());
-				}
-				else if(dst->_attr->name == "find")
-				{
-					if(cal.numArgs == 1)
+					if(yr.single.tp != YEObj::None)//TODO real val
 					{
-						auto s = ResolveVar(ERefKind::Reg, 1);
-						if(*s != Variable::STR)
-						{
-							throw 'n';
-						}
-
-						size_t pos = dst->_attr->owner._str.find(s->_str);
-						ret = Variable::NewNum(pos == string::npos ? -1 : pos);
+						ret = (Variable*)yr.single.o;
 					}
-					else if(cal.numArgs == 2)
-					{
-						auto i = ResolveVar(ERefKind::Reg, 1);
-						auto s = ResolveVar(ERefKind::Reg, 2);
-						if(*s != Variable::STR)
-						{
-							throw 'n';
-						}
-						if(*i != Variable::INT)
-						{
-							throw 'n';
-						}
-
-						size_t pos = dst->_attr->owner._str.find(s->_str, s->_int);
-						ret = Variable::NewNum(pos == string::npos ? -1 : pos);
+					else if(yr.vals.sz != 0)
+					{//TODO
 					}
 					else
-					{
-						throw 'n';
-					}
-				}
-				else if(dst->_attr->name == "substr")
-				{
-					if(cal.numArgs == 1)
-					{
-						auto s = ResolveVar(ERefKind::Reg, 1);
-						if(*s != Variable::INT)
-						{
-							throw 'n';
-						}
-
-						ret = Variable::NewStr(dst->_attr->owner._str.substr(s->_int));
-					}
-					else if(cal.numArgs == 2)
-					{
-						auto s = ResolveVar(ERefKind::Reg, 1);
-						auto l = ResolveVar(ERefKind::Reg, 2);
-						if(*s != Variable::INT)
-						{
-							throw 'n';
-						}
-						if(*l != Variable::INT)
-						{
-							throw 'n';
-						}
-
-						ret = Variable::NewStr(dst->_attr->owner._str.substr(s->_int, l->_int));
-					}
-					else
-					{
-						throw 'n';
-					}
-				}
-				else if(dst->_attr->name == "replace")
-				{
-					auto o = ResolveVar(ERefKind::Reg, 1);
-					auto n = ResolveVar(ERefKind::Reg, 2);
-					if(*o != Variable::STR)
-					{
-						throw 'n';
-					}
-					if(*n != Variable::STR)
-					{
-						throw 'n';
-					}
-
-					string r = dst->_attr->owner._str;
-					if(!o->_str.empty())
-					{
-						size_t pos = 0;
-						for(size_t pos=0; (pos = r.find(o->_str, pos)) != std::string::npos; ) {
-							r.replace(pos, o->_str.length(), n->_str);
-							pos += n->_str.length();
-						}
-						ret = Variable::NewStr(r);
-					}
-				}
-				else if(dst->_attr->name == "split")
-				{
-					if(cal.numArgs == 0)
-					{
-						const string& src = dst->_attr->owner._str;
-						size_t start = src.find_first_not_of(" \t\n\r");
-						size_t end = 0;
-						ret = Variable::NewList();
-
-						for( ; start != string::npos; )
-						{
-							end = src.find_first_of(" \t\n\r", start);
-							ret->_list->push_back(Variable::NewStr(src.substr(start, end - start)));
-							start = src.find_first_not_of(" \t\n\r", end);
-						}
-					}
-					else if(cal.numArgs == 1)
-					{
-						auto d = ResolveVar(ERefKind::Reg, 1);
-						if(*d != Variable::STR)
-						{
-							throw 'n';
-						}
-
-						if(d->_str.empty())
-						{
-							ret = Variable::NewStr(dst->_attr->owner._str);
-						}
-						else
-						{
-							size_t start = 0;
-							size_t end = 0;
-							ret = Variable::NewList();
-
-							const string& src = dst->_attr->owner._str;
-							for( ; (end = src.find(d->_str, start)) != std::string::npos; )
-							{
-								ret->_list->push_back(Variable::NewStr(src.substr(start, end - start)));
-								start = end + d->_str.length();
-							}
-							ret->_list->push_back(Variable::NewStr(src.substr(start, end - start)));
-						}
-					}
-					else
-					{
+					{//TODO
 						throw 'n';
 					}
 				}
 				else
-				{
-					throw 'n';
-				}
-			}
-			if(dst->_attr->owner._type == Variable::LIST)
-			{
-				if(dst->_attr->name == "append")
-				{
-					if(cal.numArgs != 1)
-					{
-						throw 'n';
-					}
-
-					auto v = ResolveVar(ERefKind::Reg, 1);
-
-					dst->_attr->owner._list->push_back(v->Clone());
-				}
-				else if(dst->_attr->name == "insert")
-				{
-					if(cal.numArgs != 2)
-					{
-						throw 'n';
-					}
-
-					auto i = ResolveVar(ERefKind::Reg, 1);
-					auto v = ResolveVar(ERefKind::Reg, 2);
-
-					if(*v != Variable::INT)
-					{
-						throw 'n';
-					}
-
-					dst->_attr->owner._list->insert(dst->_attr->owner._list->begin() + i->_int, v->Clone());
-				}
-				else if(dst->_attr->name == "pop")
-				{
-					if(cal.numArgs != 1)
-					{
-						throw 'n';
-					}
-
-					auto v = ResolveVar(ERefKind::Reg, 1);
-					if(v->_type != Variable::INT)
-					{
-						throw 'n';
-					}
-
-					// todo leak
-					ret = dst->_attr->owner._list->at(v->_int);
-					dst->_attr->owner._list->erase(dst->_attr->owner._list->begin() + v->_int);
-				}
-				else if(dst->_attr->name == "pop_front")
-				{
-					// todo leak
-					ret = dst->_attr->owner._list->front();
-					dst->_attr->owner._list->erase(dst->_attr->owner._list->begin());
-				}
-				else if(dst->_attr->name == "pop_back")
-				{
-					// todo leak
-					ret = dst->_attr->owner._list->back();
-					dst->_attr->owner._list->pop_back();
-				}
-				else if(dst->_attr->name == "len")
-				{
-					// todo leak
-					ret = new Variable;
-					ret->_type = Variable::INT;
-					ret->_int = (int64_t)dst->_attr->owner._list->size();
-				}
-				else
-				{
-					throw 'n';
+				{//TODO
 				}
 			}
 			else if(dst->_attr->owner._type == Variable::DICT)
@@ -720,7 +542,8 @@ void Machine::Run(const Bytecode& code, int start /* = 0 */)
 
 			ymod::Module m;
 			m.name = "math";
-			m.funcTbl[ "sin" ] =  { "sin", 1, Sin};
+			m.builtin = true;
+			m.funcTbl[ "sin" ] = { "sin", false, 1, Sin};
 
 			auto v = ResolveVar(ERefKind::LocalVar, _sp);
 			v->SetModule(m);

@@ -9,9 +9,10 @@ namespace ymod
 struct ModuleFuncDesc
 {
 	std::string name;
-	int numPrms;
+	bool needSelf = false;
+	int numPrms = 0;	// todo clarify min params
 	//TODO _type list
-	YModFn func;
+	YModFn func = nullptr;
 };
 
 struct ModulePropDesc
@@ -27,6 +28,7 @@ using ModulePropTable = std::unordered_map<std::string, ModulePropDesc>;
 struct Module
 {
 	std::string name;
+	bool builtin = false;
 	ModuleFuncTable funcTbl;
 	ModulePropTable propTbl;
 };

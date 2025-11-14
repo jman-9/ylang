@@ -174,6 +174,12 @@ const char* testcode2 =
 R"TEST(
 include math;
 println(math.sin(0.5));
+
+a = "hello world";
+println(a.len());
+println(a.split());
+a = a.replace('world', 'ylang');
+println(a);
 )TEST";
 
 int main()
