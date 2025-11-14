@@ -15,10 +15,10 @@ struct Constant
 		STR,
 	};
 
-	Type type;
+	Type _type;
 
 	int64_t _int;
-	std::string str;
+	std::string _str;
 	double _float;
 };
 

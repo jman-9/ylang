@@ -334,18 +334,18 @@ bool BytecodeBuilder::Build(const TreeNode& code, Bytecode& retCode)
 		Constant c;
 		if(tok == EToken::Int)
 		{
-			c.type = Constant::INT;
+			c._type = Constant::INT;
 			c._int = stoll(tok.val, nullptr, 0);
 		}
 		else if(tok == EToken::Float)
 		{
-			c.type = Constant::FLOAT;
+			c._type = Constant::FLOAT;
 			c._float = stod(tok.val);
 		}
 		else
 		{
-			c.type = Constant::STR;
-			c.str = tok.val;
+			c._type = Constant::STR;
+			c._str = tok.val;
 		}
 
 		retCode._consts.push_back(c);

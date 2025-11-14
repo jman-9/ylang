@@ -2,15 +2,15 @@
 #include "contract/ycontract.h"
 #include <unordered_map>
 
-namespace yvm
-{
 
+namespace ymod
+{
 
 struct ModuleFuncDesc
 {
 	std::string name;
 	int numPrms;
-	//TODO type list
+	//TODO _type list
 	YModFn func;
 };
 

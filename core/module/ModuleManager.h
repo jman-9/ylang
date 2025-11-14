@@ -2,7 +2,7 @@
 #include "Module.h"
 
 
-namespace yvm
+namespace ymod
 {
 
 class ModuleManager

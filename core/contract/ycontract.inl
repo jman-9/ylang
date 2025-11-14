@@ -8,7 +8,7 @@ inline int64_t YObj::ToInt64() const
 
 inline double YObj::ToDouble() const
 {
-	return (double)(intptr_t)o;
+	return *(double*)&o;
 }
 
 inline std::string YObj::ToStr() const
@@ -36,7 +36,7 @@ inline bool YObj::FromDouble(double d)
 {
 	if(o) return false;//TODO
 	tp = YEObj::Double;
-	o = (void*)(intptr_t)d;
+	o = (void*)*(intptr_t*)&d;
 	return true;
 }
 

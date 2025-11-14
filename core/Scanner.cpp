@@ -424,7 +424,7 @@ uint32_t Scanner::AdvanceFloating(const std::string& code, int start, Error& ret
 
 	int i = start + 1;
 	int end = -1;
-	EFloat type = EFloat::NONE;
+	EFloat _type = EFloat::NONE;
 
 	if(i >= code.size())
 	{//not float
@@ -440,13 +440,13 @@ uint32_t Scanner::AdvanceFloating(const std::string& code, int start, Error& ret
 			if(code[i] == '.')
 			{
 				i++;
-				type = EFloat::FLOAT;
+				_type = EFloat::FLOAT;
 				break;
 			}
 			else if(code[i] == 'e' || code[i] == 'E')
 			{
 				i++;
-				type = EFloat::EXP;
+				_type = EFloat::EXP;
 				break;
 			}
 			else
@@ -458,15 +458,15 @@ uint32_t Scanner::AdvanceFloating(const std::string& code, int start, Error& ret
 	else
 	{
 		if(isdigit(code[i]))
-			type = EFloat::FLOAT;
+			_type = EFloat::FLOAT;
 	}
 
-	if(type == EFloat::NONE)
+	if(_type == EFloat::NONE)
 	{
 		return 0;
 	}
 
-	if(type == EFloat::FLOAT)
+	if(_type == EFloat::FLOAT)
 	{
 		for(; i<code.size(); i++)
 		{
@@ -477,11 +477,11 @@ uint32_t Scanner::AdvanceFloating(const std::string& code, int start, Error& ret
 		if(i < code.size() && (code[i] == 'e' || code[i] == 'E'))
 		{
 			i++;
-			type = EFloat::EXP;
+			_type = EFloat::EXP;
 		}
 	}
 
-	if(type == EFloat::EXP)
+	if(_type == EFloat::EXP)
 	{
 		if(i >= code.size())
 		{//TODO err

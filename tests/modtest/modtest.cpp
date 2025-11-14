@@ -38,14 +38,14 @@ int main()
         }
     }
 
-    Variable name { .type = yvm::Variable::STR, .str = "Lucia" };
-    Variable age { .type = yvm::Variable::INT, ._int = 1 };
-    Variable scores { .type = yvm::Variable::LIST, };
+    Variable name { ._type = yvm::Variable::STR, ._str = "Lucia" };
+    Variable age { ._type = yvm::Variable::INT, ._int = 1 };
+    Variable scores { ._type = yvm::Variable::LIST, };
 
-    scores.list = new vector<Variable*>();
-    scores.list->push_back(new Variable { .type = Variable::FLOAT, ._float = 75.0 });
-    scores.list->push_back(new Variable { .type = Variable::FLOAT, ._float = 45.0 });
-    scores.list->push_back(new Variable { .type = Variable::FLOAT, ._float = 65.0 });
+    scores._list = new vector<Variable*>();
+    scores._list->push_back(new Variable { ._type = Variable::FLOAT, ._float = 75.0 });
+    scores._list->push_back(new Variable { ._type = Variable::FLOAT, ._float = 45.0 });
+    scores._list->push_back(new Variable { ._type = Variable::FLOAT, ._float = 65.0 });
 
     YArgs args;
     args.Reset(3);
@@ -57,7 +57,7 @@ int main()
     double avg = d.single.ToDouble();
 
     Variable vavg;
-    vavg.FromDouble(avg);
+    vavg.SetFloat(avg);
 
 	cout << vavg.ToStr() << '\n';
 };

@@ -10,57 +10,82 @@ namespace yvm
 Variable* Variable::NewNum(int64_t num)
 {
 	auto v = new Variable;
-	v->SetNum(num);
+	v->SetInt(num);
 	return v;
 }
-
 Variable* Variable::NewStr(const string& str)
 {
 	auto v = new Variable;
 	v->SetStr(str);
 	return v;
 }
-
 Variable* Variable::NewList(const vector<Variable*>& list /*= std::vector<Variable>()*/)
 {
 	auto v = new Variable;
 	v->SetList(list);
 	return v;
 }
+yvm::Variable* Variable::New(YObj o)
+{
+	auto v = new Variable;
+	v->SetValueFromContract(o);
+	return v;
+}
 
 
 void Variable::Clear()
 {
-	type = NONE;
+	_type = NONE;
 	_int = 0;
-	str = "";
+	_str = "";
 	_float = 0.0;
-	obj = nullptr;
-	list = nullptr;
-	dict = nullptr;
-	ref = nullptr;
-	attr = nullptr;
+	_obj = nullptr;
+	_list = nullptr;
+	_dict = nullptr;
+	_ref = nullptr;
+	_attr = nullptr;
 }
 
-void Variable::SetNum(int64_t argNum)
+void Variable::SetInt(int64_t argNum)
 {
 	Clear();
 	_int = argNum;
-	type = INT;
+	_type = INT;
 }
-
+void Variable::SetFloat(double f)
+{
+	Clear();
+	_float = f;
+	_type = FLOAT;
+}
 void Variable::SetStr(const string& argStr)
 {
 	Clear();
-	str = argStr;
-	type = STR;
+	_str = argStr;
+	_type = STR;
 }
-
 void Variable::SetList(const vector<Variable *>& argList /* = std::vector<Variable *>() */)
 {
 	Clear();
-	type = LIST;
-	list = new vector<Variable*>(argList);
+	_type = LIST;
+	_list = new vector<Variable*>(argList);
+}
+void Variable::SetModule(const ymod::Module& mod)
+{
+	Clear();
+	_type = MODULE;
+	_mod = mod;
+}
+void Variable::SetValueFromContract(YObj o)
+{
+	switch(o.tp)
+	{
+	case YEObj::Int64: return SetInt(o.ToInt64());
+	case YEObj::Double: return SetFloat(o.ToDouble());
+	case YEObj::Str: return SetStr(o.ToStr());
+	default://TODO
+		throw 'n';
+	}
 }
 
 Variable* Variable::Clone()
@@ -78,9 +103,9 @@ bool Variable::Assign(EToken op, const Variable& rval)
 		return false;
 	}
 
-	if(type == REF)
+	if(_type == REF)
 	{
-		auto t = ref;
+		auto t = _ref;
 		Clear();
 		return t->Assign(op, rval);
 	}
@@ -91,9 +116,9 @@ bool Variable::Assign(EToken op, const Variable& rval)
 	}
 	else
 	{
-		if(type == LIST || rval.type == LIST)
+		if(_type == LIST || rval._type == LIST)
 		{
-			if(type != LIST || rval.type != LIST)
+			if(_type != LIST || rval._type != LIST)
 			{
 				throw 'n';
 				return false;
@@ -101,25 +126,25 @@ bool Variable::Assign(EToken op, const Variable& rval)
 
 			int a = 1;
 		}
-		else if(type == STR || rval.type == STR)
+		else if(_type == STR || rval._type == STR)
 		{
 			if(op == EToken::PlusAssign)
 			{
-				if(type == INT)
+				if(_type == INT)
 				{
 					Clear();
-					type = STR;
-					str = format("{}{}", _int, rval.str);
+					_type = STR;
+					_str = format("{}{}", _int, rval._str);
 				}
-				else if(type == FLOAT)
+				else if(_type == FLOAT)
 				{
 					Clear();
-					type = STR;
-					str = format("{}{}", _float, rval.str);
+					_type = STR;
+					_str = format("{}{}", _float, rval._str);
 				}
-				else if(type == STR)
+				else if(_type == STR)
 				{
-					str += rval.ToStr();
+					_str += rval.ToStr();
 				}
 			}
 			else
@@ -128,15 +153,15 @@ bool Variable::Assign(EToken op, const Variable& rval)
 				return false;
 			}
 		}
-		else if(type == FLOAT || rval.type == FLOAT)
+		else if(_type == FLOAT || rval._type == FLOAT)
 		{
-			if(type == INT)
+			if(_type == INT)
 			{
-				type = FLOAT;
+				_type = FLOAT;
 				_float = (double)_int;
 			}
 
-			double rfloat = rval.type == FLOAT ? rval._float : (double)rval._int;
+			double rfloat = rval._type == FLOAT ? rval._float : (double)rval._int;
 
 			switch(op)
 			{
@@ -149,9 +174,9 @@ bool Variable::Assign(EToken op, const Variable& rval)
 		}
 		else
 		{
-			if(type == NONE)
+			if(_type == NONE)
 			{
-				type = INT;
+				_type = INT;
 				_int = 0;
 			}
 
@@ -178,23 +203,23 @@ bool Variable::CalcAndAssign(const Variable& lhs, EToken calcOp, const Variable&
 {
 	//TODO +, - confusion if(Token::IsPrefixUnary(calcOp))
 
-	if(lhs.type == STR || rhs.type == STR)
+	if(lhs._type == STR || rhs._type == STR)
 	{//todo refactor
 		if(calcOp == EToken::Plus)
 		{
-			if(lhs.type == INT)
+			if(lhs._type == INT)
 			{
-				str = format("{}{}", lhs._int, rhs.str);
+				_str = format("{}{}", lhs._int, rhs._str);
 			}
-			else if(lhs.type == FLOAT)
+			else if(lhs._type == FLOAT)
 			{
-				str = format("{}{}", lhs._float, rhs.str);
+				_str = format("{}{}", lhs._float, rhs._str);
 			}
-			else if(lhs.type == STR)
+			else if(lhs._type == STR)
 			{
-				str = lhs.str + rhs.ToStr();
+				_str = lhs._str + rhs.ToStr();
 			}
-			type = STR;
+			_type = STR;
 		}
 		else if(calcOp == EToken::Equal || calcOp == EToken::NotEqual)
 		{
@@ -202,29 +227,29 @@ bool Variable::CalcAndAssign(const Variable& lhs, EToken calcOp, const Variable&
 			{
 				switch(calcOp)
 				{
-				case EToken::Equal:			_int = lhs.str == rhs.str; break;
-				case EToken::NotEqual:		_int = lhs.str != rhs.str; break;
+				case EToken::Equal:			_int = lhs._str == rhs._str; break;
+				case EToken::NotEqual:		_int = lhs._str != rhs._str; break;
 				}
 			}
 			else
 			{
-				type = INT;
+				_type = INT;
 				_int = 0;
 			}
 		}
 		else if(calcOp == EToken::Dot)
 		{
-			if(rhs.type != STR)
+			if(rhs._type != STR)
 			{
 				throw 'n';
 			}
 
 			Attribute* newAttr = new Attribute();
 			newAttr->owner = lhs;
-			newAttr->name = rhs.str;
+			newAttr->name = rhs._str;
 			Clear();
-			type = ATTR;
-			attr = newAttr;
+			_type = ATTR;
+			_attr = newAttr;
 		}
 		else
 		{//TODO impl
@@ -232,10 +257,10 @@ bool Variable::CalcAndAssign(const Variable& lhs, EToken calcOp, const Variable&
 			return false;
 		}
 	}
-	else if(lhs.type == FLOAT || rhs.type == FLOAT)
+	else if(lhs._type == FLOAT || rhs._type == FLOAT)
 	{
-		double lfloat = lhs.type == FLOAT ? lhs._float : (double)lhs._int;
-		double rfloat = rhs.type == FLOAT ? rhs._float : (double)rhs._int;
+		double lfloat = lhs._type == FLOAT ? lhs._float : (double)lhs._int;
+		double rfloat = rhs._type == FLOAT ? rhs._float : (double)rhs._int;
 
 		if(calcOp == EToken::Slash && rfloat == 0.0)
 		{//TODO div 0
@@ -250,7 +275,7 @@ bool Variable::CalcAndAssign(const Variable& lhs, EToken calcOp, const Variable&
 		case EToken::Slash:			_float = lfloat / rfloat; break;
 		default:
 			{
-				type = INT;
+				_type = INT;
 				switch(calcOp)
 				{
 				case EToken::And:			_int = lfloat && rfloat; break;
@@ -266,7 +291,7 @@ bool Variable::CalcAndAssign(const Variable& lhs, EToken calcOp, const Variable&
 				}
 			}
 		}
-		type = FLOAT;
+		_type = FLOAT;
 	}
 	else
 	{
@@ -301,7 +326,7 @@ bool Variable::CalcAndAssign(const Variable& lhs, EToken calcOp, const Variable&
 		default:
 			throw 'n';
 		}
-		type = INT;
+		_type = INT;
 	}
 
 	return true;
@@ -309,7 +334,7 @@ bool Variable::CalcAndAssign(const Variable& lhs, EToken calcOp, const Variable&
 
 bool Variable::CalcUnaryAndAssign(EToken unaryOp, const Variable& rhs)
 {
-	if(rhs.type == STR || rhs.type == NONE)
+	if(rhs._type == STR || rhs._type == NONE)
 	{
 		throw 'n';
 		return false;
@@ -324,7 +349,7 @@ bool Variable::CalcUnaryAndAssign(EToken unaryOp, const Variable& rhs)
 	default:
 		throw 'n';
 	}
-	type = INT;
+	_type = INT;
 
 	return true;
 }
@@ -342,21 +367,21 @@ YObj Variable::ToContract() const
 	auto ToList = [this]() -> YList*
 	{
 		YList* yl = new YList;
-		yl->sz = (int)list->size();
+		yl->sz = (int)_list->size();
 		yl->list = new YObj[yl->sz];
 		for(int i=0; i<yl->sz; i++)
 		{
-			yl->list[i] = list->at(i)->ToContract();
+			yl->list[i] = _list->at(i)->ToContract();
 		}
 		return yl;
 	};
 	auto ToDict = [this, ToYStr]() -> YDict*
 	{
 		YDict* yd = new YDict;
-		yd->sz = (int)dict->size();
+		yd->sz = (int)_dict->size();
 		yd->keys = new YObj[yd->sz];
 		yd->vals = new YObj[yd->sz];
-		auto it = dict->begin();
+		auto it = _dict->begin();
 		for(int i=0; i<yd->sz; i++, it++)
 		{
 			yd->keys[i] = { (void*)ToYStr(it->first), YEObj::Str };
@@ -365,11 +390,11 @@ YObj Variable::ToContract() const
 		return yd;
 	};
 
-	switch(type)
+	switch(_type)
 	{
 	case INT: return { (void*)(intptr_t)_int, YEObj::Int64 };
-	case FLOAT: return { (void*)(intptr_t)_float, YEObj::Double };
-	case STR: return { (void*)ToYStr(str), YEObj::Str };
+	case FLOAT: return { (void*)(*(intptr_t*)&_float), YEObj::Double };
+	case STR: return { (void*)ToYStr(_str), YEObj::Str };
 	case LIST: return { (void*)ToList(), YEObj::List };
 	case DICT: return { (void*)ToDict(), YEObj::Dict };
 	default: throw 'n';
@@ -379,22 +404,22 @@ YObj Variable::ToContract() const
 
 string Variable::ToStr() const
 {
-	switch(type)
+	switch(_type)
 	{
 	case INT:
 		return to_string(_int);
 	case FLOAT:
 		return to_string(_float);
 	case STR:
-		return str;
+		return _str;
 	case OBJECT:
 		return "obj(wip)";
 	case LIST:
 		{
 			string r = "[";
-			if(!list->empty())
+			if(!_list->empty())
 			{
-				for(auto v: *list)
+				for(auto v: *_list)
 				{
 					string t = v->ToStr();
 					if(*v == STR) t = "'" + t + "'";
@@ -409,9 +434,9 @@ string Variable::ToStr() const
 	case DICT:
 		{
 			string r = "{";
-			if(!dict->empty())
+			if(!_dict->empty())
 			{
-				for(auto [k, v]: *dict)
+				for(auto [k, v]: *_dict)
 				{
 					string t = v->ToStr();
 					if(*v == STR) t = "'" + t + "'";
@@ -424,39 +449,20 @@ string Variable::ToStr() const
 			return r;
 		}
 	case REF:
-		return "ref: " + ref->ToStr();
+		return "ref: " + _ref->ToStr();
 	case ATTR:
-		return "attr(wip): " + attr->name;
+		return "attr(wip): " + _attr->name;
 	}
 	return "";
 }
 
-void Variable::FromInt64(int64_t n)
-{
-	Clear();
-	type = INT;
-	_int = n;
-}
-void Variable::FromDouble(double d)
-{
-	Clear();
-	type = FLOAT;
-	_float = d;
-}
-void Variable::FromStr(const std::string& s)
-{
-	Clear();
-	type = STR;
-	str = s;
-}
-
 bool Variable::operator==(Type cmp) const
 {
-	return type == cmp;
+	return _type == cmp;
 }
 bool Variable::operator!=(Type cmp) const
 {
-	return type != cmp;
+	return _type != cmp;
 }
 
 }

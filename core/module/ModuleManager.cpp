@@ -1,6 +1,6 @@
 #include "ModuleManager.h"
 
-namespace yvm
+namespace ymod
 {
 
 void ModuleManager::IncludeModule(const Module& module)

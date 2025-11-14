@@ -32,6 +32,7 @@ enum class YEObj : uint32_t
 {
 	None,
 
+	Self,
 	Int64,
 	Double,
 	Str,

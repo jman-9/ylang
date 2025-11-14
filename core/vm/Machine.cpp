@@ -1,7 +1,19 @@
 #include "Machine.h"
+#include "module/Module.h"
 #include <format>
 #include <iostream>
 using namespace std;
+
+
+YRet Sin(YArgs* args)
+{//TODO int value check
+	double x = args->args[0].ToDouble();
+	double v = sin(x);
+	YRet yr;
+	yr.single.FromDouble(v);
+	return yr;
+}
+
 
 namespace yvm
 {
@@ -45,11 +57,11 @@ void Machine::Run(const Bytecode& code, int start /* = 0 */)
 	_consts.clear();
 	for(auto& c : code._consts)
 	{
-		switch(c.type)
+		switch(c._type)
 		{
-		case Constant::INT:		_consts.push_back({ .type = Variable::INT, ._int = c._int }); break;
-		case Constant::FLOAT:	_consts.push_back({ .type = Variable::FLOAT, ._float = c._float }); break;
-		case Constant::STR:		_consts.push_back({ .type = Variable::STR, .str = c.str }); break;
+		case Constant::INT:		_consts.push_back({ ._type = Variable::INT, ._int = c._int }); break;
+		case Constant::FLOAT:	_consts.push_back({ ._type = Variable::FLOAT, ._float = c._float }); break;
+		case Constant::STR:		_consts.push_back({ ._type = Variable::STR, ._str = c._str }); break;
 		default: //TODO
 			throw 'n';
 		}
@@ -198,29 +210,29 @@ void Machine::Run(const Bytecode& code, int start /* = 0 */)
 			Variable* dst = ResolveVar((ERefKind)ls.dstKind, ls.dst);
 
 			Variable* t = nullptr;
-			if(dst->type != Variable::REF)
+			if(dst->_type != Variable::REF)
 			{
 				t = dst;
 			}
 			else
 			{
-				auto t = dst->ref;
+				auto t = dst->_ref;
 				dst->Clear();
 			}
 			t->Clear();
-			t->list = new std::vector<Variable *>;
-			t->type = Variable::LIST;
+			t->_list = new std::vector<Variable *>;
+			t->_type = Variable::LIST;
 		}
 		else if(inst == EOpcode::ListAdd)
 		{
 			const Op::ListAdd& la = *(Op::ListAdd*)inst.code.data();
 			Variable* src = ResolveVar((ERefKind)la.srcKind, la.src);
 			Variable* dst = ResolveVar((ERefKind)la.dstKind, la.dst);
-			if(dst->type != Variable::LIST)
+			if(dst->_type != Variable::LIST)
 			{
 				throw 'n';
 			}
-			dst->list->push_back(src->Clone());
+			dst->_list->push_back(src->Clone());
 		}
 		else if(inst == EOpcode::DictSet)
 		{
@@ -228,18 +240,18 @@ void Machine::Run(const Bytecode& code, int start /* = 0 */)
 			Variable* dst = ResolveVar((ERefKind)ds.dstKind, ds.dst);
 
 			Variable* t = nullptr;
-			if(dst->type != Variable::REF)
+			if(dst->_type != Variable::REF)
 			{
 				t = dst;
 			}
 			else
 			{
-				t = dst->ref;
+				t = dst->_ref;
 				dst->Clear();
 			}
 			t->Clear();
-			t->dict = new std::unordered_map<std::string, Variable *>;
-			t->type = Variable::DICT;
+			t->_dict = new std::unordered_map<std::string, Variable *>;
+			t->_type = Variable::DICT;
 		}
 		else if(inst == EOpcode::DictAdd)
 		{
@@ -247,16 +259,16 @@ void Machine::Run(const Bytecode& code, int start /* = 0 */)
 			Variable* val = ResolveVar((ERefKind)da.valKind, da.val);
 			Variable* key = ResolveVar((ERefKind)da.keyKind, da.key);
 			Variable* dst = ResolveVar((ERefKind)da.dstKind, da.dst);
-			if(dst->type != Variable::DICT)
+			if(dst->_type != Variable::DICT)
 			{
 				throw 'n';
 			}
-			if(key->type != Variable::STR)
+			if(key->_type != Variable::STR)
 			{
 				throw 'n';
 			}
 
-			(*dst->dict)[key->str] = val->Clone();
+			(*dst->_dict)[key->_str] = val->Clone();
 		}
 		else if(inst == EOpcode::Index)
 		{
@@ -264,24 +276,24 @@ void Machine::Run(const Bytecode& code, int start /* = 0 */)
 			Variable* idx = ResolveVar((ERefKind)li.idxKind, li.idx);
 			Variable* dst = ResolveVar((ERefKind)li.dstKind, li.dst);
 
-			if(idx->type == Variable::INT)
+			if(idx->_type == Variable::INT)
 			{
-				if(dst->type != Variable::LIST)
+				if(dst->_type != Variable::LIST)
 				{
 					throw 'n';
 				}
 
-				*dst = *dst->list->at(idx->_int);
+				*dst = *dst->_list->at(idx->_int);
 			}
-			else if(idx->type == Variable::STR)
+			else if(idx->_type == Variable::STR)
 			{
-				if(dst->type != Variable::DICT)
+				if(dst->_type != Variable::DICT)
 				{
 					throw 'n';
 				}
 
-				auto found = dst->dict->find(idx->str);
-				if(found == dst->dict->end())
+				auto found = dst->_dict->find(idx->_str);
+				if(found == dst->_dict->end())
 				{
 					throw 'n';
 				}
@@ -299,30 +311,30 @@ void Machine::Run(const Bytecode& code, int start /* = 0 */)
 			Variable* idx = ResolveVar((ERefKind)lli.idxKind, lli.idx);
 			Variable* dst = ResolveVar((ERefKind)lli.dstKind, lli.dst);
 
-			if(idx->type == Variable::INT)
+			if(idx->_type == Variable::INT)
 			{
-				if(dst->type != Variable::LIST)
+				if(dst->_type != Variable::LIST)
 				{
 					throw 'n';
 				}
 
-				auto t = dst->list->at(idx->_int);
+				auto t = dst->_list->at(idx->_int);
 				dst->Clear();
-				dst->type = Variable::REF;
-				dst->ref = t;
+				dst->_type = Variable::REF;
+				dst->_ref = t;
 			}
-			else if(idx->type == Variable::STR)
+			else if(idx->_type == Variable::STR)
 			{
-				if(dst->type != Variable::DICT)
+				if(dst->_type != Variable::DICT)
 				{
 					throw 'n';
 				}
 
 				Variable* t = nullptr;
-				auto found = dst->dict->find(idx->str);
-				if(found == dst->dict->end())
+				auto found = dst->_dict->find(idx->_str);
+				if(found == dst->_dict->end())
 				{
-					auto inserted = dst->dict->insert({idx->str, new Variable()});
+					auto inserted = dst->_dict->insert({idx->_str, new Variable()});
 					if(!inserted.second)
 					{
 						throw 'n';
@@ -335,8 +347,8 @@ void Machine::Run(const Bytecode& code, int start /* = 0 */)
 				}
 
 				dst->Clear();
-				dst->type = Variable::REF;
-				dst->ref = t;
+				dst->_type = Variable::REF;
+				dst->_ref = t;
 			}
 			else
 			{
@@ -352,19 +364,56 @@ void Machine::Run(const Bytecode& code, int start /* = 0 */)
 
 			Variable* dst = ResolveVar((ERefKind)cal.dstKind, cal.dst);
 
-			if(dst->type != Variable::ATTR)
+			if(dst->_type != Variable::ATTR)
 			{
 				throw 'n';
 			}
 
 			Variable* ret = nullptr;
-			if(dst->attr->owner.type == Variable::STR)
+			if(dst->_attr->owner._type == Variable::MODULE)
 			{
-				if(dst->attr->name == "len")
-				{
-					ret = Variable::NewNum(dst->attr->owner.str.size());
+				auto found = dst->_attr->owner._mod.funcTbl.find(dst->_attr->name);
+				if(found == dst->_attr->owner._mod.funcTbl.end())
+				{//TODO
+					throw 'n';
 				}
-				else if(dst->attr->name == "find")
+
+				if(cal.numArgs < found->second.numPrms)
+				{//TODO
+					throw 'n';
+				}
+
+				YArgs ya;
+				ya.Reset(found->second.numPrms);
+				for(int i=0; i<found->second.numPrms; i++)
+				{//TODO int value check
+					auto arg = ResolveVar(ERefKind::Reg, i+1);
+					ya.args[i] = arg->ToContract();
+				}
+				auto yr = found->second.func(&ya);
+				if(yr.code)
+				{//TODO
+					throw 'n';
+				}
+				if(yr.single.tp != YEObj::None)//TODO real val
+				{
+					ret = Variable::New(yr.single);
+				}
+				else if(yr.vals.sz != 0)
+				{//TODO
+				}
+				else
+				{//TODO
+					throw 'n';
+				}
+			}
+			else if(dst->_attr->owner._type == Variable::STR)
+			{
+				if(dst->_attr->name == "len")
+				{
+					ret = Variable::NewNum(dst->_attr->owner._str.size());
+				}
+				else if(dst->_attr->name == "find")
 				{
 					if(cal.numArgs == 1)
 					{
@@ -374,7 +423,7 @@ void Machine::Run(const Bytecode& code, int start /* = 0 */)
 							throw 'n';
 						}
 
-						size_t pos = dst->attr->owner.str.find(s->str);
+						size_t pos = dst->_attr->owner._str.find(s->_str);
 						ret = Variable::NewNum(pos == string::npos ? -1 : pos);
 					}
 					else if(cal.numArgs == 2)
@@ -390,7 +439,7 @@ void Machine::Run(const Bytecode& code, int start /* = 0 */)
 							throw 'n';
 						}
 
-						size_t pos = dst->attr->owner.str.find(s->str, s->_int);
+						size_t pos = dst->_attr->owner._str.find(s->_str, s->_int);
 						ret = Variable::NewNum(pos == string::npos ? -1 : pos);
 					}
 					else
@@ -398,7 +447,7 @@ void Machine::Run(const Bytecode& code, int start /* = 0 */)
 						throw 'n';
 					}
 				}
-				else if(dst->attr->name == "substr")
+				else if(dst->_attr->name == "substr")
 				{
 					if(cal.numArgs == 1)
 					{
@@ -408,7 +457,7 @@ void Machine::Run(const Bytecode& code, int start /* = 0 */)
 							throw 'n';
 						}
 
-						ret = Variable::NewStr(dst->attr->owner.str.substr(s->_int));
+						ret = Variable::NewStr(dst->_attr->owner._str.substr(s->_int));
 					}
 					else if(cal.numArgs == 2)
 					{
@@ -423,14 +472,14 @@ void Machine::Run(const Bytecode& code, int start /* = 0 */)
 							throw 'n';
 						}
 
-						ret = Variable::NewStr(dst->attr->owner.str.substr(s->_int, l->_int));
+						ret = Variable::NewStr(dst->_attr->owner._str.substr(s->_int, l->_int));
 					}
 					else
 					{
 						throw 'n';
 					}
 				}
-				else if(dst->attr->name == "replace")
+				else if(dst->_attr->name == "replace")
 				{
 					auto o = ResolveVar(ERefKind::Reg, 1);
 					auto n = ResolveVar(ERefKind::Reg, 2);
@@ -443,22 +492,22 @@ void Machine::Run(const Bytecode& code, int start /* = 0 */)
 						throw 'n';
 					}
 
-					string r = dst->attr->owner.str;
-					if(!o->str.empty())
+					string r = dst->_attr->owner._str;
+					if(!o->_str.empty())
 					{
 						size_t pos = 0;
-						for(size_t pos=0; (pos = r.find(o->str, pos)) != std::string::npos; ) {
-							r.replace(pos, o->str.length(), n->str);
-							pos += n->str.length();
+						for(size_t pos=0; (pos = r.find(o->_str, pos)) != std::string::npos; ) {
+							r.replace(pos, o->_str.length(), n->_str);
+							pos += n->_str.length();
 						}
 						ret = Variable::NewStr(r);
 					}
 				}
-				else if(dst->attr->name == "split")
+				else if(dst->_attr->name == "split")
 				{
 					if(cal.numArgs == 0)
 					{
-						const string& src = dst->attr->owner.str;
+						const string& src = dst->_attr->owner._str;
 						size_t start = src.find_first_not_of(" \t\n\r");
 						size_t end = 0;
 						ret = Variable::NewList();
@@ -466,7 +515,7 @@ void Machine::Run(const Bytecode& code, int start /* = 0 */)
 						for( ; start != string::npos; )
 						{
 							end = src.find_first_of(" \t\n\r", start);
-							ret->list->push_back(Variable::NewStr(src.substr(start, end - start)));
+							ret->_list->push_back(Variable::NewStr(src.substr(start, end - start)));
 							start = src.find_first_not_of(" \t\n\r", end);
 						}
 					}
@@ -478,9 +527,9 @@ void Machine::Run(const Bytecode& code, int start /* = 0 */)
 							throw 'n';
 						}
 
-						if(d->str.empty())
+						if(d->_str.empty())
 						{
-							ret = Variable::NewStr(dst->attr->owner.str);
+							ret = Variable::NewStr(dst->_attr->owner._str);
 						}
 						else
 						{
@@ -488,13 +537,13 @@ void Machine::Run(const Bytecode& code, int start /* = 0 */)
 							size_t end = 0;
 							ret = Variable::NewList();
 
-							const string& src = dst->attr->owner.str;
-							for( ; (end = src.find(d->str, start)) != std::string::npos; )
+							const string& src = dst->_attr->owner._str;
+							for( ; (end = src.find(d->_str, start)) != std::string::npos; )
 							{
-								ret->list->push_back(Variable::NewStr(src.substr(start, end - start)));
-								start = end + d->str.length();
+								ret->_list->push_back(Variable::NewStr(src.substr(start, end - start)));
+								start = end + d->_str.length();
 							}
-							ret->list->push_back(Variable::NewStr(src.substr(start, end - start)));
+							ret->_list->push_back(Variable::NewStr(src.substr(start, end - start)));
 						}
 					}
 					else
@@ -507,9 +556,9 @@ void Machine::Run(const Bytecode& code, int start /* = 0 */)
 					throw 'n';
 				}
 			}
-			if(dst->attr->owner.type == Variable::LIST)
+			if(dst->_attr->owner._type == Variable::LIST)
 			{
-				if(dst->attr->name == "append")
+				if(dst->_attr->name == "append")
 				{
 					if(cal.numArgs != 1)
 					{
@@ -518,9 +567,9 @@ void Machine::Run(const Bytecode& code, int start /* = 0 */)
 
 					auto v = ResolveVar(ERefKind::Reg, 1);
 
-					dst->attr->owner.list->push_back(v->Clone());
+					dst->_attr->owner._list->push_back(v->Clone());
 				}
-				else if(dst->attr->name == "insert")
+				else if(dst->_attr->name == "insert")
 				{
 					if(cal.numArgs != 2)
 					{
@@ -535,9 +584,9 @@ void Machine::Run(const Bytecode& code, int start /* = 0 */)
 						throw 'n';
 					}
 
-					dst->attr->owner.list->insert(dst->attr->owner.list->begin() + i->_int, v->Clone());
+					dst->_attr->owner._list->insert(dst->_attr->owner._list->begin() + i->_int, v->Clone());
 				}
-				else if(dst->attr->name == "pop")
+				else if(dst->_attr->name == "pop")
 				{
 					if(cal.numArgs != 1)
 					{
@@ -545,91 +594,91 @@ void Machine::Run(const Bytecode& code, int start /* = 0 */)
 					}
 
 					auto v = ResolveVar(ERefKind::Reg, 1);
-					if(v->type != Variable::INT)
+					if(v->_type != Variable::INT)
 					{
 						throw 'n';
 					}
 
 					// todo leak
-					ret = dst->attr->owner.list->at(v->_int);
-					dst->attr->owner.list->erase(dst->attr->owner.list->begin() + v->_int);
+					ret = dst->_attr->owner._list->at(v->_int);
+					dst->_attr->owner._list->erase(dst->_attr->owner._list->begin() + v->_int);
 				}
-				else if(dst->attr->name == "pop_front")
+				else if(dst->_attr->name == "pop_front")
 				{
 					// todo leak
-					ret = dst->attr->owner.list->front();
-					dst->attr->owner.list->erase(dst->attr->owner.list->begin());
+					ret = dst->_attr->owner._list->front();
+					dst->_attr->owner._list->erase(dst->_attr->owner._list->begin());
 				}
-				else if(dst->attr->name == "pop_back")
+				else if(dst->_attr->name == "pop_back")
 				{
 					// todo leak
-					ret = dst->attr->owner.list->back();
-					dst->attr->owner.list->pop_back();
+					ret = dst->_attr->owner._list->back();
+					dst->_attr->owner._list->pop_back();
 				}
-				else if(dst->attr->name == "len")
+				else if(dst->_attr->name == "len")
 				{
 					// todo leak
 					ret = new Variable;
-					ret->type = Variable::INT;
-					ret->_int = (int64_t)dst->attr->owner.list->size();
+					ret->_type = Variable::INT;
+					ret->_int = (int64_t)dst->_attr->owner._list->size();
 				}
 				else
 				{
 					throw 'n';
 				}
 			}
-			else if(dst->attr->owner.type == Variable::DICT)
+			else if(dst->_attr->owner._type == Variable::DICT)
 			{
-				if(dst->attr->name == "keys")
+				if(dst->_attr->name == "keys")
 				{
 					ret = new Variable;
-					ret->type = Variable::LIST;
-					ret->list = new vector<Variable*>;
+					ret->_type = Variable::LIST;
+					ret->_list = new vector<Variable*>;
 
-					for(auto& [k, _] : *dst->attr->owner.dict)
+					for(auto& [k, _] : *dst->_attr->owner._dict)
 					{
-						ret->list->push_back(new Variable{ .type = Variable::STR, .str = k });
+						ret->_list->push_back(new Variable{ ._type = Variable::STR, ._str = k });
 					}
 				}
-				else if(dst->attr->name == "values")
+				else if(dst->_attr->name == "values")
 				{
 					ret = new Variable;
-					ret->type = Variable::LIST;
-					ret->list = new vector<Variable*>;
+					ret->_type = Variable::LIST;
+					ret->_list = new vector<Variable*>;
 
-					for(auto& [_, v] : *dst->attr->owner.dict)
+					for(auto& [_, v] : *dst->_attr->owner._dict)
 					{
-						ret->list->push_back(v);
+						ret->_list->push_back(v);
 					}
 				}
-				else if(dst->attr->name == "items")
+				else if(dst->_attr->name == "items")
 				{
 					ret = new Variable;
-					ret->type = Variable::LIST;
-					ret->list = new vector<Variable*>;
+					ret->_type = Variable::LIST;
+					ret->_list = new vector<Variable*>;
 
-					for(auto& [k, v] : *dst->attr->owner.dict)
+					for(auto& [k, v] : *dst->_attr->owner._dict)
 					{
 						Variable* pair = new Variable;
-						pair->type = Variable::LIST;
-						pair->list = new vector<Variable*>;
+						pair->_type = Variable::LIST;
+						pair->_list = new vector<Variable*>;
 						Variable* kv = new Variable;
-						kv->type = Variable::STR;
-						kv->str = k;
-						pair->list->push_back(kv);
-						pair->list->push_back(v);
+						kv->_type = Variable::STR;
+						kv->_str = k;
+						pair->_list->push_back(kv);
+						pair->_list->push_back(v);
 
-						ret->list->push_back(pair);
+						ret->_list->push_back(pair);
 					}
 				}
-				else if(dst->attr->name == "len")
+				else if(dst->_attr->name == "len")
 				{
 					// todo leak
 					ret = new Variable;
-					ret->type = Variable::INT;
-					ret->_int = (int64_t)dst->attr->owner.dict->size();
+					ret->_type = Variable::INT;
+					ret->_int = (int64_t)dst->_attr->owner._dict->size();
 				}
-				else if(dst->attr->name == "pop")
+				else if(dst->_attr->name == "pop")
 				{
 					if(cal.numArgs != 1)
 					{
@@ -637,16 +686,16 @@ void Machine::Run(const Bytecode& code, int start /* = 0 */)
 					}
 
 					auto v = ResolveVar(ERefKind::Reg, 1);
-					if(v->type != Variable::STR)
+					if(v->_type != Variable::STR)
 					{
 						throw 'n';
 					}
 
-					auto found = dst->attr->owner.dict->find(v->str);
-					if(found != dst->attr->owner.dict->end())
+					auto found = dst->_attr->owner._dict->find(v->_str);
+					if(found != dst->_attr->owner._dict->end())
 					{
 						ret = found->second;
-						dst->attr->owner.dict->erase(found);
+						dst->_attr->owner._dict->erase(found);
 					}
 				}
 				else
@@ -669,7 +718,12 @@ void Machine::Run(const Bytecode& code, int start /* = 0 */)
 				throw 'n';
 			}
 
-			int a = 1;
+			ymod::Module m;
+			m.name = "math";
+			m.funcTbl[ "sin" ] =  { "sin", 1, Sin};
+
+			auto v = ResolveVar(ERefKind::LocalVar, _sp);
+			v->SetModule(m);
 		}
 
 
