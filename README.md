@@ -223,6 +223,7 @@ hello world
 * [ ] Optimized VM dispatch
 * [ ] Automated tests
 * [ ] Documentation
+* [ ] Unicode
 * ...and more
 
 
