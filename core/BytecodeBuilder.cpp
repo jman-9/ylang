@@ -245,9 +245,9 @@ void BytecodeBuilder::FillBytecode(int ln, const OpType& inst)
 		_bytecodeStr[ln] = format("jmp {}", inst.pos);
 
 	}
-	else if constexpr (is_same_v<Op::Invoke, OpType>)
+	else if constexpr (is_same_v<Op::Call, OpType>)
 	{
-		_bytecodeStr[ln] = format("{}{} = invoke {}", ValKindChar(ERefKind::Reg), _reg, inst.pos);
+		_bytecodeStr[ln] = format("{}{} = call {}", ValKindChar(ERefKind::Reg), _reg, inst.pos);
 	}
 	else if constexpr (is_same_v<Op::Jz, OpType>)
 	{
@@ -277,9 +277,9 @@ void BytecodeBuilder::FillBytecode(int ln, const OpType& inst)
 	{
 		_bytecodeStr[ln] = format("lvalueindex {}{}[{}{}]", ValKindChar(inst.dstKind), inst.dst, ValKindChar(inst.idxKind), inst.idx);
 	}
-	else if constexpr (is_same_v<Op::Call, OpType>)
+	else if constexpr (is_same_v<Op::Invoke, OpType>)
 	{
-		_bytecodeStr[ln] = format("call {}{}(...)", ValKindChar(ERefKind::Reg), _reg, ValKindChar(inst.dstKind), inst.dst);
+		_bytecodeStr[ln] = format("invoke {}{}(...)", ValKindChar(ERefKind::Reg), _reg, ValKindChar(inst.dstKind), inst.dst);
 	}
 	else if constexpr (is_same_v<Op::Inc, OpType>)
 	{
@@ -320,8 +320,8 @@ bool BytecodeBuilder::Build(const TreeNode& code, Bytecode& retCode)
 	auto main = _symTbl.GetSymbol("main");
 	if(main.kind == ESymbol::Fn)
 	{
-		Op::Invoke ivk{ .pos = (uint32_t)main.pos, .numPrms = (uint32_t)main.params.size() };
-		PushBytecode(ivk);
+		Op::Call cal{ .pos = (uint32_t)main.pos, .numPrms = (uint32_t)main.params.size() };
+		PushBytecode(cal);
 	}
 
 	map<int, Token> sorted;
@@ -452,34 +452,34 @@ bool BytecodeBuilder::BuildExp(const TreeNode& stmt, bool root)
 
 		if(ivkType == EToken::Dot)
 		{	//TODO generalize
-			Op::Call cal{ .dstKind = (uint8_t)ERefKind::Reg, .dst = (uint16_t)_reg, .numArgs = (uint8_t)(stmt.childs.size()-1) };
-			PushBytecode(cal);
+			Op::Invoke ivk{ .dstKind = (uint8_t)ERefKind::Reg, .dst = (uint16_t)_reg, .numArgs = (uint8_t)(stmt.childs.size()-1) };
+			PushBytecode(ivk);
 			return true;
 		}
 
 		if(ivkType.val == "print")
 		{//TODO new architecture
-			Op::Invoke ivk{ .pos = 0xFFFF0000, .numPrms = (uint32_t)stmt.childs.size()-1 };
-			PushBytecode(ivk);
+			Op::Call cal{ .pos = 0xFFFF0000, .numPrms = (uint32_t)stmt.childs.size()-1 };
+			PushBytecode(cal);
 			return true;
 		}
 		else if(ivkType.val == "println")
 		{
-			Op::Invoke ivk{ .pos = 0xFFFF0000+1, .numPrms = (uint32_t)stmt.childs.size()-1 };
-			PushBytecode(ivk);
+			Op::Call cal{ .pos = 0xFFFF0000+1, .numPrms = (uint32_t)stmt.childs.size()-1 };
+			PushBytecode(cal);
 			return true;
 		}
 
 		int constIdx = _constTbl.GetIdx(ivkType);
 		if(constIdx >= 0)
 		{
-			Op::Call cal{ .dstKind = (uint8_t)ERefKind::Const, .dst = (uint16_t)constIdx, .numArgs = (uint8_t)(stmt.childs.size()-1) };
-			PushBytecode(cal);
+			Op::Invoke ivk{ .dstKind = (uint8_t)ERefKind::Const, .dst = (uint16_t)constIdx, .numArgs = (uint8_t)(stmt.childs.size()-1) };
+			PushBytecode(ivk);
 		}
 		else
 		{
-			Op::Invoke ivk{ .pos = (uint32_t)_symTbl.GetSymbol(stmt.childs[0]->self.val).pos, .numPrms = (uint32_t)stmt.childs.size()-1 };
-			PushBytecode(ivk);
+			Op::Call cal{ .pos = (uint32_t)_symTbl.GetSymbol(stmt.childs[0]->self.val).pos, .numPrms = (uint32_t)stmt.childs.size()-1 };
+			PushBytecode(cal);
 		}
 		return true;
 	}

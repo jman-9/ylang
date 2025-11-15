@@ -50,9 +50,9 @@ void Instruction::Fill(const OpType& inst)
 	{
 		kind = (uint8_t)EOpcode::Jmp;
 	}
-	else if constexpr (std::is_same_v<Op::Invoke, OpType>)
+	else if constexpr (std::is_same_v<Op::Call, OpType>)
 	{
-		kind = (uint8_t)EOpcode::Invoke;
+		kind = (uint8_t)EOpcode::Call;
 	}
 	else if constexpr (std::is_same_v<Op::Jz, OpType>)
 	{
@@ -82,9 +82,9 @@ void Instruction::Fill(const OpType& inst)
 	{
 		kind = (uint8_t)EOpcode::LValueIndex;
 	}
-	else if constexpr (std::is_same_v<Op::Call, OpType>)
+	else if constexpr (std::is_same_v<Op::Invoke, OpType>)
 	{
-		kind = (uint8_t)EOpcode::Call;
+		kind = (uint8_t)EOpcode::Invoke;
 	}
 	else if constexpr (std::is_same_v<Op::Inc, OpType>)
 	{

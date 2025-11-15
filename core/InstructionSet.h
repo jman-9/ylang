@@ -10,7 +10,7 @@ enum class EOpcode : uint16_t
 	PushSp,
 	PopSp,
 	Jmp,
-	Invoke,
+	Call,
 	Ret,
 	Jz,
 	ListSet,
@@ -19,7 +19,7 @@ enum class EOpcode : uint16_t
 	DictAdd,
 	Index,
 	LValueIndex,
-	Call,
+	Invoke,
 	Inc,
 };
 
@@ -53,7 +53,7 @@ struct Jmp
 	uint32_t pos = 0;
 };
 
-struct Invoke
+struct Call
 {
 	uint32_t pos = 0;
 	uint32_t numPrms = 0;
@@ -117,7 +117,7 @@ struct LValueIndex
 	uint16_t idx = 0;
 };
 
-struct Call
+struct Invoke
 {
 	uint8_t dstKind = (uint8_t)ERefKind::None;
 	uint16_t dst = 0;

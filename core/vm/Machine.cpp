@@ -129,18 +129,18 @@ void Machine::Run(const Bytecode& code, int start /* = 0 */)
 			i = jmp.pos;
 			continue;
 		}
-		else if(inst == EOpcode::Invoke)
+		else if(inst == EOpcode::Call)
 		{
-			const Op::Invoke& ivk = *(Op::Invoke*)inst.code.data();
+			const Op::Call& cal = *(Op::Call*)inst.code.data();
 
-			_rp -= (int)ivk.numPrms;
+			_rp -= (int)cal.numPrms;
 			_rpStack.push(_rp);
 
-			if(ivk.pos >= 0xFFFF0000)
+			if(cal.pos >= 0xFFFF0000)
 			{// todo new architecture
-				if(ivk.pos == 0xFFFF0000)
+				if(cal.pos == 0xFFFF0000)
 				{
-					if(ivk.numPrms == 0)
+					if(cal.numPrms == 0)
 					{//noop
 					}
 					else
@@ -149,9 +149,9 @@ void Machine::Run(const Bytecode& code, int start /* = 0 */)
 						cout << v->ToStr();
 					}
 				}
-				else if(ivk.pos == 0xFFFF0000 + 1)
+				else if(cal.pos == 0xFFFF0000 + 1)
 				{
-					if(ivk.numPrms == 0)
+					if(cal.numPrms == 0)
 					{
 						cout << "\n";
 					}
@@ -173,7 +173,7 @@ void Machine::Run(const Bytecode& code, int start /* = 0 */)
 				_retStack.push((uint32_t)i+1);
 				_cspStack.push(_sp);
 
-				i = ivk.pos;
+				i = cal.pos;
 				continue;
 			}
 		}
@@ -348,14 +348,14 @@ void Machine::Run(const Bytecode& code, int start /* = 0 */)
 				throw 'n';
 			}
 		}
-		else if(inst == EOpcode::Call)
+		else if(inst == EOpcode::Invoke)
 		{
-			const Op::Call& cal = *(Op::Call*)inst.code.data();
+			const Op::Invoke& ivk = *(Op::Invoke*)inst.code.data();
 
-			_rp = _rp - cal.numArgs - 1;
+			_rp = _rp - ivk.numArgs - 1;
 			_rpStack.push(_rp);
 
-			Variable* dst = ResolveVar((ERefKind)cal.dstKind, cal.dst);
+			Variable* dst = ResolveVar((ERefKind)ivk.dstKind, ivk.dst);
 			if(*dst == Variable::STR)
 			{
 				const auto& mod = _modMgr.GetModule(dst->_str);
@@ -405,7 +405,7 @@ void Machine::Run(const Bytecode& code, int start /* = 0 */)
 				throw 'n';
 			}
 
-			if(cal.numArgs < found->second.numPrms)
+			if(ivk.numArgs < found->second.numPrms)
 			{//TODO
 				throw 'n';
 			}
