@@ -7,7 +7,7 @@ namespace yvm
 {
 
 
-Variable* Variable::NewNum(int64_t num)
+Variable* Variable::NewInt(int64_t num)
 {
 	auto v = new Variable;
 	v->SetInt(num);

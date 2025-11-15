@@ -35,7 +35,7 @@ inline YRet Find(YArgs* args)
 
 		size_t pos = self->_str.find(s->_str);
 
-		yr.single.o = Variable::NewNum(pos == string::npos ? -1 : pos);
+		yr.single.o = Variable::NewInt(pos == string::npos ? -1 : pos);
 	}
 	else
 	{
@@ -52,7 +52,7 @@ inline YRet Find(YArgs* args)
 
 		size_t pos = self->_str.find(s->_str, i->_int);
 
-		yr.single.o = Variable::NewNum(pos == string::npos ? -1 : pos);
+		yr.single.o = Variable::NewInt(pos == string::npos ? -1 : pos);
 	}
 
 	return yr;
@@ -182,6 +182,72 @@ inline YRet Split(YArgs* args)
 }
 
 
+constexpr string_view kAsciiSpaces = " \t\n\r\f\v";
+
+inline YRet Trim(YArgs* args)
+{
+	auto self = (Variable*)args->args[0].o;
+
+	const string& r = self->_str;
+	size_t start = r.find_first_not_of(kAsciiSpaces);
+	size_t end = start == string_view::npos ? string_view::npos : r.find_last_not_of(kAsciiSpaces);
+
+	YRet yr;
+	yr.single.tp = YEArg::YVar;
+	yr.single.o = Variable::NewStr(start == string_view::npos ? "" : r.substr(start, end - start + 1));
+	return yr;
+}
+inline YRet LTrim(YArgs* args)
+{
+	auto self = (Variable*)args->args[0].o;
+
+	const string& r = self->_str;
+	size_t start = r.find_first_not_of(kAsciiSpaces);
+
+	YRet yr;
+	yr.single.tp = YEArg::YVar;
+	yr.single.o = Variable::NewStr(start == string_view::npos ? "" : r.substr(start));
+	return yr;
+}
+inline YRet RTrim(YArgs* args)
+{
+	auto self = (Variable*)args->args[0].o;
+
+	const string& r = self->_str;
+	size_t end = r.find_last_not_of(kAsciiSpaces);
+
+	YRet yr;
+	yr.single.tp = YEArg::YVar;
+	yr.single.o = Variable::NewStr(end == string_view::npos ? "" : r.substr(0, end + 1));
+	return yr;
+}
+
+inline YRet Join(YArgs* args)
+{
+	auto self = (Variable*)args->args[0].o;
+	if(args->numArgs < 2)
+		throw 'n';//TODO
+
+	auto list = (Variable*)args->args[1].o;
+
+	Variable* vj = Variable::NewStr();
+	string& j = vj->_str;
+	if(!list->_list->empty())
+	{
+		j = list->_list->at(0)->ToStr();
+		for(int i=1; i<list->_list->size(); i++)
+		{
+			j += self->_str + list->_list->at(i)->ToStr();
+		}
+	}
+
+	YRet yr;
+	yr.single.tp = YEArg::YVar;
+	yr.single.o = vj;
+	return yr;
+}
+
+
 const ymod::Module& GetModule()
 {
 	static Module m;
@@ -194,6 +260,10 @@ const ymod::Module& GetModule()
 		m.funcTbl[ "substr" ] = { "substr", true, 1, Substr };
 		m.funcTbl[ "replace" ] = { "replace", true, 2, Replace };
 		m.funcTbl[ "split" ] = { "split", true, 0, Split };
+		m.funcTbl[ "trim" ] = { "trim", true, 0, Trim };
+		m.funcTbl[ "ltrim" ] = { "ltrim", true, 0, LTrim };
+		m.funcTbl[ "rtrim" ] = { "rtrim", true, 0, RTrim };
+		m.funcTbl[ "join" ] = { "join", true, 1, Join };
 	}
 	return m;
 }

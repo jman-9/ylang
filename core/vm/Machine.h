@@ -14,7 +14,7 @@ class Machine
 public:
 	Machine();
 
-	void Run(const Bytecode& code, int start = 0);
+	int Run(const Bytecode& code, int start = 0);
 
 protected:
 	Variable* ResolveVar(ERefKind k, int idx);

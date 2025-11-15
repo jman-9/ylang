@@ -393,6 +393,8 @@ bool BytecodeBuilder::BuildInclude(const TreeNode& stmt)
 {
 	auto& incName = *stmt.childs[0];
 
+	_symTbl.AddOrNot({ incName.self.val, ESymbol::Mod });
+
 	int idx = _constTbl.AddOrNot(incName.self);
 	Op::Inc inc { .inc = (uint16_t)idx };
 	PushBytecode(inc);
@@ -466,6 +468,12 @@ bool BytecodeBuilder::BuildExp(const TreeNode& stmt, bool root)
 		else if(ivkType.val == "println")
 		{
 			Op::Call cal{ .pos = 0xFFFF0000+1, .numPrms = (uint32_t)stmt.childs.size()-1 };
+			PushBytecode(cal);
+			return true;
+		}
+		else if(ivkType.val == "exit")
+		{
+			Op::Call cal{ .pos = 0xFFFF0000+2, .numPrms = (uint32_t)stmt.childs.size()-1 };
 			PushBytecode(cal);
 			return true;
 		}

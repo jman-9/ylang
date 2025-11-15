@@ -16,8 +16,8 @@ inline YRet Len(YArgs* args)
 
 	YRet yr;
 	yr.single.tp = YEArg::YVar;
-	yr.single.o = Variable::NewNum((int64_t)self->_list->size());
-	return {};
+	yr.single.o = Variable::NewInt((int64_t)self->_list->size());
+	return yr;
 }
 
 inline YRet Append(YArgs* args)

@@ -172,10 +172,8 @@ else
 
 const char* testcode2 =
 R"TEST(
-include insttest;
 
-a = insttest();
-a.test();
+include rand; r=rand.get(-5, 5); if(!(-100 <= r && r <= 1039281)) exit(1);
 
 )TEST";
 

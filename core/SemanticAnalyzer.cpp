@@ -67,7 +67,7 @@ bool SemanticAnalyzer::AnalyzeExp(const TreeNode& stmt)
 		auto& name = stmt.childs[0];
 		if(name->self == EToken::Id)
 		{
-			if(name->self.val == "print" || name->self.val == "println")
+			if(name->self.val == "print" || name->self.val == "println" || name->self.val == "exit")
 			{//TODO builtin table
 			}
 			else

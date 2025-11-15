@@ -1,15 +1,134 @@
 #include "catch2/catch_amalgamated.hpp"
-#include "module/ModuleManager.h"
+#include "core/module/ModuleManager.h"
+#include "core/Scanner.h"
+#include "core/StringInterpolator.h"
+#include "core/Parser.h"
+#include "core/SemanticAnalyzer.h"
+#include "core/BytecodeBuilder.h"
+#include "core/vm/Machine.h"
 #include <iostream>
 #include <map>
 #include <vector>
 using namespace std;
+using namespace yvm;
 
 
-TEST_CASE( "ModuleManager Test", "[modmgr]" )
+
+static std::vector<Error> Build(const std::string& src, Bytecode& retBytecode)
 {
+	vector<Error> errs;
 
+	do {	//todo memory leak
+		Scanner s;
+		s.Scan(src);
+		if(!s._errors.empty())
+		{
+			errs.insert(errs.end(), s._errors.begin(), s._errors.end());
+			break;
+		}
+
+		StringInterpolator si;
+		vector<Token> processed;
+		for(auto& t : s._tokens)
+		{
+			if(t != EToken::Str)
+			{
+				processed.push_back(t);
+				continue;
+			}
+
+			auto interpolated = si.Interpolate(t);
+			if(interpolated.empty())
+			{//todo error
+				throw 'n';
+			}
+			processed.insert(processed.end(), interpolated.begin(), interpolated.end());
+		}
+
+		Parser p(processed);
+		auto ast = p.Parse();
+		if(!p._errors.empty())
+		{
+			errs.insert(errs.end(), p._errors.begin(), p._errors.end());
+			break;
+		}
+
+		SemanticAnalyzer sa;
+		sa.Analyze(*ast);
+		if(!sa._errors.empty())
+		{
+			errs.insert(errs.end(), sa._errors.begin(), sa._errors.end());
+			break;
+		}
+
+		BytecodeBuilder bb;
+		if(!bb.Build(*ast, retBytecode))
+		{//TODO trace
+			throw 'n';
+		}
+	} while(0);
+
+	return errs;
 }
+
+
+static pair<int, vector<Error>> Run(const std::string& src)
+{
+	vector<Error> errs;
+
+	Bytecode c;
+	errs = Build(src, c);
+	if(!errs.empty())
+		return { 1, errs };
+
+	yvm::Machine m;
+	return { m.Run(c), errs };
+}
+
+
+TEST_CASE( "Primitive String Test", "[primstr]" )
+{
+	pair<int, vector<Error>> ret;
+
+	ret = Run( R"YT( a = 'hello'; if(a.len() != 5) exit(1); )YT" );
+	REQUIRE( ret.first == 0 );
+
+	ret = Run( R"YT( a = 'a b c d t'; if(a.find(' c d') != 3) exit(1); )YT" );
+	REQUIRE( ret.first == 0 );
+
+	ret = Run( R"YT( a = 'pika pika chu'; if(a.substr(5, 4) + a.substr(10) != 'pikachu') exit(1); )YT" );
+	REQUIRE( ret.first == 0 );
+
+	ret = Run( R"YT( a = 'hello world'; a = a.replace('world', 'ylang'); if(a != 'hello ylang') exit(1); )YT" );
+	REQUIRE( ret.first == 0 );
+
+	ret = Run( R"YT( a = 'a b c d t'; if(a.split().len() != 5) exit(1); )YT" );
+	REQUIRE( ret.first == 0 );
+
+	ret = Run( R"YT( a = '\r \n \t \v 12345 7\t9 \r \n \t \v '; if(a.trim().len() != 9) exit(1); )YT" );
+	REQUIRE( ret.first == 0 );
+
+	ret = Run( R"YT( a = '  \t  12345 7\t9 \t\n'; if(a.ltrim().len() != 12) exit(1); )YT" );
+	REQUIRE( ret.first == 0 );
+
+	ret = Run( R"YT( a = ' \v 12345 7\t9 \t\n\r\v '; if(a.rtrim().len() != 12) exit(1); )YT" );
+	REQUIRE( ret.first == 0 );
+
+	ret = Run( R"YT( delim = '::'; list = ['aa' , 'bb', 'cc', 'dd']; if(delim.join(list) != 'aa::bb::cc::dd') exit(1); )YT" );
+	REQUIRE( ret.first == 0 );
+}
+
+TEST_CASE( "Builtin Random Test", "[bltrand]" )
+{
+	pair<int, vector<Error>> ret;
+
+	ret = Run( R"YT( include rand; rand.randomize_timer(); )YT" );
+	REQUIRE( ret.first == 0 );
+
+	ret = Run( R"YT( include rand; r=rand.get(-100, 1039281); if(!(-100 <= r && r <= 1039281)) exit(1); )YT" );
+	REQUIRE( ret.first == 0 );
+}
+
 
 static const Catch::LeakDetector leakDetector;
 
@@ -23,7 +142,8 @@ int main(int argc, char** argv)
 	Catch::ConfigData& cfg = _session.configData();
 
 	cfg.showSuccessfulTests = true;
-	cfg.testsOrTags.push_back("[modmgr]");
+	//cfg.testsOrTags.push_back("[primstr]");
+	cfg.testsOrTags.push_back("[bltrand]");
 
 	int numFailed = _session.run();
 };

@@ -16,7 +16,7 @@ inline YRet Len(YArgs* args)
 
 	YRet yr;
 	yr.single.tp = YEArg::YVar;
-	yr.single.o = Variable::NewNum((int64_t)self->_dict->size());
+	yr.single.o = Variable::NewInt((int64_t)self->_dict->size());
 	return {};
 }
 

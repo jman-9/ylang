@@ -45,8 +45,10 @@ Variable* Machine::ResolveVar(ERefKind k, int idx)
 }
 
 
-void Machine::Run(const Bytecode& code, int start /* = 0 */)
+int Machine::Run(const Bytecode& code, int start /* = 0 */)
 {
+	int retCode = 0;
+
 	_consts.clear();
 	for(auto& c : code._consts)
 	{
@@ -159,6 +161,20 @@ void Machine::Run(const Bytecode& code, int start /* = 0 */)
 					{
 						auto v = ResolveVar(ERefKind::Reg, 0);
 						cout << v->ToStr() << "\n";
+					}
+				}
+				else if(cal.pos == 0xFFFF0000 + 2)
+				{
+					if(cal.numPrms == 0)
+					{
+						retCode = 0;
+						break;
+					}
+					else
+					{
+						auto v = ResolveVar(ERefKind::Reg, 0);
+						retCode = v->_int;
+						break;
 					}
 				}
 				else
@@ -352,8 +368,8 @@ void Machine::Run(const Bytecode& code, int start /* = 0 */)
 		{
 			const Op::Invoke& ivk = *(Op::Invoke*)inst.code.data();
 
-			_rp = _rp - ivk.numArgs - 1;
-			_rpStack.push(_rp);
+			int rpBackup = _rp - ivk.numArgs - 1;
+			int argsRp = rpBackup + 1;
 
 			Variable* dst = ResolveVar((ERefKind)ivk.dstKind, ivk.dst);
 			if(*dst == Variable::STR)
@@ -420,7 +436,7 @@ void Machine::Run(const Bytecode& code, int start /* = 0 */)
 				}
 
 				off = 1;
-				ya.Reset(found->second.numPrms + 1);
+				ya.Reset(ivk.numArgs + 1);
 				if(mod->builtin)
 				{
 					ya.args[0].tp = YEArg::YVar;
@@ -434,23 +450,23 @@ void Machine::Run(const Bytecode& code, int start /* = 0 */)
 			else
 			{
 				off = 0;
-				ya.Reset(found->second.numPrms);
+				ya.Reset(ivk.numArgs);
 			}
 
 			if(mod->builtin)
 			{
-				for(int i=0; i<found->second.numPrms; i++)
+				for(int i=0; i<ivk.numArgs; i++)
 				{//TODO int value check
-					auto arg = ResolveVar(ERefKind::Reg, i+1);
+					auto arg = ResolveVar(ERefKind::Reg, argsRp+i);
 					YArg yo { (void*)arg, YEArg::YVar };
 					ya.args[i+off] = yo;
 				}
 			}
 			else
 			{
-				for(int i=0; i<found->second.numPrms; i++)
+				for(int i=0; i<ivk.numArgs; i++)
 				{//TODO int value check
-					auto arg = ResolveVar(ERefKind::Reg, i+1);
+					auto arg = ResolveVar(ERefKind::Reg, argsRp+i);
 					ya.args[i+off] = arg->ToContract();
 				}
 			}
@@ -478,8 +494,9 @@ void Machine::Run(const Bytecode& code, int start /* = 0 */)
 			{//TODO
 			}
 
-			_rpStack.pop();
-			auto v = ResolveVar(ERefKind::Reg, 0);
+			_rp = rpBackup;
+			//_rpStack.pop();
+			auto v = ResolveVar(ERefKind::Reg, _rp);
 			*v = ret ? *ret : Variable();
 		}
 		else if(inst == EOpcode::Inc)
@@ -504,6 +521,8 @@ void Machine::Run(const Bytecode& code, int start /* = 0 */)
 
 		i++;
 	}
+
+	return retCode;
 }
 
 }
