@@ -22,9 +22,9 @@ YRet Get(YArgs* args)
 	auto max = (Variable*)args->args[1].o;
 
 	YRet yr;
-	yr.single.tp = YEArg::Int64;
+	yr.single.tp = YEArg::YVar;
 	yr.single.o = Variable::NewInt( RANDOM(min->_int, max->_int) );
-	return {};
+	return yr;
 }
 
 const ymod::Module& GetModule()

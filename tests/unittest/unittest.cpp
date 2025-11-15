@@ -125,7 +125,7 @@ TEST_CASE( "Builtin Random Test", "[bltrand]" )
 	ret = Run( R"YT( include rand; rand.randomize_timer(); )YT" );
 	REQUIRE( ret.first == 0 );
 
-	ret = Run( R"YT( include rand; r=rand.get(-100, 1039281); if(!(-100 <= r && r <= 1039281)) exit(1); )YT" );
+	ret = Run( R"YT( include rand; for(i=0; i<20000; i+=1) { r=rand.get(-2052, 9810); if(!(-2052 <= r && r <= 9810)) exit(1); } )YT" );
 	REQUIRE( ret.first == 0 );
 }
 

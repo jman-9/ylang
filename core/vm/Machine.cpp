@@ -468,8 +468,13 @@ bool Machine::Invoke(const Op::Invoke& ivk)
 	}
 	if(mod->builtin)
 	{
-		if(yr.single.tp != YEArg::None)//TODO real val
+		if(yr.single.tp != YEArg::None)
 		{
+			if(yr.single.tp != YEArg::YVar)
+			{//TODO
+				throw 'n';
+			}
+
 			ret = (Variable*)yr.single.o;
 		}
 		else if(yr.vals.sz != 0)
@@ -484,7 +489,6 @@ bool Machine::Invoke(const Op::Invoke& ivk)
 	}
 
 	_rp = rpBackup;
-	//_rpStack.pop();
 	auto v = ResolveVar(ERefKind::Reg, _rp);
 	*v = ret ? *ret : Variable();
 	return true;
