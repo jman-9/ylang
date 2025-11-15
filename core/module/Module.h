@@ -29,8 +29,8 @@ struct Module
 {
 	std::string name;
 	bool builtin = false;
-	YModFn issuer = nullptr;
-	YModFn revoker = nullptr;
+	YModFn newer = nullptr;
+	YModFn deleter = nullptr;
 	ModuleFuncTable funcTbl;
 	ModulePropTable propTbl;
 

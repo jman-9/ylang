@@ -28,7 +28,7 @@
 #include <vector>
 
 
-enum class YEObj : uint32_t
+enum class YEArg : uint32_t
 {
 	None,
 
@@ -41,20 +41,19 @@ enum class YEObj : uint32_t
 	List,
 	Dict,
 	Object,
-	License,
 };
 
 
 
-struct YObj
+struct YArg
 {
 	void* o = nullptr;
-	YEObj tp = YEObj::None;
+	YEArg tp = YEArg::None;
 
 	int64_t ToInt64() const;
 	double ToDouble() const;
 	std::string ToStr() const;
-	std::vector<YObj> ToList() const;
+	std::vector<YArg> ToList() const;
 
 	bool FromInt64(int64_t n);
 	bool FromDouble(double d);
@@ -74,20 +73,20 @@ struct YStr
 struct YList
 {
 	int sz = 0;
-	YObj* list = nullptr;
+	YArg* list = nullptr;
 };
 
 struct YDict
 {
 	int sz = 0;
-	YObj* keys = nullptr;
-	YObj* vals = nullptr;
+	YArg* keys = nullptr;
+	YArg* vals = nullptr;
 };
 
 struct YArgs
 {
 	int numArgs = 0;
-	YObj* args = nullptr;
+	YArg* args = nullptr;
 
 	void Reset(int num);
 };
@@ -96,7 +95,13 @@ struct YRet
 {
 	int code = 0;
 	YList vals;
-	YObj single;
+	YArg single;
+};
+
+struct YObj
+{
+	YStr name;
+	void* obj;
 };
 
 using YModFn = YRet (*)(YArgs*);

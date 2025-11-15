@@ -8,11 +8,11 @@
 #include <unordered_map>
 
 
-
 namespace yvm
 {
 
 struct Attribute;
+struct Object;
 
 struct Variable
 {
@@ -29,7 +29,6 @@ struct Variable
 		REF,
 		ATTR,
 		MODULE,
-		LICENSE,
 	};
 
 	Type _type = NONE;
@@ -50,14 +49,15 @@ struct Variable
 	void SetStr(const std::string& str);
 	void SetList(const std::vector<Variable*>& list = std::vector<Variable*>());
 	void SetModule(const ymod::Module& mod);
-	void SetValueFromContract(YObj o);
+	void SetObject(ymod::Module& mod, void* obj);
+	void SetValueFromContract(YArg o);
 	Variable* Clone();
 
 	bool Assign(EToken op, const Variable& rval);
 	bool CalcAndAssign(const Variable& lhs, EToken calcOp, const Variable& rhs);
 	bool CalcUnaryAndAssign(EToken unaryOp, const Variable& rhs);
 
-	YObj ToContract() const;
+	YArg ToContract() const;
 	std::string ToStr() const;
 
 	bool operator==(Type cmp) const;
@@ -66,7 +66,8 @@ struct Variable
 	static Variable* NewNum(int64_t num = 0);
 	static Variable* NewStr(const std::string& str = "");
 	static Variable* NewList(const std::vector<Variable*>& list = std::vector<Variable*>());
-	static Variable* New(YObj o);
+	static Variable* NewObject(ymod::Module& mod, void* obj);
+	static Variable* New(YArg o);
 };
 
 struct Attribute

@@ -25,7 +25,15 @@ Variable* Variable::NewList(const vector<Variable*>& list /*= std::vector<Variab
 	v->SetList(list);
 	return v;
 }
-yvm::Variable* Variable::New(YObj o)
+
+yvm::Variable* Variable::NewObject(ymod::Module& mod, void* obj)
+{
+	auto v = new Variable;
+	v->SetObject(mod, obj);
+	return v;
+}
+
+yvm::Variable* Variable::New(YArg o)
 {
 	auto v = new Variable;
 	v->SetValueFromContract(o);
@@ -44,6 +52,7 @@ void Variable::Clear()
 	_dict = nullptr;
 	_ref = nullptr;
 	_attr = nullptr;
+	_mod = ymod::Module();
 }
 
 void Variable::SetInt(int64_t argNum)
@@ -76,13 +85,22 @@ void Variable::SetModule(const ymod::Module& mod)
 	_type = MODULE;
 	_mod = mod;
 }
-void Variable::SetValueFromContract(YObj o)
+
+void Variable::SetObject(ymod::Module& mod, void* obj)
+{
+	Clear();
+	_type = OBJECT;
+	_obj = obj;
+	_mod = mod;
+}
+
+void Variable::SetValueFromContract(YArg o)
 {
 	switch(o.tp)
 	{
-	case YEObj::Int64: return SetInt(o.ToInt64());
-	case YEObj::Double: return SetFloat(o.ToDouble());
-	case YEObj::Str: return SetStr(o.ToStr());
+	case YEArg::Int64: return SetInt(o.ToInt64());
+	case YEArg::Double: return SetFloat(o.ToDouble());
+	case YEArg::Str: return SetStr(o.ToStr());
 	default://TODO
 		throw 'n';
 	}
@@ -354,7 +372,7 @@ bool Variable::CalcUnaryAndAssign(EToken unaryOp, const Variable& rhs)
 	return true;
 }
 
-YObj Variable::ToContract() const
+YArg Variable::ToContract() const
 {
 	auto ToYStr = [](const string& s) -> YStr*
 	{
@@ -368,7 +386,7 @@ YObj Variable::ToContract() const
 	{
 		YList* yl = new YList;
 		yl->sz = (int)_list->size();
-		yl->list = new YObj[yl->sz];
+		yl->list = new YArg[yl->sz];
 		for(int i=0; i<yl->sz; i++)
 		{
 			yl->list[i] = _list->at(i)->ToContract();
@@ -379,12 +397,12 @@ YObj Variable::ToContract() const
 	{
 		YDict* yd = new YDict;
 		yd->sz = (int)_dict->size();
-		yd->keys = new YObj[yd->sz];
-		yd->vals = new YObj[yd->sz];
+		yd->keys = new YArg[yd->sz];
+		yd->vals = new YArg[yd->sz];
 		auto it = _dict->begin();
 		for(int i=0; i<yd->sz; i++, it++)
 		{
-			yd->keys[i] = { (void*)ToYStr(it->first), YEObj::Str };
+			yd->keys[i] = { (void*)ToYStr(it->first), YEArg::Str };
 			yd->vals[i] = it->second->ToContract();
 		}
 		return yd;
@@ -392,15 +410,15 @@ YObj Variable::ToContract() const
 
 	switch(_type)
 	{
-	case INT: return { (void*)(intptr_t)_int, YEObj::Int64 };
-	case FLOAT: return { (void*)(*(intptr_t*)&_float), YEObj::Double };
-	case STR: return { (void*)ToYStr(_str), YEObj::Str };
-	case LIST: return { (void*)ToList(), YEObj::List };
-	case DICT: return { (void*)ToDict(), YEObj::Dict };
-	case LICENSE: return { _obj, YEObj::License };
+	case INT: return { (void*)(intptr_t)_int, YEArg::Int64 };
+	case FLOAT: return { (void*)(*(intptr_t*)&_float), YEArg::Double };
+	case STR: return { (void*)ToYStr(_str), YEArg::Str };
+	case LIST: return { (void*)ToList(), YEArg::List };
+	case DICT: return { (void*)ToDict(), YEArg::Dict };
+	case OBJECT: return { _obj, YEArg::Object };
 	default: throw 'n';
 	}
-	return YObj();
+	return YArg();
 }
 
 string Variable::ToStr() const

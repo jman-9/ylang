@@ -28,15 +28,15 @@ EXPORT YRet ProcessUserData(YArgs* args)
 {
 	string name = args->args[0].ToStr();
 	int64_t age = args->args[1].ToInt64();
-	vector<YObj> scores = args->args[2].ToList();
+	vector<YArg> scores = args->args[2].ToList();
 
 	YRet yr;
 	yr.code = 0;
 
 	double sum = 0;
-	for(auto& yo : scores)
+	for(auto& ya : scores)
 	{
-		sum += yo.ToDouble();
+		sum += ya.ToDouble();
 	}
 
 	if(!yr.single.FromDouble(sum /= scores.size()))

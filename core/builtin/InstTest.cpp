@@ -7,9 +7,11 @@ namespace ybuiltin::InstTest
 
 YRet Issuer(YArgs* args)
 {
+	YObj* yo = new YObj { .name = YStr(), .obj = (void*)1234 };
+
 	YRet yr;
-	yr.single.tp = YEObj::License;
-	yr.single.o = (void*)1234;
+	yr.single.tp = YEArg::Object;
+	yr.single.o = yo;
 	return yr;
 }
 
@@ -26,7 +28,7 @@ const ymod::Module& GetModule()
 	if(m.name.empty())
 	{
 		m.name = "insttest";
-		m.issuer = Issuer;
+		m.newer = Issuer;
 		m.builtin = true;
 		m.funcTbl[ "test" ] = { "test", true, 0, Test };
 	}

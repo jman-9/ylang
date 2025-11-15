@@ -16,7 +16,7 @@ inline YRet Len(YArgs* args)
 	YRet yr;
 	auto rv = new Variable;
 	rv->SetInt((int64_t)self->_str.size());
-	yr.single.tp = YEObj::YVar;
+	yr.single.tp = YEArg::YVar;
 	yr.single.o = rv;
 	return yr;
 }
@@ -28,7 +28,7 @@ inline YRet Find(YArgs* args)
 		throw 'n';//TODO
 
 	YRet yr;
-	yr.single.tp = YEObj::YVar;
+	yr.single.tp = YEArg::YVar;
 	if(args->numArgs == 2)
 	{
 		auto s = (Variable*)args->args[1].o;
@@ -65,7 +65,7 @@ inline YRet Substr(YArgs* args)
 		throw 'n';//TODO
 
 	YRet yr;
-	yr.single.tp = YEObj::YVar;
+	yr.single.tp = YEArg::YVar;
 	if(args->numArgs == 2)
 	{
 		auto s = (Variable*)args->args[1].o;
@@ -123,7 +123,7 @@ inline YRet Replace(YArgs* args)
 	}
 
 	YRet yr;
-	yr.single.tp = YEObj::YVar;
+	yr.single.tp = YEArg::YVar;
 	yr.single.o = Variable::NewStr(r);
 	return yr;
 }
@@ -176,7 +176,7 @@ inline YRet Split(YArgs* args)
 		}
 	}
 
-	yr.single.tp = YEObj::YVar;
+	yr.single.tp = YEArg::YVar;
 	yr.single.o = ret;
 	return yr;
 }

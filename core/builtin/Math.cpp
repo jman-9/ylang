@@ -16,7 +16,7 @@ YRet Sin(YArgs* args)
 	auto vr = new yvm::Variable;
 	vr->SetFloat(v);
 	yr.single.o = (void*)vr;
-	yr.single.tp = YEObj::YVar;
+	yr.single.tp = YEArg::YVar;
 	return yr;
 }
 

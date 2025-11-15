@@ -363,13 +363,13 @@ void Machine::Run(const Bytecode& code, int start /* = 0 */)
 				{//TODO
 					throw 'n';
 				}
-				if(!mod.issuer)
+				if(!mod.newer)
 				{//TODO
 					throw 'n';
 				}
 
-				YRet yr = mod.issuer(nullptr);
-				if(yr.single.tp != YEObj::License)
+				YRet yr = mod.newer(nullptr);
+				if(yr.single.tp != YEArg::Object)
 				{
 					throw 'n';
 				}
@@ -377,7 +377,7 @@ void Machine::Run(const Bytecode& code, int start /* = 0 */)
 				_rpStack.pop();
 				auto v = ResolveVar(ERefKind::Reg, 0);
 				v->Clear();
-				v->_type = Variable::LICENSE;
+				v->_type = Variable::OBJECT;
 				v->_obj = yr.single.o;
 				v->_mod = mod;
 				i++;
@@ -392,7 +392,7 @@ void Machine::Run(const Bytecode& code, int start /* = 0 */)
 			const ymod::Module* mod = primitive::GetModule(owner._type);
 			if(!mod)
 			{
-				if(owner != Variable::MODULE && owner != Variable::LICENSE)
+				if(owner != Variable::MODULE && owner != Variable::OBJECT)
 				{//TODO
 					throw 'n';
 				}
@@ -421,21 +421,14 @@ void Machine::Run(const Bytecode& code, int start /* = 0 */)
 
 				off = 1;
 				ya.Reset(found->second.numPrms + 1);
-				if(owner == Variable::LICENSE)
+				if(mod->builtin)
 				{
-					ya.args[0] = owner.ToContract();
+					ya.args[0].tp = YEArg::YVar;
+					ya.args[0].o = &owner;
 				}
 				else
-				{
-					if(mod->builtin)
-					{
-						ya.args[0].tp = YEObj::YVar;
-						ya.args[0].o = &owner;
-					}
-					else
-					{//TODO
-						throw 'n';
-					}
+				{//TODO
+					ya.args[0] = owner.ToContract();
 				}
 			}
 			else
@@ -449,7 +442,7 @@ void Machine::Run(const Bytecode& code, int start /* = 0 */)
 				for(int i=0; i<found->second.numPrms; i++)
 				{//TODO int value check
 					auto arg = ResolveVar(ERefKind::Reg, i+1);
-					YObj yo { (void*)arg, YEObj::YVar };
+					YArg yo { (void*)arg, YEArg::YVar };
 					ya.args[i+off] = yo;
 				}
 			}
@@ -470,7 +463,7 @@ void Machine::Run(const Bytecode& code, int start /* = 0 */)
 			}
 			if(mod->builtin)
 			{
-				if(yr.single.tp != YEObj::None)//TODO real val
+				if(yr.single.tp != YEArg::None)//TODO real val
 				{
 					ret = (Variable*)yr.single.o;
 				}

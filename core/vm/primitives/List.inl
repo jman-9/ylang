@@ -15,7 +15,7 @@ inline YRet Len(YArgs* args)
 	auto self = (Variable*)args->args[0].o;
 
 	YRet yr;
-	yr.single.tp = YEObj::YVar;
+	yr.single.tp = YEArg::YVar;
 	yr.single.o = Variable::NewNum((int64_t)self->_list->size());
 	return {};
 }
@@ -52,7 +52,7 @@ inline YRet Pop(YArgs* args)
 
 
 	YRet yr;
-	yr.single.tp = YEObj::YVar;
+	yr.single.tp = YEArg::YVar;
 	yr.single.o = self->_list->at(i->_int);
 	self->_list->erase(self->_list->begin() + i->_int);
 	return yr;
@@ -62,7 +62,7 @@ inline YRet PopFront(YArgs* args)
 {
 	auto self = (Variable*)args->args[0].o;
 	YRet yr;
-	yr.single.tp = YEObj::YVar;
+	yr.single.tp = YEArg::YVar;
 	yr.single.o = self->_list->front();
 	self->_list->erase(self->_list->begin());
 	return yr;
@@ -72,7 +72,7 @@ inline YRet PopBack(YArgs* args)
 {
 	auto self = (Variable*)args->args[0].o;
 	YRet yr;
-	yr.single.tp = YEObj::YVar;
+	yr.single.tp = YEArg::YVar;
 	yr.single.o = self->_list->back();
 	self->_list->pop_back();
 	return yr;

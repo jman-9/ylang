@@ -15,7 +15,7 @@ inline YRet Len(YArgs* args)
 	auto self = (Variable*)args->args[0].o;
 
 	YRet yr;
-	yr.single.tp = YEObj::YVar;
+	yr.single.tp = YEArg::YVar;
 	yr.single.o = Variable::NewNum((int64_t)self->_dict->size());
 	return {};
 }
@@ -31,7 +31,7 @@ inline YRet Keys(YArgs* args)
 	}
 
 	YRet yr;
-	yr.single.tp = YEObj::YVar;
+	yr.single.tp = YEArg::YVar;
 	yr.single.o = ret;
 	return yr;
 }
@@ -47,7 +47,7 @@ inline YRet Values(YArgs* args)
 	}
 
 	YRet yr;
-	yr.single.tp = YEObj::YVar;
+	yr.single.tp = YEArg::YVar;
 	yr.single.o = ret;
 	return yr;
 }
@@ -68,7 +68,7 @@ inline YRet Items(YArgs* args)
 	}
 
 	YRet yr;
-	yr.single.tp = YEObj::YVar;
+	yr.single.tp = YEArg::YVar;
 	yr.single.o = ret;
 	return yr;
 }
@@ -90,7 +90,7 @@ inline YRet Pop(YArgs* args)
 	}
 
 	YRet yr;
-	yr.single.tp = YEObj::YVar;
+	yr.single.tp = YEArg::YVar;
 	yr.single.o = ret;
 	return yr;
 }
