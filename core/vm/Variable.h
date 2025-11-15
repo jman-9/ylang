@@ -29,6 +29,7 @@ struct Variable
 		REF,
 		ATTR,
 		MODULE,
+		LICENSE,
 	};
 
 	Type _type = NONE;

@@ -429,7 +429,9 @@ bool BytecodeBuilder::BuildExp(const TreeNode& stmt, bool root)
 
 	if(stmt.self == EToken::Invoke)
 	{
-		if(stmt.childs[0]->self == EToken::Dot)
+		const Token& ivkType = stmt.childs[0]->self;
+
+		if(ivkType == EToken::Dot)
 		{	//TODO generalize
 			if(!BuildExp(*stmt.childs[0], false))
 				throw 'n';
@@ -444,32 +446,41 @@ bool BytecodeBuilder::BuildExp(const TreeNode& stmt, bool root)
 		}
 		_reg = regStack;
 
-		if (stmt.childs[0]->self == EToken::LParen)
+		if (ivkType == EToken::LParen)
 		{//todo dynamic eval
 		}
 
-		if(stmt.childs[0]->self == EToken::Dot)
+		if(ivkType == EToken::Dot)
 		{	//TODO generalize
 			Op::Call cal{ .dstKind = (uint8_t)ERefKind::Reg, .dst = (uint16_t)_reg, .numArgs = (uint8_t)(stmt.childs.size()-1) };
 			PushBytecode(cal);
 			return true;
 		}
 
-		if(stmt.childs[0]->self.val == "print")
+		if(ivkType.val == "print")
 		{//TODO new architecture
 			Op::Invoke ivk{ .pos = 0xFFFF0000, .numPrms = (uint32_t)stmt.childs.size()-1 };
 			PushBytecode(ivk);
 			return true;
 		}
-		else if(stmt.childs[0]->self.val == "println")
+		else if(ivkType.val == "println")
 		{
 			Op::Invoke ivk{ .pos = 0xFFFF0000+1, .numPrms = (uint32_t)stmt.childs.size()-1 };
 			PushBytecode(ivk);
 			return true;
 		}
 
-		Op::Invoke ivk{ .pos = (uint32_t)_symTbl.GetSymbol(stmt.childs[0]->self.val).pos, .numPrms = (uint32_t)stmt.childs.size()-1 };
-		PushBytecode(ivk);
+		int constIdx = _constTbl.GetIdx(ivkType);
+		if(constIdx >= 0)
+		{
+			Op::Call cal{ .dstKind = (uint8_t)ERefKind::Const, .dst = (uint16_t)constIdx, .numArgs = (uint8_t)(stmt.childs.size()-1) };
+			PushBytecode(cal);
+		}
+		else
+		{
+			Op::Invoke ivk{ .pos = (uint32_t)_symTbl.GetSymbol(stmt.childs[0]->self.val).pos, .numPrms = (uint32_t)stmt.childs.size()-1 };
+			PushBytecode(ivk);
+		}
 		return true;
 	}
 

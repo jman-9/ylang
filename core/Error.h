@@ -18,6 +18,7 @@ enum class EErr
 	LValueError,
 	ExpectedExpression,
 	Expected,
+	AlreadyExisting,
 };
 
 struct Error
@@ -49,4 +50,5 @@ namespace ErrorBuilder
 	Error LValueError(uint32_t line, const std::string& s);
 	Error ExpectedExpression(uint32_t line, const std::string& s);
 	Error Expected(uint32_t line, const std::string& s);
+	Error AlreadyExisting(uint32_t line, const std::string& s);
 }

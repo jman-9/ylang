@@ -10,6 +10,7 @@ enum class ESymbol
 	Var,
 	Fn,
 	Cls,
+	Mod,
 };
 
 struct Param

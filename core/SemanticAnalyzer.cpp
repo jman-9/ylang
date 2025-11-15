@@ -79,11 +79,14 @@ bool SemanticAnalyzer::AnalyzeExp(const TreeNode& stmt)
 					return false;
 				}
 
-				//TODO 가변인자
-				if(stmt.childs.size() - 1 != found->second.params.size())
-				{//todo message
-					_errors.push_back(ErrorBuilder::Default(stmt.self.line, format("'{}': no matched arguments", name->self.val)));
-					return false;
+				if(found->second.kind == ESymbol::Fn)
+				{
+					//TODO 가변인자
+					if(stmt.childs.size() - 1 != found->second.params.size())
+					{//todo message
+						_errors.push_back(ErrorBuilder::Default(stmt.self.line, format("'{}': no matched arguments", name->self.val)));
+						return false;
+					}
 				}
 			}
 		}
@@ -132,10 +135,20 @@ bool SemanticAnalyzer::AnalyzeInclude(const TreeNode& stmt)
 		return false;
 	}
 
-	if(stmt.childs.front()->self != EToken::Id)
+	auto& modName = stmt.childs.front()->self;
+	if(modName != EToken::Id)
 	{//todo
 		return false;
 	}
+
+	auto found = _symTbl.back().find(modName.val);
+	if(found != _symTbl.back().end())
+	{
+		_errors.push_back(ErrorBuilder::AlreadyExisting(modName.line, modName.val));
+		return false;
+	}
+
+	_symTbl.back()[modName.val] = Symbol{ .name = modName.val, .kind = ESymbol::Mod };
 	return true;
 }
 

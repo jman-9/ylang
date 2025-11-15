@@ -41,6 +41,7 @@ enum class YEObj : uint32_t
 	List,
 	Dict,
 	Object,
+	License,
 };
 
 

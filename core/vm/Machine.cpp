@@ -356,19 +356,47 @@ void Machine::Run(const Bytecode& code, int start /* = 0 */)
 			_rpStack.push(_rp);
 
 			Variable* dst = ResolveVar((ERefKind)cal.dstKind, cal.dst);
+			if(*dst == Variable::STR)
+			{
+				const auto& mod = _modMgr.GetModule(dst->_str);
+				if(mod.IsNull())
+				{//TODO
+					throw 'n';
+				}
+				if(!mod.issuer)
+				{//TODO
+					throw 'n';
+				}
+
+				YRet yr = mod.issuer(nullptr);
+				if(yr.single.tp != YEObj::License)
+				{
+					throw 'n';
+				}
+
+				_rpStack.pop();
+				auto v = ResolveVar(ERefKind::Reg, 0);
+				v->Clear();
+				v->_type = Variable::LICENSE;
+				v->_obj = yr.single.o;
+				v->_mod = mod;
+				i++;
+				continue;
+			}
 			if(dst->_type != Variable::ATTR)
 			{
 				throw 'n';
 			}
 
-			const ymod::Module* mod = primitive::GetModule(dst->_attr->owner._type);
+			auto& owner = dst->_attr->owner;
+			const ymod::Module* mod = primitive::GetModule(owner._type);
 			if(!mod)
 			{
-				if(dst->_attr->owner._type != Variable::MODULE)
+				if(owner != Variable::MODULE && owner != Variable::LICENSE)
 				{//TODO
 					throw 'n';
 				}
-				mod = &dst->_attr->owner._mod;
+				mod = &owner._mod;
 			}
 
 			auto found = mod->funcTbl.find(dst->_attr->name);
@@ -386,10 +414,29 @@ void Machine::Run(const Bytecode& code, int start /* = 0 */)
 			int off = 0;
 			if(found->second.needSelf)
 			{
+				if(owner == Variable::MODULE)
+				{//TODO
+					throw 'n';
+				}
+
 				off = 1;
 				ya.Reset(found->second.numPrms + 1);
-				ya.args[0].tp = YEObj::YVar;
-				ya.args[0].o = &dst->_attr->owner;
+				if(owner == Variable::LICENSE)
+				{
+					ya.args[0] = owner.ToContract();
+				}
+				else
+				{
+					if(mod->builtin)
+					{
+						ya.args[0].tp = YEObj::YVar;
+						ya.args[0].o = &owner;
+					}
+					else
+					{//TODO
+						throw 'n';
+					}
+				}
 			}
 			else
 			{

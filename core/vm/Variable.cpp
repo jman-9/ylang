@@ -397,6 +397,7 @@ YObj Variable::ToContract() const
 	case STR: return { (void*)ToYStr(_str), YEObj::Str };
 	case LIST: return { (void*)ToList(), YEObj::List };
 	case DICT: return { (void*)ToDict(), YEObj::Dict };
+	case LICENSE: return { _obj, YEObj::License };
 	default: throw 'n';
 	}
 	return YObj();
