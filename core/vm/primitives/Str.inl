@@ -266,16 +266,16 @@ const ymod::ModuleDesc& GetModuleDesc()
 	{
 		m.name = "str";
 		m.builtin = true;
-		m.funcTbl[ "empty" ] = { "empty", true, 0, Empty };
-		m.funcTbl[ "len" ] = { "len", true, 0, Len };
-		m.funcTbl[ "find" ] = { "find", true, 1, Find };
-		m.funcTbl[ "substr" ] = { "substr", true, 1, Substr };
-		m.funcTbl[ "replace" ] = { "replace", true, 2, Replace };
-		m.funcTbl[ "split" ] = { "split", true, 0, Split };
-		m.funcTbl[ "trim" ] = { "trim", true, 0, Trim };
-		m.funcTbl[ "ltrim" ] = { "ltrim", true, 0, LTrim };
-		m.funcTbl[ "rtrim" ] = { "rtrim", true, 0, RTrim };
-		m.funcTbl[ "join" ] = { "join", true, 1, Join };
+		m.memberTbl[ "empty" ] = { "empty", ymod::ModuleMemberDesc::FUNC, true, 0, Empty };
+		m.memberTbl[ "len" ] = { "len", ymod::ModuleMemberDesc::FUNC, true, 0, Len };
+		m.memberTbl[ "find" ] = { "find", ymod::ModuleMemberDesc::FUNC, true, 1, Find };
+		m.memberTbl[ "substr" ] = { "substr", ymod::ModuleMemberDesc::FUNC, true, 1, Substr };
+		m.memberTbl[ "replace" ] = { "replace", ymod::ModuleMemberDesc::FUNC, true, 2, Replace };
+		m.memberTbl[ "split" ] = { "split", ymod::ModuleMemberDesc::FUNC, true, 0, Split };
+		m.memberTbl[ "trim" ] = { "trim", ymod::ModuleMemberDesc::FUNC, true, 0, Trim };
+		m.memberTbl[ "ltrim" ] = { "ltrim", ymod::ModuleMemberDesc::FUNC, true, 0, LTrim };
+		m.memberTbl[ "rtrim" ] = { "rtrim", ymod::ModuleMemberDesc::FUNC, true, 0, RTrim };
+		m.memberTbl[ "join" ] = { "join", ymod::ModuleMemberDesc::FUNC, true, 1, Join };
 	}
 	return m;
 }

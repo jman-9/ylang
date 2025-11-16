@@ -102,11 +102,11 @@ const ymod::ModuleDesc& GetModuleDesc()
 	{
 		m.name = "dict";
 		m.builtin = true;
-		m.funcTbl[ "len" ] = { "len", true, 0, Len };
-		m.funcTbl[ "keys" ] = { "keys", true, 0, Keys };
-		m.funcTbl[ "values" ] = { "values", true, 0, Values };
-		m.funcTbl[ "items" ] = { "items", true, 0, Items };
-		m.funcTbl[ "pop" ] = { "pop", true, 1, Pop };
+		m.memberTbl[ "len" ] = { "len", ymod::ModuleMemberDesc::FUNC, true, 0, Len };
+		m.memberTbl[ "keys" ] = { "keys", ymod::ModuleMemberDesc::FUNC, true, 0, Keys };
+		m.memberTbl[ "values" ] = { "values", ymod::ModuleMemberDesc::FUNC, true, 0, Values };
+		m.memberTbl[ "items" ] = { "items", ymod::ModuleMemberDesc::FUNC, true, 0, Items };
+		m.memberTbl[ "pop" ] = { "pop", ymod::ModuleMemberDesc::FUNC, true, 1, Pop };
 	}
 	return m;
 }

@@ -30,7 +30,7 @@ const ymod::ModuleDesc& GetModuleDesc()
 		m.name = "insttest";
 		m.newer = Issuer;
 		m.builtin = true;
-		m.funcTbl[ "test" ] = { "test", true, 0, Test };
+		m.memberTbl[ "test" ] = { "test", ymod::ModuleMemberDesc::FUNC, true, 0, Test };
 	}
 	return m;
 }

@@ -173,7 +173,15 @@ else
 const char* testcode2 =
 R"TEST(
 
-include rand; r=rand.get(-5, 5); if(!(-100 <= r && r <= 1039281)) exit(1);
+include file;
+a = file.open("test.txt", "w+");
+a.write("hahahaha");
+a.close();
+
+a.open("test.txt", "r");
+r = a.read(100);
+println(r);
+a.close();
 
 )TEST";
 

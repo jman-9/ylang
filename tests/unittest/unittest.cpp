@@ -144,6 +144,38 @@ TEST_CASE( "Builtin Sys Test", "[bltsys]" )
 	REQUIRE( ret.first == 0 );
 }
 
+TEST_CASE( "Builtin File Test", "[bltfile]" )
+{
+	pair<int, vector<Error>> ret;
+
+	ret = Run( R"YT(
+		w = "hahahaha";
+		include file;
+		a = file.open("test.txt", "w+");
+		a.write(w);
+		a.close();
+
+		a.open("test.txt", "r");
+		r = a.read(100);
+		a.close();
+		println("{w} {w.len()}");
+		println("{r} {r.len()}");
+		if(r != w) exit(1);
+	)YT" );
+	REQUIRE( ret.first == 0 );
+}
+
+TEST_CASE( "Builtin Json Test", "[bltjson]" )
+{
+	pair<int, vector<Error>> ret;
+
+	ret = Run( R"YT(
+		include json;
+		a = json.parse("{{}}");
+	)YT" );
+	REQUIRE( ret.first == 0 );
+}
+
 
 static const Catch::LeakDetector leakDetector;
 
@@ -161,7 +193,9 @@ int main(int argc, char** argv)
 	cfg.showSuccessfulTests = true;
 	//cfg.testsOrTags.push_back("[primstr]");
 	//cfg.testsOrTags.push_back("[bltrand]");
-	cfg.testsOrTags.push_back("[bltsys]");
+	//cfg.testsOrTags.push_back("[bltsys]");
+	//cfg.testsOrTags.push_back("[bltfile]");
+	cfg.testsOrTags.push_back("[bltjson]");
 
 	int numFailed = _session.run();
 };

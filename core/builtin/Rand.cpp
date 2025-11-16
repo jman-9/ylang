@@ -35,8 +35,8 @@ const ymod::ModuleDesc& GetModuleDesc()
 	{
 		m.name = "rand";
 		m.builtin = true;
-		m.funcTbl[ "randomize_timer" ] = ymod::ModuleFuncDesc{ "randomize_timer", false, 0, RandomizeTimer };
-		m.funcTbl[ "get" ] = ymod::ModuleFuncDesc{ "get", false, 2, Get };
+		m.memberTbl[ "randomize_timer" ] = { "randomize_timer", ymod::ModuleMemberDesc::FUNC, false, 0, RandomizeTimer };
+		m.memberTbl[ "get" ] = { "get", ymod::ModuleMemberDesc::FUNC, false, 2, Get };
 	}
 	return m;
 }

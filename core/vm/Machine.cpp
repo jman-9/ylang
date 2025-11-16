@@ -68,12 +68,10 @@ bool Machine::Assign(const Op::Assign& as)
 				if(dst->_attr->owner == Variable::MODULE)
 				{
 					auto found = dst->_attr->owner._mod.memberVars.find(dst->_attr->name);
-					if(found == dst->_attr->owner._mod.memberVars.end())
+					if(found != dst->_attr->owner._mod.memberVars.end())
 					{
-						throw 'n';
+						dst->SetValueFromContract(found->second);
 					}
-
-					dst->SetValueFromContract(found->second);
 				}
 			}
 		}
@@ -424,8 +422,8 @@ bool Machine::Invoke(const Op::Invoke& ivk)
 		modDesc = owner._mod.modDesc;
 	}
 
-	auto found = modDesc->funcTbl.find(dst->_attr->name);
-	if(found == modDesc->funcTbl.end())
+	auto found = modDesc->memberTbl.find(dst->_attr->name);
+	if(found == modDesc->memberTbl.end())
 	{//TODO
 		throw 'n';
 	}
@@ -490,12 +488,20 @@ bool Machine::Invoke(const Op::Invoke& ivk)
 	{
 		if(yr.single.tp != YEArg::None)
 		{
-			if(yr.single.tp != YEArg::YVar)
+			if(yr.single.tp == YEArg::Object)
 			{//TODO
+				YObj* yo = (YObj*)yr.single.o;
+				ymod::Module mod { &_modMgr.GetModuleDesc(yo->name.str) };
+				ret = Variable::NewObject(mod, yo->obj);
+			}
+			else if(yr.single.tp == YEArg::YVar)
+			{//TODO
+				ret = (Variable*)yr.single.o;
+			}
+			else
+			{
 				throw 'n';
 			}
-
-			ret = (Variable*)yr.single.o;
 		}
 		else if(yr.vals.sz != 0)
 		{//TODO

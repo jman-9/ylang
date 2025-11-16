@@ -20,6 +20,15 @@ inline YRet Len(YArgs* args)
 	return yr;
 }
 
+inline YRet Resize(YArgs* args)
+{
+	auto self = (Variable*)args->args[0].o;
+	auto n = (Variable*)args->args[1].o;
+
+	self->_list->resize(n->_int);
+	return {};
+}
+
 inline YRet Append(YArgs* args)
 {
 	auto self = (Variable*)args->args[0].o;
@@ -85,12 +94,13 @@ const ymod::ModuleDesc& GetModuleDesc()
 	{
 		m.name = "list";
 		m.builtin = true;
-		m.funcTbl[ "len" ] = { "len", true, 0, Len };
-		m.funcTbl[ "append" ] = { "append", true, 1, Append };
-		m.funcTbl[ "insert" ] = { "insert", true, 2, Insert };
-		m.funcTbl[ "pop" ] = { "pop", true, 1, Pop };
-		m.funcTbl[ "pop_front" ] = { "pop_front", true, 0, PopFront };
-		m.funcTbl[ "pop_back" ] = { "pop_back", true, 0, PopBack };
+		m.memberTbl[ "len" ] = { "len", ymod::ModuleMemberDesc::FUNC, true, 0, Len };
+		m.memberTbl[ "resize" ] = { "resize", ymod::ModuleMemberDesc::FUNC, true, 1, Resize };
+		m.memberTbl[ "append" ] = { "append", ymod::ModuleMemberDesc::FUNC, true, 1, Append };
+		m.memberTbl[ "insert" ] = { "insert", ymod::ModuleMemberDesc::FUNC, true, 2, Insert };
+		m.memberTbl[ "pop" ] = { "pop", ymod::ModuleMemberDesc::FUNC, true, 1, Pop };
+		m.memberTbl[ "pop_front" ] = { "pop_front", ymod::ModuleMemberDesc::FUNC, true, 0, PopFront };
+		m.memberTbl[ "pop_back" ] = { "pop_back", ymod::ModuleMemberDesc::FUNC, true, 0, PopBack };
 	}
 	return m;
 }
