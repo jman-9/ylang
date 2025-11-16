@@ -39,7 +39,7 @@ EXPORT YRet ProcessUserData(YArgs* args)
 		sum += ya.ToDouble();
 	}
 
-	if(!yr.single.FromDouble(sum /= scores.size()))
+	if(!yr.single.SetDouble(sum /= scores.size()))
 	{
 		yr.code = 1;
 	}

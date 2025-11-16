@@ -1,6 +1,7 @@
 #pragma once
 #include "ycontract.h"
 
+
 inline int64_t YArg::ToInt64() const
 {
 	return (int64_t)o;
@@ -24,7 +25,7 @@ inline std::vector<YArg> YArg::ToList() const
 	return vt;
 }
 
-inline bool YArg::FromInt64(int64_t n)
+inline bool YArg::SetInt64(int64_t n)
 {
 	if(o) return false;//TODO
 	tp = YEArg::Int64;
@@ -32,7 +33,7 @@ inline bool YArg::FromInt64(int64_t n)
 	return true;
 }
 
-inline bool YArg::FromDouble(double d)
+inline bool YArg::SetDouble(double d)
 {
 	if(o) return false;//TODO
 	tp = YEArg::Double;
@@ -40,17 +41,26 @@ inline bool YArg::FromDouble(double d)
 	return true;
 }
 
-inline bool YArg::FromStr(const std::string& s)
+inline bool YArg::SetStr(const std::string& s)
 {
 	if(o) return false;//TODO
 	tp = YEArg::Str;
 	YStr* ys = new YStr;
-	ys->FromStr(s);
+	ys->SetStr(s);
 	o = (void*)ys;
 	return true;
 }
 
-inline void YStr::FromStr(const std::string& s)
+inline bool YArg::SetYVar(void* yv)
+{//TODO clone or ref...???
+	if(o) return false;//TODO
+	tp = YEArg::YVar;
+	o = yv;
+	return true;
+}
+
+
+inline void YStr::SetStr(const std::string& s)
 {
 	if(str)
 		delete str;

@@ -40,13 +40,12 @@ struct ModuleMemberDesc
 using ModuleFuncTable = std::unordered_map<std::string, ModuleFuncDesc>;
 using ModulePropTable = std::unordered_map<std::string, ModulePropDesc>;
 using ModuleMemberTable = std::unordered_map<std::string, ModuleMemberDesc>;
-using ModuleMemberVarTable = std::unordered_map<std::string, std::string>;
+using ModuleMemberVarTable = std::unordered_map<std::string, YArg>;
 
 
 struct ModuleDesc;
 struct Module
 {
-	//Module(const ModuleDesc* mod = nullptr): modDesc(mod) {}//TODO
 	const ModuleDesc* modDesc = nullptr;
 	ModuleMemberVarTable memberVars;
 };

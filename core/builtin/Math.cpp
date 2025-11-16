@@ -11,7 +11,7 @@ YRet Sin(YArgs* args)
 	double x = a1->_float;
 	double v = sin(x);
 	YRet yr;
-	yr.single.FromDouble(v);
+	yr.single.SetDouble(v);
 
 	auto vr = new yvm::Variable;
 	vr->SetFloat(v);

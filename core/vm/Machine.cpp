@@ -73,7 +73,7 @@ bool Machine::Assign(const Op::Assign& as)
 						throw 'n';
 					}
 
-					dst->SetStr(found->second);
+					dst->SetValueFromContract(found->second);
 				}
 			}
 		}

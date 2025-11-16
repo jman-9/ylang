@@ -1,4 +1,5 @@
-#include "Rand.h"
+#include "Sys.h"
+#include "Args.h"
 #include "vm/Variable.h"
 #include <time.h>
 
@@ -30,7 +31,15 @@ const ModuleDesc& GetModuleDesc()
 Module Init()
 {
 	Module o(&GetModuleDesc());
-	o.memberVars["version"] = "ylang 0.0.2";
+	o.memberVars["version"] = YArg{Variable::NewStr("ylang 0.0.2"), YEArg::YVar};
+
+	auto argv = Variable::NewList();
+	for(size_t i=1; i<g_Args.size(); i++)
+	{
+		argv->_list->push_back(Variable::NewStr(g_Args[i]));
+	}
+	o.memberVars["argv"] = YArg{argv, YEArg::YVar};
+	o.memberVars["executable"] = YArg{Variable::NewStr(g_Args[0]), YEArg::YVar};
 	return o;
 }
 

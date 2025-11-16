@@ -5,6 +5,7 @@
 #include "core/Parser.h"
 #include "core/SemanticAnalyzer.h"
 #include "core/BytecodeBuilder.h"
+#include "core/Args.h"
 #include "core/vm/Machine.h"
 #include <iostream>
 #include <map>
@@ -133,7 +134,13 @@ TEST_CASE( "Builtin Sys Test", "[bltsys]" )
 {
 	pair<int, vector<Error>> ret;
 
-	ret = Run( R"YT( include sys; println(sys.version); )YT" );
+	ret = Run( R"YT( include sys; println(sys.version); if(sys.version.empty()) exit(1); )YT" );
+	REQUIRE( ret.first == 0 );
+
+	ret = Run( R"YT( include sys; println(sys.executable); if(sys.executable.empty()) exit(1); )YT" );
+	REQUIRE( ret.first == 0 );
+
+	ret = Run( R"YT( include sys; println(sys.argv); )YT" );
 	REQUIRE( ret.first == 0 );
 }
 
@@ -145,6 +152,8 @@ int main(int argc, char** argv)
 	(void)argc;
 	(void)argv;
 	(void)&leakDetector;
+
+	yrun::ArgsCollector::Collect(argc, argv);
 
 	static Catch::Session _session;
 	Catch::ConfigData& cfg = _session.configData();

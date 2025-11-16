@@ -10,6 +10,17 @@ using namespace yvm;
 using namespace ymod;
 using namespace std;
 
+inline YRet Empty(YArgs* args)
+{
+	auto self = (Variable*)args->args[0].o;
+	YRet yr;
+	auto rv = new Variable;
+	rv->SetInt((int64_t)self->_str.empty());
+	yr.single.tp = YEArg::YVar;
+	yr.single.o = rv;
+	return yr;
+}
+
 inline YRet Len(YArgs* args)
 {
 	auto self = (Variable*)args->args[0].o;
@@ -255,6 +266,7 @@ const ymod::ModuleDesc& GetModuleDesc()
 	{
 		m.name = "str";
 		m.builtin = true;
+		m.funcTbl[ "empty" ] = { "empty", true, 0, Empty };
 		m.funcTbl[ "len" ] = { "len", true, 0, Len };
 		m.funcTbl[ "find" ] = { "find", true, 1, Find };
 		m.funcTbl[ "substr" ] = { "substr", true, 1, Substr };

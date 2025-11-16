@@ -101,6 +101,7 @@ void Variable::SetValueFromContract(YArg o)
 	case YEArg::Int64: return SetInt(o.ToInt64());
 	case YEArg::Double: return SetFloat(o.ToDouble());
 	case YEArg::Str: return SetStr(o.ToStr());
+	case YEArg::YVar: *this = *(const Variable*)o.o; break;
 	default://TODO
 		throw 'n';
 	}

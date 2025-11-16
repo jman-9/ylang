@@ -44,7 +44,6 @@ enum class YEArg : uint32_t
 };
 
 
-
 struct YArg
 {
 	void* o = nullptr;
@@ -55,19 +54,19 @@ struct YArg
 	std::string ToStr() const;
 	std::vector<YArg> ToList() const;
 
-	bool FromInt64(int64_t n);
-	bool FromDouble(double d);
-	bool FromStr(const std::string& s);
+	bool SetInt64(int64_t n);
+	bool SetDouble(double d);
+	bool SetStr(const std::string& s);
+	bool SetYVar(void* yv);
 	//bool FromList() const;
 };
-
 
 struct YStr
 {
 	int len = 0;
 	char* str = nullptr;
 
-	void FromStr(const std::string& s);
+	void SetStr(const std::string& s);
 };
 
 struct YList
