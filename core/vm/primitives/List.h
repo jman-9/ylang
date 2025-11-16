@@ -5,7 +5,7 @@
 namespace yvm::primitive::List
 {
 
-inline const ymod::Module& GetModule();
+inline const ymod::ModuleDesc& GetModuleDesc();
 
 }
 

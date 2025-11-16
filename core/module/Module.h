@@ -21,18 +21,48 @@ struct ModulePropDesc
 	//TODO
 };
 
+struct ModuleMemberDesc
+{
+	enum Kind
+	{
+		VAR,
+		FUNC,
+	};
+
+	std::string name;
+	Kind kind;
+	bool needSelf = false;
+	int numPrms = 0;	// todo clarify min params
+	//TODO _type list
+	YModFn func = nullptr;
+};
 
 using ModuleFuncTable = std::unordered_map<std::string, ModuleFuncDesc>;
 using ModulePropTable = std::unordered_map<std::string, ModulePropDesc>;
+using ModuleMemberTable = std::unordered_map<std::string, ModuleMemberDesc>;
+using ModuleMemberVarTable = std::unordered_map<std::string, std::string>;
 
+
+struct ModuleDesc;
 struct Module
+{
+	//Module(const ModuleDesc* mod = nullptr): modDesc(mod) {}//TODO
+	const ModuleDesc* modDesc = nullptr;
+	ModuleMemberVarTable memberVars;
+};
+
+using YModIniter = Module (*)();
+
+struct ModuleDesc
 {
 	std::string name;
 	bool builtin = false;
+	YModIniter initer = nullptr;
 	YModFn newer = nullptr;
 	YModFn deleter = nullptr;
 	ModuleFuncTable funcTbl;
 	ModulePropTable propTbl;
+	ModuleMemberTable memberTbl;
 
 	bool IsNull() const;
 };

@@ -5,7 +5,7 @@
 namespace yvm::primitive::Str
 {
 
-inline const ymod::Module& GetModule();
+inline const ymod::ModuleDesc& GetModuleDesc();
 
 }
 

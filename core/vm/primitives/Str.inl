@@ -248,9 +248,9 @@ inline YRet Join(YArgs* args)
 }
 
 
-const ymod::Module& GetModule()
+const ymod::ModuleDesc& GetModuleDesc()
 {
-	static Module m;
+	static ModuleDesc m;
 	if(m.name.empty())
 	{
 		m.name = "str";

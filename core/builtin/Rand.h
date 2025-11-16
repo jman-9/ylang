@@ -5,6 +5,6 @@
 namespace ybuiltin::Rand
 {
 
-const ymod::Module& GetModule();
+const ymod::ModuleDesc& GetModuleDesc();
 
 }

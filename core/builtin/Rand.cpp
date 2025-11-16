@@ -27,9 +27,9 @@ YRet Get(YArgs* args)
 	return yr;
 }
 
-const ymod::Module& GetModule()
+const ymod::ModuleDesc& GetModuleDesc()
 {
-	static ymod::Module m;
+	static ymod::ModuleDesc m;
 
 	if(m.name.empty())
 	{

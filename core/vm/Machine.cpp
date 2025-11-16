@@ -62,6 +62,20 @@ bool Machine::Assign(const Op::Assign& as)
 		if(src1 && src2)
 		{
 			dst->CalcAndAssign(*src1, (EToken)as.op, *src2);
+			//TODO generalize
+			if(*dst == Variable::ATTR)
+			{
+				if(dst->_attr->owner == Variable::MODULE)
+				{
+					auto found = dst->_attr->owner._mod.memberVars.find(dst->_attr->name);
+					if(found == dst->_attr->owner._mod.memberVars.end())
+					{
+						throw 'n';
+					}
+
+					dst->SetStr(found->second);
+				}
+			}
 		}
 		else if(src1)
 		{
@@ -364,20 +378,26 @@ bool Machine::Invoke(const Op::Invoke& ivk)
 	Variable* dst = ResolveVar((ERefKind)ivk.dstKind, ivk.dst);
 	if(*dst == Variable::STR)
 	{//newer
-		const auto& mod = _modMgr.GetModule(dst->_str);
-		if(mod.IsNull())
+		const auto& modDesc = _modMgr.GetModuleDesc(dst->_str);
+		if(modDesc.IsNull())
 		{//TODO
 			throw 'n';
 		}
-		if(!mod.newer)
+		if(!modDesc.newer)
 		{//TODO
 			throw 'n';
 		}
 
-		YRet yr = mod.newer(nullptr);
+		YRet yr = modDesc.newer(nullptr);
 		if(yr.single.tp != YEArg::Object)
 		{
 			throw 'n';
+		}
+
+		ymod::Module mod { .modDesc = &modDesc };
+		if(modDesc.initer)
+		{
+			mod = modDesc.initer();
 		}
 
 		_rpStack.pop();
@@ -394,18 +414,18 @@ bool Machine::Invoke(const Op::Invoke& ivk)
 	}
 
 	auto& owner = dst->_attr->owner;
-	const ymod::Module* mod = primitive::GetModule(owner._type);
-	if(!mod)
+	const ymod::ModuleDesc* modDesc = primitive::GetModuleDesc(owner._type);
+	if(!modDesc)
 	{
 		if(owner != Variable::MODULE && owner != Variable::OBJECT)
 		{//TODO
 			throw 'n';
 		}
-		mod = &owner._mod;
+		modDesc = owner._mod.modDesc;
 	}
 
-	auto found = mod->funcTbl.find(dst->_attr->name);
-	if(found == mod->funcTbl.end())
+	auto found = modDesc->funcTbl.find(dst->_attr->name);
+	if(found == modDesc->funcTbl.end())
 	{//TODO
 		throw 'n';
 	}
@@ -426,7 +446,7 @@ bool Machine::Invoke(const Op::Invoke& ivk)
 
 		off = 1;
 		ya.Reset(ivk.numArgs + 1);
-		if(mod->builtin)
+		if(modDesc->builtin)
 		{
 			ya.args[0].tp = YEArg::YVar;
 			ya.args[0].o = &owner;
@@ -442,7 +462,7 @@ bool Machine::Invoke(const Op::Invoke& ivk)
 		ya.Reset(ivk.numArgs);
 	}
 
-	if(mod->builtin)
+	if(modDesc->builtin)
 	{
 		for(int i=0; i<ivk.numArgs; i++)
 		{//TODO int value check
@@ -466,7 +486,7 @@ bool Machine::Invoke(const Op::Invoke& ivk)
 	{//TODO
 		throw 'n';
 	}
-	if(mod->builtin)
+	if(modDesc->builtin)
 	{
 		if(yr.single.tp != YEArg::None)
 		{
@@ -503,10 +523,16 @@ bool Machine::Inc(const Op::Inc& inc)
 		throw 'n';
 	}
 
-	const ymod::Module& mod = _modMgr.GetModule(name->_str);
-	if(mod.IsNull())
+	const ymod::ModuleDesc& modDesc = _modMgr.GetModuleDesc(name->_str);
+	if(modDesc.IsNull())
 	{//TODO
 		throw 'n';
+	}
+
+	ymod::Module mod{ &modDesc, };
+	if(modDesc.initer)
+	{
+		mod = modDesc.initer();
 	}
 
 	auto v = ResolveVar(ERefKind::LocalVar, _sp);

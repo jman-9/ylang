@@ -5,17 +5,17 @@
 namespace yvm::primitive
 {
 
-static const ymod::Module& strMod = yvm::primitive::Str::GetModule();
-static const ymod::Module& listMod= yvm::primitive::List::GetModule();
-static const ymod::Module& dictMod= yvm::primitive::Dict::GetModule();
+static const ymod::ModuleDesc& strModDesc = yvm::primitive::Str::GetModuleDesc();
+static const ymod::ModuleDesc& listModDesc= yvm::primitive::List::GetModuleDesc();
+static const ymod::ModuleDesc& dictModDesc= yvm::primitive::Dict::GetModuleDesc();
 
-const ymod::Module* GetModule(Variable::Type primType)
+const ymod::ModuleDesc* GetModuleDesc(Variable::Type primType)
 {
 	switch(primType)
 	{
-	case Variable::STR: return &strMod;
-	case Variable::LIST: return &listMod;
-	case Variable::DICT: return &dictMod;
+	case Variable::STR: return &strModDesc;
+	case Variable::LIST: return &listModDesc;
+	case Variable::DICT: return &dictModDesc;
 	}
 	return nullptr;
 }

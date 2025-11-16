@@ -4,7 +4,7 @@ namespace ymod
 {
 
 
-bool Module::IsNull() const
+bool ModuleDesc::IsNull() const
 {
 	return name.empty();
 }

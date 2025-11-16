@@ -2,7 +2,7 @@
 #include "module/Module.h"
 
 
-namespace ybuiltin::InstTest
+namespace ybuiltin::Sys
 {
 
 const ymod::ModuleDesc& GetModuleDesc();

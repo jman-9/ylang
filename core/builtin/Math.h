@@ -5,6 +5,6 @@
 namespace ybuiltin::Math
 {
 
-const ymod::Module& GetModule();
+const ymod::ModuleDesc& GetModuleDesc();
 
 }

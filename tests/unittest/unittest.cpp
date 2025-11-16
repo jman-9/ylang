@@ -129,6 +129,14 @@ TEST_CASE( "Builtin Random Test", "[bltrand]" )
 	REQUIRE( ret.first == 0 );
 }
 
+TEST_CASE( "Builtin Sys Test", "[bltsys]" )
+{
+	pair<int, vector<Error>> ret;
+
+	ret = Run( R"YT( include sys; println(sys.version); )YT" );
+	REQUIRE( ret.first == 0 );
+}
+
 
 static const Catch::LeakDetector leakDetector;
 
@@ -143,7 +151,8 @@ int main(int argc, char** argv)
 
 	cfg.showSuccessfulTests = true;
 	//cfg.testsOrTags.push_back("[primstr]");
-	cfg.testsOrTags.push_back("[bltrand]");
+	//cfg.testsOrTags.push_back("[bltrand]");
+	cfg.testsOrTags.push_back("[bltsys]");
 
 	int numFailed = _session.run();
 };

@@ -3,22 +3,22 @@
 namespace ymod
 {
 
-bool ModuleManager::RegisterModule(const Module& module)
+bool ModuleManager::RegisterModuleDesc(const ModuleDesc& modDesc)
 {
-	if(_modMap.contains(module.name))
+	if(_modDescMap.contains(modDesc.name))
 		return false;
 
-	_modMap[module.name] = module;
+	_modDescMap[modDesc.name] = modDesc;
 	return true;
 }
 
-const ymod::Module& ModuleManager::GetModule(const std::string& name) const
+const ymod::ModuleDesc& ModuleManager::GetModuleDesc(const std::string& name) const
 {
-	static Module s_emptyModule;
+	static ModuleDesc s_emptyModuleDesc;
 
-	auto found = _modMap.find(name);
-	if(found == _modMap.end())
-		return s_emptyModule;
+	auto found = _modDescMap.find(name);
+	if(found == _modDescMap.end())
+		return s_emptyModuleDesc;
 
 	return found->second;
 }
