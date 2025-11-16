@@ -94,7 +94,7 @@ const ModuleDesc& GetModuleDesc()
 		m.memberTbl["open"] = ModuleMemberDesc{ "open", ModuleMemberDesc::FUNC, false, 2, Open };
 		m.memberTbl["close"] = ModuleMemberDesc{ "close", ModuleMemberDesc::FUNC, true, 0, Close };
 		m.memberTbl["read"] = ModuleMemberDesc{ "read", ModuleMemberDesc::FUNC, true, 1, Read };
-		m.memberTbl["write"] = ModuleMemberDesc{ "read", ModuleMemberDesc::FUNC, true, 1, Write };
+		m.memberTbl["write"] = ModuleMemberDesc{ "write", ModuleMemberDesc::FUNC, true, 1, Write };
 	}
 	return m;
 }

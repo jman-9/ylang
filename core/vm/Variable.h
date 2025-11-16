@@ -48,6 +48,7 @@ struct Variable
 	void SetFloat(double f);
 	void SetStr(const std::string& str);
 	void SetList(const std::vector<Variable*>& list = std::vector<Variable*>());
+	void SetDict(const std::unordered_map<std::string, Variable*>& dict = std::unordered_map<std::string, Variable*>());
 	void SetModule(const ymod::Module& mod);
 	void SetObject(ymod::Module& mod, void* obj);
 	void SetValueFromContract(YArg o);
@@ -66,6 +67,7 @@ struct Variable
 	static Variable* NewInt(int64_t num = 0);
 	static Variable* NewStr(const std::string& str = "");
 	static Variable* NewList(const std::vector<Variable*>& list = std::vector<Variable*>());
+	static Variable* NewDict(const std::unordered_map<std::string, Variable*>& dict = std::unordered_map<std::string, Variable*>());
 	static Variable* NewObject(ymod::Module& mod, void* obj);
 	static Variable* New(YArg o);
 };

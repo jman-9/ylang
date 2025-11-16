@@ -27,7 +27,7 @@ const ModuleDesc& GetModuleDesc()
 Module Init()
 {
 	Module o(&GetModuleDesc());
-	o.memberVars["version"] = YArg{Variable::NewStr("ylang 0.0.2"), YEArg::YVar};
+	o.memberVars["version"] = YArg{Variable::NewStr("ylang 0.0.3"), YEArg::YVar};
 
 	auto argv = Variable::NewList();
 	for(size_t i=1; i<g_Args.size(); i++)

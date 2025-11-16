@@ -171,7 +171,46 @@ TEST_CASE( "Builtin Json Test", "[bltjson]" )
 
 	ret = Run( R"YT(
 		include json;
-		a = json.parse("{{}}");
+
+		a = json.parse("""
+			{
+				"glossary": {
+					"title": "example glossary",
+					"GlossDiv": {
+						"title": "S",
+						"GlossList": {
+							"GlossEntry": {
+								"ID": "SGML",
+								"SortAs": "SGML",
+								"GlossTerm": "Standard Generalized Markup Language",
+								"Acronym": "SGML",
+								"Abbrev": "ISO 8879:1986",
+								"GlossDef": {
+									"para": "A meta-markup language, used to create markup languages such as DocBook.",
+									"GlossSeeAlso": ["GML", "XML"]
+								},
+								"GlossSee": "markup"
+							}
+						}
+					}
+				}
+			}""");
+		println("{a}\n");
+
+		include file;
+		jf = file.open("jsontest.txt", "w+");
+		jf.write(json.dump(a, 2));
+		jf.close();
+
+		jf.open("jsontest.txt", "r");
+		r = jf.read(10000);
+		jf.close();
+
+		b = json.parse(r);
+		if(json.dump(a, 2) != json.dump(b, 2))
+			exit(1);
+
+		println(json.dump(b, 2));
 	)YT" );
 	REQUIRE( ret.first == 0 );
 }

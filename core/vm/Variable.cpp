@@ -26,6 +26,13 @@ Variable* Variable::NewList(const vector<Variable*>& list /*= std::vector<Variab
 	return v;
 }
 
+yvm::Variable* Variable::NewDict(const std::unordered_map<std::string, Variable*>& dict /*= std::unordered_map<std::string, Variable*>()*/)
+{
+	auto v = new Variable;
+	v->SetDict(dict);
+	return v;
+}
+
 yvm::Variable* Variable::NewObject(ymod::Module& mod, void* obj)
 {
 	auto v = new Variable;
@@ -73,12 +80,20 @@ void Variable::SetStr(const string& argStr)
 	_str = argStr;
 	_type = STR;
 }
-void Variable::SetList(const vector<Variable *>& argList /* = std::vector<Variable *>() */)
+void Variable::SetList(const vector<Variable *>& list /* = std::vector<Variable *>() */)
 {
 	Clear();
 	_type = LIST;
-	_list = new vector<Variable*>(argList);
+	_list = new vector<Variable*>(list);
 }
+
+void Variable::SetDict(const unordered_map<string, Variable*>& dict /*= std::unordered_map<std::string, Variable*>()*/)
+{
+	Clear();
+	_type = DICT;
+	_dict = new unordered_map<string, Variable*>(dict);
+}
+
 void Variable::SetModule(const ymod::Module& mod)
 {
 	Clear();
