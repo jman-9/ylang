@@ -16,6 +16,15 @@ YRet RandomizeTimer(YArgs* args)
 	return {};
 }
 
+YRet Seed(YArgs* args)
+{
+	auto seed = (Variable*)args->args[0].o;
+
+	srand( seed->_int );
+	return {};
+}
+
+
 YRet Get(YArgs* args)
 {
 	auto min = (Variable*)args->args[0].o;
@@ -36,6 +45,7 @@ const ymod::ModuleDesc& GetModuleDesc()
 		m.name = "rand";
 		m.builtin = true;
 		m.memberTbl[ "randomize_timer" ] = { "randomize_timer", ymod::ModuleMemberDesc::FUNC, false, 0, RandomizeTimer };
+		m.memberTbl[ "seed" ] = { "seed", ymod::ModuleMemberDesc::FUNC, false, 1, Seed };
 		m.memberTbl[ "get" ] = { "get", ymod::ModuleMemberDesc::FUNC, false, 2, Get };
 	}
 	return m;

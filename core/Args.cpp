@@ -14,7 +14,7 @@ Args& Args::I()
 	return s_args;
 }
 
-void ArgsCollector::Collect(int argc, char** argv)
+void ArgsCollector::Collect(int argc, const char** argv)
 {
 	g_Args.clear();
 	for(int i=0; i<argc; i++)

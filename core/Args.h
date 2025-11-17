@@ -19,7 +19,7 @@ public:
 
 struct ArgsCollector
 {
-	static void Collect(int argc, char** argv);
+	static void Collect(int argc, const char** argv);
 };
 
 }

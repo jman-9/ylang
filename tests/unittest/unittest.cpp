@@ -14,6 +14,8 @@ using namespace std;
 using namespace yvm;
 
 
+// #define DEBUG_OUT
+
 
 static std::vector<Error> Build(const std::string& src, Bytecode& retBytecode)
 {
@@ -67,6 +69,14 @@ static std::vector<Error> Build(const std::string& src, Bytecode& retBytecode)
 		{//TODO trace
 			throw 'n';
 		}
+
+	#ifdef DEBUG_OUT
+		for(int i=0; i<bb._bytecodeStr.size(); i++)
+		{
+			cout << format("{:4} {}\n", i, bb._bytecodeStr[i]);
+		}
+	#endif
+
 	} while(0);
 
 	return errs;
@@ -218,7 +228,7 @@ TEST_CASE( "Builtin Json Test", "[bltjson]" )
 
 static const Catch::LeakDetector leakDetector;
 
-int main(int argc, char** argv)
+int main(int argc, const char** argv)
 {
 	(void)argc;
 	(void)argv;

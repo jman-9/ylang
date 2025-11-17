@@ -147,7 +147,7 @@ YRet Dump(YArgs* args)
 				cout << i++ << " ";
 			#endif
 
-				jtrav->push_back("");
+				jtrav->push_back(json());
 				vq.push(v);
 			}
 			for(auto& j : *jtrav)

@@ -20,6 +20,21 @@ inline YRet Len(YArgs* args)
 	return {};
 }
 
+inline YRet Contains(YArgs* args)
+{
+	if(args->numArgs < 2)
+		throw 'n';//TODO
+
+	auto self = (Variable*)args->args[0].o;
+	auto k = (Variable*)args->args[1].o;
+
+	auto found = self->_dict->find(k->_str);
+	YRet yr;
+	yr.single.tp = YEArg::YVar;
+	yr.single.o = Variable::NewInt( found != self->_dict->end() );
+	return yr;
+}
+
 inline YRet Keys(YArgs* args)
 {
 	auto self = (Variable*)args->args[0].o;
@@ -103,6 +118,7 @@ const ymod::ModuleDesc& GetModuleDesc()
 		m.name = "dict";
 		m.builtin = true;
 		m.memberTbl[ "len" ] = { "len", ymod::ModuleMemberDesc::FUNC, true, 0, Len };
+		m.memberTbl[ "contains" ] = { "contains", ymod::ModuleMemberDesc::FUNC, true, 1, Contains };
 		m.memberTbl[ "keys" ] = { "keys", ymod::ModuleMemberDesc::FUNC, true, 0, Keys };
 		m.memberTbl[ "values" ] = { "values", ymod::ModuleMemberDesc::FUNC, true, 0, Values };
 		m.memberTbl[ "items" ] = { "items", ymod::ModuleMemberDesc::FUNC, true, 0, Items };

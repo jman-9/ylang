@@ -13,6 +13,10 @@
 using namespace std;
 
 
+#if _DEBUG || DEBUG
+#define DEBUG_OUT
+#endif
+
 
 static std::vector<Error> Build(const std::string& src, Bytecode& retBytecode)
 {
@@ -66,6 +70,14 @@ static std::vector<Error> Build(const std::string& src, Bytecode& retBytecode)
 		{//TODO trace
 			throw 'n';
 		}
+
+	#ifdef DEBUG_OUT
+		for(int i=0; i<bb._bytecodeStr.size(); i++)
+		{
+			cout << format("{:4} {}\n", i, bb._bytecodeStr[i]);
+		}
+	#endif
+
 	} while(0);
 
 	return errs;

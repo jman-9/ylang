@@ -1,4 +1,5 @@
 #include "ylang.h"
+#include "core/Args.h"
 #include <string.h>
 #include <iostream>
 #include <format>
@@ -7,6 +8,7 @@ using namespace std;
 
 int main(int argc, const char** argv)
 {
+	yrun::ArgsCollector::Collect(argc, argv);
 	ylang y;
 
 	if(argc < 2)

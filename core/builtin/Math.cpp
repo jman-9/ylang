@@ -4,63 +4,52 @@
 
 namespace ybuiltin::Math
 {
+using namespace yvm;
 
 YRet Sin(YArgs* args)
-{//TODO int value check
-	auto a1 = (yvm::Variable*)args->args[0].o;
-	double x = a1->_float;
+{
+	auto a1 = (Variable*)args->args[0].o;
+	double x = *a1 == Variable::INT ? (double)a1->_int : a1->_float;
 	double v = sin(x);
-	YRet yr;
-	yr.single.SetDouble(v);
 
-	auto vr = new yvm::Variable;
-	vr->SetFloat(v);
-	yr.single.o = (void*)vr;
+	YRet yr;
+	yr.single.o = Variable::NewFloat(v);
 	yr.single.tp = YEArg::YVar;
 	return yr;
 }
 
 YRet Cos(YArgs* args)
-{//TODO int value check
-	auto a1 = (yvm::Variable*)args->args[0].o;
-	double x = a1->_float;
+{
+	auto a1 = (Variable*)args->args[0].o;
+	double x = *a1 == Variable::INT ? (double)a1->_int : a1->_float;
 	double v = cos(x);
-	YRet yr;
-	yr.single.SetDouble(v);
 
-	auto vr = new yvm::Variable;
-	vr->SetFloat(v);
-	yr.single.o = (void*)vr;
+	YRet yr;
+	yr.single.o = Variable::NewFloat(v);
 	yr.single.tp = YEArg::YVar;
 	return yr;
 }
 
 YRet Tan(YArgs* args)
-{//TODO int value check
-	auto a1 = (yvm::Variable*)args->args[0].o;
-	double x = a1->_float;
+{
+	auto a1 = (Variable*)args->args[0].o;
+	double x = *a1 == Variable::INT ? (double)a1->_int : a1->_float;
 	double v = tan(x);
-	YRet yr;
-	yr.single.SetDouble(v);
 
-	auto vr = new yvm::Variable;
-	vr->SetFloat(v);
-	yr.single.o = (void*)vr;
+	YRet yr;
+	yr.single.o = Variable::NewFloat(v);
 	yr.single.tp = YEArg::YVar;
 	return yr;
 }
 
 YRet Sqrt(YArgs* args)
-{//TODO int value check
-	auto a1 = (yvm::Variable*)args->args[0].o;
-	double x = a1->_float;
+{
+	auto a1 = (Variable*)args->args[0].o;
+	double x = *a1 == Variable::INT ? (double)a1->_int : a1->_float;
 	double v = sqrt(x);
-	YRet yr;
-	yr.single.SetDouble(v);
 
-	auto vr = new yvm::Variable;
-	vr->SetFloat(v);
-	yr.single.o = (void*)vr;
+	YRet yr;
+	yr.single.o = Variable::NewFloat(v);
 	yr.single.tp = YEArg::YVar;
 	return yr;
 }

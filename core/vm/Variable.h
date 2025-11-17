@@ -65,6 +65,7 @@ struct Variable
 	bool operator!=(Type cmp) const;
 
 	static Variable* NewInt(int64_t num = 0);
+	static Variable* NewFloat(double num = 0.0);
 	static Variable* NewStr(const std::string& str = "");
 	static Variable* NewList(const std::vector<Variable*>& list = std::vector<Variable*>());
 	static Variable* NewDict(const std::unordered_map<std::string, Variable*>& dict = std::unordered_map<std::string, Variable*>());

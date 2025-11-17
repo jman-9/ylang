@@ -153,9 +153,13 @@ private:
 	template<EOpcode Op>
 	void FillBytecode(int ln);
 	template<class OpType>
-	void FillBytecode(int ln, const OpType& inst);
+	void FillBytecode(int ln, const OpType& inst, const TreeNode* stmt = nullptr);
+	template<class OpType>
+	void FillBytecode(int ln, const OpType& inst, const TreeNode& stmt);
 	template<EOpcode Op>
 	int PushBytecode();
 	template<class OpType>
-	int PushBytecode(const OpType& inst);
+	int PushBytecode(const OpType& inst, const TreeNode* stmt = nullptr);
+	template<class OpType>
+	int PushBytecode(const OpType& inst, const TreeNode& stmt);
 };

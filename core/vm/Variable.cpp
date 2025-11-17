@@ -13,6 +13,14 @@ Variable* Variable::NewInt(int64_t num)
 	v->SetInt(num);
 	return v;
 }
+
+yvm::Variable* Variable::NewFloat(double dbl /*= 0.0*/)
+{
+	auto v = new Variable;
+	v->SetFloat(dbl);
+	return v;
+}
+
 Variable* Variable::NewStr(const string& str)
 {
 	auto v = new Variable;
