@@ -1,6 +1,6 @@
-# ylang 0.0.2
+# ylang 0.0.3
 
-A programming language — retro, C-like and Pythonic
+yet another programming language — retro, C-like, and Pythonic
 
 ---
 
@@ -12,46 +12,56 @@ combining C’s syntax with Python-like dynamic semantics.
 
 It implements a complete compilation pipeline — from scanning to bytecode generation — and execution on its own virtual machine, named `yvm` — keeping it small, structured, and clear.
 
-It now supports REPL, dynamic resolution via dot(`.`) operator,
-and core collections (list, dict).
+
+## Language Characteristics
+
+### C-like
+* C-style syntax
+* `main` function as the entry point
+* Semicolon(`;`) required for statement termination
+* Control statements: if/for/break/continue/return
+* Same operators as C (arithmetic, logical, bitwise, augmented assignments)
+
+### Pythonic
+* Supports both top-level statements and `main()` entry function
+* Dynamic typing (number, string, collection, object)
+* Built-in collections: list, dictionary
+* f-string style interpolation — `"value = {value}"` (but no prefix!)
+* User-defined functions
+* Dot(`.`) operator for dynamic member access
+* Primitive modules: string, list, dictionary
+* Useful built-in modules: json, math, file, rand, sys
 
 
 ## Architecture
 
-**Pipeline:**
+**Project Structure**
+
+```
+ylang/
+├─ core/              # ylang core - compiler engine
+│   ├─ builtin/       # Core built-in modules
+│   ├─ module/        # Module loader
+│   ├─ vm/            # yvm engine
+│   └─ primitives/    # Base types (list, dict, string)
+├─ examples/          # Example scripts (.y)
+├─ tests/             # test programs
+│   └─ unittest/      # Unit tests (Catch2)
+└─ tools/             # tools for ylang
+    └─ ylang/         # ylang CLI
+```
+
+**Pipeline**
 
 ```
 Source (.y)
  → Scanner
+ → String Interpolator
  → Parser
  → Semantic Analyzer
  → Bytecode Builder
- → Machine (VM)
+ → Machine (yvm)
 ```
-
-**VM Features:**
-
-* Dynamic variables (number, string, list, dictionary)
-* Control statements: if/for/break/continue/return
-* User functions and recursion
-* dot(`.`) operator for dynamic member resolution
-* Built-in methods for list, dict, and string
-* Stack-based virtual machine execution
-
-
-## Project Structure
-
-```
-ylang/
-├─ core/                 # ylang core - Scanner, Parser, Semantic, Bytecode, etc
-│   ├─ contract/         # contract layer
-│   └─ vm/               # yvm - Machine 
-├─ examples/             # Example scripts (.y)
-├─ tests/                # test programs
-└─ tools/                # tools
-    └─ ylang/            # ylang CLI
-```
-
 
 
 ## Build Instructions
@@ -96,19 +106,14 @@ make
 Run with source file:
 
 ```bash
-λ ylang examples/07_string.y
+λ ylang examples/basic/03_fibonacci.y
 ```
 
-Example result:
+Example result: 
 
 ```
-=== string example ===
-11
-6
-hello
-hello ylang
-['a', 'b', 'c', 'd']
-['apple', 'banana', '', 'grape']
+=== fibonacci example ===
+0 1 1 2 3 5 8 13 21 34
 ```
 
 ### Interactive Mode (REPL)
@@ -119,81 +124,53 @@ and runs code interactively.
 
 ```text
 λ ylang
-ylang 0.0.2
-
->> fn avg(list) {
-..     sum = 0;
-..     for (x = 0; x < list.len(); x += 1) {
-..         sum += list[x];
-..     }
-..     return sum / list.len();
-.. }
-
->> nums = [3, 6, 10, 5];
->> println("average = {avg(nums)}");
-average = 6
-
->> fn greet(person) {
-..     return "hello " + person['name'] + ", age " + person['age'];
-.. }
-
->> alice = { 'name': 'Alice', 'age': 30 };
->> println(greet(alice));
-hello Alice, age 30
+ylang 0.0.3
+>> include json;
+>> d = 
+..  json.parse('{{"a":1,"b":2}}');
+..
+>> println("{d['a']} + {d['b']} = " + (d['a'] + d['b']));
+1 + 2 = 3
 ```
 
 
 
 ## Examples
 
-| File                                      | Description                     |
-| ------------------------------------------| ------------------------------- |
-| [01_control.y](examples/01_control.y)     | if / for / break / continue     |
-| [02_function.y](examples/02_function.y)   | user function and recursion     |
-| [03_fibonacci.y](examples/03_fibonacci.y) | recursive fibonacci             |
-| [04_list.y](examples/04_list.y)           | list example                    |
-| [05_dict.y](examples/05_dict.y)           | dictionary example              | 
-| [06_list_dict.y](examples/06_list_dict.y) | list-dict combined example      |
-| [07_string.y](examples/07_string.y)       | string example                  |
-| [08_perfect.y](examples/08_perfect.y)     | perfect number calculation demo |
+#### See [basic examples](examples/basic/)
+
+### More complex examples
+
+[Langton's ant (ANSI visual animation)](examples/langton_ant.y) — (ANSI visual animation)
+
+[Maze generation and A* pathfinding](examples/maze_gen_find.y) — (also animation :)
+
+[CSV to JSON to CSV demo](examples/csv_json_csv.y)
+
 
 ## Quick Example
 ```rust
+include json;
+
 println("=== quick example ===");
 
-fn add(x, y) {
-    return x + y;
-}
-
-msg = "hello ylang";
-words = msg.split();
-println(words);                    // ['hello', 'ylang']
-
-nums = [10, 20, 30];
-nums.append(add(40, 2));           // use user-defined function
-println("list: {nums}");           // [10, 20, 30, 42]
-
 fn main() {
-    user = {'name': "alice", 'age': 25, 'scores': nums};
-    println(user);                 // {'name': 'alice', 'age': 25, 'scores': [10, 20, 30, 42]}
-    println(user.keys());          // ['name', 'age', 'scores']
-    println(user['scores'].len()); // 4
+    data = { "name": "Alice", "age": 25, "scores": [85, 90, 78] };
+    json_text = json.dump(data);
+	println(json_text);
 
-    msg2 = msg.replace("ylang", "world");
-    println(msg2);                 // hello world
+    parsed = json.parse(json_text);
+    println("name = {parsed['name']}, age = {parsed['age']}");
 }
 ```
-Output:
+
+Output: 
+
 ```bash
 === quick example ===
-['hello', 'ylang']
-list: [10, 20, 30, 42]
-{'name': 'alice', 'age': 25, 'scores': [10, 20, 30, 42]}
-['name', 'age', 'scores']
-4
-hello world
+{"age":25,"name":"Alice","scores":[85,90,78]}
+name = Alice, age = 25
 ```
-
 
 
 ---
@@ -207,7 +184,6 @@ hello world
 * **Platform:** Cross-platform
 
 
-
 ## Future Work
 
 * [x] REPL
@@ -219,19 +195,19 @@ hello world
 * [ ] String formatting
 * [ ] Class
 * [ ] Memory management
-* [ ] Module & import system
+* [x] Module & import system
 * [ ] Optimized VM dispatch
-* [ ] Automated tests
+* [x] Automated tests
 * [ ] Documentation
 * [ ] Unicode
+* [ ] Increment and decrement operators
+* [ ] Optimization
 * ...and more
-
 
 
 ## License
 
 This project is licensed under the **MIT License** — see the [LICENSE](LICENSE) file for details.
-
 
 
 ## Version History
@@ -240,3 +216,4 @@ This project is licensed under the **MIT License** — see the [LICENSE](LICENSE
 | ---------- | --------------------------------------------------------------------- |
 | **0.0.1** | Basic VM, arithmetic, control flow, user functions                    |
 | **0.0.2** | Dynamic resolution, collections(list/dict), f-string, floating-point, main() entrypoint |
+| **0.0.3** | Module system, built-in modules, escape character, `yvm` refactoring |

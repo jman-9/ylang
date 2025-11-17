@@ -9,3 +9,4 @@
 | [06_list_dict.y](06_list_dict.y) | list-dict combined example      |
 | [07_string.y](07_string.y)       | string example                  |
 | [08_perfect.y](08_perfect.y)     | perfect number calculation demo |
+| [09_builtins.y](09_builtins.y)   | builtin module showcase |
