@@ -1,5 +1,6 @@
 #include "Math.h"
 #include "vm/Variable.h"
+#include <math.h>
 
 
 namespace ybuiltin::Math

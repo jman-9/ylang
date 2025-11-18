@@ -1,5 +1,6 @@
 #pragma once
 #include "ycontract.h"
+#include <string.h>
 
 
 inline int64_t YArg::ToInt64() const

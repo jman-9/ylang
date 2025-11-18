@@ -1,6 +1,7 @@
 #include "Machine.h"
 #include "primitives/Primitives.h"
 #include "builtin/BuiltinGarage.h"
+#include <limits.h>
 #include <format>
 #include <iostream>
 using namespace std;
