@@ -62,7 +62,17 @@ bool Machine::Assign(const Op::Assign& as)
 		Variable* dst = ResolveVar((ERefKind)as.dstKind, as.dst);
 		if(src1 && src2)
 		{
-			dst->CalcAndAssign(*src1, (EToken)as.op, *src2);
+			auto op = (EToken)as.op;
+			if(Token::IsAssign(op))
+			{
+				src1->Assign(op, *src2);
+				*dst = *src1;
+			}
+			else
+			{
+				dst->CalcAndAssign(*src1, (EToken)as.op, *src2);
+			}
+
 			//TODO generalize
 			if(*dst == Variable::ATTR)
 			{
@@ -78,11 +88,30 @@ bool Machine::Assign(const Op::Assign& as)
 		}
 		else if(src1)
 		{
-			dst->Assign(EToken::Assign, *src1);
+			if(*src1 == Variable::LVREF)
+			{
+				auto lv = src1->_ref;
+				dst->Assign(EToken::Assign, *lv);
+				src1 = lv;
+			}
+			else
+			{
+				dst->Assign(EToken::Assign, *src1);
+			}
+			src1->CalcIncDec((EToken)as.op);
+
 		}
 		else if(src2)
 		{
-			dst->CalcUnaryAndAssign((EToken)as.op, *src2);
+			if(Token::IsIncDecOp((EToken)as.op))
+			{
+				src2->CalcIncDec((EToken)as.op);
+				dst->Assign(EToken::Assign, *src2);
+			}
+			else
+			{
+				dst->CalcUnaryAndAssign((EToken)as.op, *src2);
+			}
 		}
 		else
 		{
@@ -98,12 +127,33 @@ bool Machine::Assign(const Op::Assign& as)
 				throw 'n';
 			}
 
-			Variable* src = ResolveVar((ERefKind)as.src2Kind, as.src2);
-			Variable* dst = ResolveVar((ERefKind)as.src1Kind, as.src1);
-			dst->Assign((EToken)as.op, *src);
+			Variable* src2 = ResolveVar((ERefKind)as.src2Kind, as.src2);
+			Variable* src1 = ResolveVar((ERefKind)as.src1Kind, as.src1);
+			src1->Assign((EToken)as.op, *src2);
+		}
+		else if(Token::IsIncDecOp((EToken)as.op))
+		{
+			Variable* src2 = ResolveVar((ERefKind)as.src2Kind, as.src2);
+			Variable* src1 = ResolveVar((ERefKind)as.src1Kind, as.src1);
+			if(src1)
+			{
+				src1->CalcIncDec((EToken)as.op);
+			}
+			else if(src2)
+			{
+				src2->CalcIncDec((EToken)as.op);
+			}
+			else
+			{
+				throw 'n';
+			}
+
+		}
+		else if(Token::IsPrefixUnary((EToken)as.op))
+		{//no-op
 		}
 		else
-		{//TODO func call, unary
+		{//TODO func call
 			throw 'n';
 		}
 	}
@@ -217,7 +267,7 @@ bool Machine::ListSet(const Op::ListSet& ls)
 	Variable* dst = ResolveVar((ERefKind)ls.dstKind, ls.dst);
 
 	Variable* t = nullptr;
-	if(dst->_type != Variable::REF)
+	if(dst->_type != Variable::LVREF)
 	{
 		t = dst;
 	}
@@ -249,7 +299,7 @@ bool Machine::DictSet(const Op::DictSet& ds)
 	Variable* dst = ResolveVar((ERefKind)ds.dstKind, ds.dst);
 
 	Variable* t = nullptr;
-	if(dst->_type != Variable::REF)
+	if(dst->_type != Variable::LVREF)
 	{
 		t = dst;
 	}
@@ -332,7 +382,7 @@ bool Machine::LValueIndex(const Op::LValueIndex& lli)
 
 		auto t = dst->_list->at(idx->_int);
 		dst->Clear();
-		dst->_type = Variable::REF;
+		dst->_type = Variable::LVREF;
 		dst->_ref = t;
 	}
 	else if(idx->_type == Variable::STR)
@@ -359,7 +409,7 @@ bool Machine::LValueIndex(const Op::LValueIndex& lli)
 		}
 
 		dst->Clear();
-		dst->_type = Variable::REF;
+		dst->_type = Variable::LVREF;
 		dst->_ref = t;
 	}
 	else

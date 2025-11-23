@@ -145,11 +145,15 @@ bool Variable::Assign(EToken op, const Variable& rval)
 		return false;
 	}
 
-	if(_type == REF)
+	if(_type == LVREF)
 	{
 		auto t = _ref;
-		Clear();
-		return t->Assign(op, rval);
+		if(!t->Assign(op, rval))
+		{
+			throw 'n';
+		}
+		*this = *t;
+		return true;
 	}
 
 	if(op == EToken::Assign)
@@ -244,6 +248,17 @@ bool Variable::Assign(EToken op, const Variable& rval)
 bool Variable::CalcAndAssign(const Variable& lhs, EToken calcOp, const Variable& rhs)
 {
 	//TODO +, - confusion if(Token::IsPrefixUnary(calcOp))
+
+	if(_type == LVREF)
+	{
+		auto t = _ref;
+		if(!t->CalcAndAssign(lhs, calcOp, rhs))
+		{
+			throw 'n';
+		}
+		*this = *t;
+		return true;
+	}
 
 	if(lhs._type == STR || rhs._type == STR)
 	{//todo refactor
@@ -376,12 +391,24 @@ bool Variable::CalcAndAssign(const Variable& lhs, EToken calcOp, const Variable&
 
 bool Variable::CalcUnaryAndAssign(EToken unaryOp, const Variable& rhs)
 {
+	if(_type == LVREF)
+	{
+		auto t = _ref;
+		if(!t->CalcUnaryAndAssign(unaryOp, rhs))
+		{
+			throw 'n';
+		}
+		*this = *t;
+		return true;
+	}
+
 	if(rhs._type == STR || rhs._type == NONE)
 	{
 		throw 'n';
 		return false;
 	}
 
+	//TODO float
 	switch(unaryOp)
 	{
 	case EToken::UnaryPlus: _int = +rhs._int; break;
@@ -395,6 +422,44 @@ bool Variable::CalcUnaryAndAssign(EToken unaryOp, const Variable& rhs)
 
 	return true;
 }
+
+bool Variable::CalcIncDec(EToken op)
+{
+	if(_type == LVREF)
+	{
+		auto t = _ref;
+		if(!t->CalcIncDec(op))
+		{
+			throw 'n';
+		}
+		*this = *t;
+		return true;
+	}
+
+	switch(op)
+	{
+	case EToken::PreInc:
+	case EToken::PostInc:
+		switch(_type)
+		{
+		case INT: _int++; break;
+		case FLOAT: _float++; break;
+		default: throw 'n';
+		}
+		break;
+	case EToken::PreDec:
+	case EToken::PostDec:
+		switch(_type)
+		{
+		case INT: _int--; break;
+		case FLOAT: _float--; break;
+		default: throw 'n';
+		}
+		break;
+	}
+	return true;
+}
+
 
 YArg Variable::ToContract() const
 {
@@ -491,6 +556,7 @@ string Variable::ToStr() const
 			r += "}";
 			return r;
 		}
+	case LVREF:
 	case REF:
 		return "ref: " + _ref->ToStr();
 	case ATTR:

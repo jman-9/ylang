@@ -20,6 +20,17 @@ static char ValKindChar(uint8_t k)
 	return ValKindChar(ERefKind(k));
 }
 
+inline ERefKind ToRefKind(SymbolTable::Idx::Kind idxKind)
+{
+	switch(idxKind)
+	{
+	case SymbolTable::Idx::LOCAL: return ERefKind::LocalVar;
+	case SymbolTable::Idx::GLOBAL: return ERefKind::GlobalVar;
+	}
+	return ERefKind::None;
+}
+
+#define TO_REF_KIND_U8(__idxKind__) ((uint8_t)ToRefKind(__idxKind__))
 
 
 int ConstTable::AddOrNot(const Token& tok)
@@ -235,6 +246,14 @@ void BytecodeBuilder::FillBytecode(int ln, const OpType& inst, const TreeNode* s
 		{
 			_bytecodeStr[ln] = format("{}{} {} {}{}", ValKindChar(inst.src1Kind), inst.src1, Token::TokenString((EToken)inst.op), ValKindChar(inst.src2Kind), inst.src2);
 		}
+		else if(inst.src1Kind)
+		{
+			_bytecodeStr[ln] = format("{}{}{}", ValKindChar(inst.src1Kind), inst.src1, Token::TokenString((EToken)inst.op));
+		}
+		else if(inst.src2Kind)
+		{
+			_bytecodeStr[ln] = format("{}{}{}", Token::TokenString((EToken)inst.op), ValKindChar(inst.src2Kind), inst.src2);
+		}
 		else
 		{
 			throw 'n';
@@ -436,7 +455,7 @@ bool BytecodeBuilder::BuildExp(const TreeNode& stmt, bool root)
 		{
 			auto idx = _symTbl.AddOrNot({ .name = stmt.self.val, .kind = ESymbol::Var });
 
-			inst.src1Kind = idx.kind == SymbolTable::Idx::LOCAL ? (uint8_t)ERefKind::LocalVar : (uint8_t)ERefKind::GlobalVar;
+			inst.src1Kind = TO_REF_KIND_U8(idx.kind);
 			inst.src1 = (uint16_t)idx.idx;
 		}
 
@@ -554,7 +573,7 @@ bool BytecodeBuilder::BuildExp(const TreeNode& stmt, bool root)
 		{
 			auto idx = _symTbl.AddOrNot({ .name = lhs->self.val, .kind = ESymbol::Var });
 
-			inst.src1Kind = idx.kind == SymbolTable::Idx::LOCAL ? (uint8_t)ERefKind::LocalVar : (uint8_t)ERefKind::GlobalVar;
+			inst.src1Kind = TO_REF_KIND_U8(idx.kind);
 			inst.src1 = (uint16_t)idx.idx;
 		}
 	}
@@ -586,7 +605,7 @@ bool BytecodeBuilder::BuildExp(const TreeNode& stmt, bool root)
 					throw 'n';
 				}
 
-				inst.src2Kind = idx.kind == SymbolTable::Idx::LOCAL ? (uint8_t)ERefKind::LocalVar : (uint8_t)ERefKind::GlobalVar;
+				inst.src2Kind = TO_REF_KIND_U8(idx.kind);
 				inst.src2 = (uint16_t)idx.idx;
 			}
 		}
@@ -595,7 +614,59 @@ bool BytecodeBuilder::BuildExp(const TreeNode& stmt, bool root)
 	}
 	else
 	{
-		if(stmt.self.IsPrefixUnary())
+		if(stmt.self.IsIncDecOp())
+		{
+			uint8_t srcKind;
+			uint16_t srcIdx;
+			auto& LValue = stmt.childs.front()->self;
+			switch(stmt.childs.front()->self.kind)
+			{
+			case EToken::Id:
+				{
+					auto idx = _symTbl.GetIdx(LValue.val);
+					srcKind = TO_REF_KIND_U8(idx.kind);
+					srcIdx = (uint16_t)idx.idx;
+					break;
+				}
+
+			case EToken::Index:
+			case EToken::LBracket:
+				{
+					auto idxInst = _bytecode.back();
+					if(idxInst != EOpcode::Index)//TODO
+						throw 'n';
+
+					const Op::Index& idx = *((Op::Index*)idxInst.code.data());
+					Op::LValueIndex lidx = { idx.dstKind, idx.idxKind, idx.dst, idx.idx };
+					FillBytecode(_bytecode.size()-1, lidx, stmt);
+
+					srcKind = inst.src1Kind;
+					srcIdx = inst.src1;
+					break;
+				}
+
+			case EToken::Dot: //TODO
+			default:
+				throw 'n';
+			}
+
+			inst.op = (uint8_t)stmt.self.kind;
+			if(stmt.self == EToken::PreInc || stmt.self == EToken::PreDec)
+			{
+				inst.src1Kind = (uint8_t)ERefKind::None;
+				inst.src1 = 0;
+				inst.src2Kind = srcKind;
+				inst.src2 = srcIdx;
+			}
+			else
+			{
+				inst.src1Kind =srcKind;
+				inst.src1 = srcIdx;
+				inst.src2Kind = (uint8_t)ERefKind::None;
+				inst.src2 = 0;
+			}
+		}
+		else if(stmt.self.IsPrefixUnary())
 		{
 			inst.op = (uint8_t)stmt.self.kind;
 			inst.src2Kind = inst.src1Kind;

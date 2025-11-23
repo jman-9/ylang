@@ -62,6 +62,10 @@ static bool Init()
 	s_tokenStrMap[EToken::Index] = "???";
 	s_tokenStrMap[EToken::UnaryPlus] = "+";
 	s_tokenStrMap[EToken::UnaryMinus] = "-";
+	s_tokenStrMap[EToken::PreInc] = "++";
+	s_tokenStrMap[EToken::PreDec] = "--";
+	s_tokenStrMap[EToken::PostInc] = "++";
+	s_tokenStrMap[EToken::PostDec] = "--";
 	s_tokenStrMap[EToken::List] = "list";
 	s_tokenStrMap[EToken::Dict] = "dict";
 	return true;
@@ -92,6 +96,11 @@ bool Token::IsAssign() const
 	return Token::IsAssign(kind);
 }
 
+bool Token::IsIncDecOp() const
+{
+	return Token::IsIncDecOp(kind);
+}
+
 bool Token::Is(EToken tok) const
 {
 	return kind == tok;
@@ -120,13 +129,19 @@ bool Token::IsLiteral(EToken tok)
 
 bool Token::IsPrefixUnary(EToken tok)
 {
-	return tok == EToken::Not || tok == EToken::Tilde || tok == EToken::Plus || tok == EToken::Minus || tok == EToken::UnaryPlus || tok == EToken::UnaryMinus;
+	return tok == EToken::Not || tok == EToken::Tilde || tok == EToken::Plus || tok == EToken::Minus || tok == EToken::UnaryPlus || tok == EToken::UnaryMinus || tok == EToken::PlusPlus || tok == EToken::MinusMinus || tok == EToken::PreInc || tok == EToken::PreDec;
 }
 
 bool Token::IsAssign(EToken tok)
 {
 	return EToken::Assign <= tok && tok <= EToken::RShiftAssign;
 }
+
+bool Token::IsIncDecOp(EToken tok)
+{
+	return tok == EToken::PlusPlus || tok == EToken::MinusMinus || tok == EToken::PreInc || tok == EToken::PostInc	|| tok == EToken::PreDec || tok == EToken::PostDec;
+}
+
 
 bool Token::IsWhiteSpace(const Token& tok)
 {
@@ -146,6 +161,11 @@ bool Token::IsPrefixUnary(const Token& tok)
 bool Token::IsAssign(const Token& tok)
 {
 	return IsAssign(tok.kind);
+}
+
+bool Token::IsIncDecOp(const Token& tok)
+{
+	return IsIncDecOp(tok.kind);
 }
 
 

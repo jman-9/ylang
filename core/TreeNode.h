@@ -10,6 +10,7 @@ using TreeNodeSptr = std::shared_ptr<TreeNode>;
 struct TreeNode
 {
 	Token self;
+	int priority = 0;
 	TreeNode* parent = nullptr;
 	std::vector<TreeNodeSptr> childs;
 
@@ -39,6 +40,39 @@ struct TreeNode
 
 		childs.back()->parent = nullptr;
 		childs.pop_back();
+	}
+
+
+	inline void PopChild(TreeNodeSptr node)
+	{
+		for(auto it = childs.begin(); it != childs.end(); it++)
+		{
+			if(*it == node)
+			{
+				node->parent = nullptr;
+				childs.erase(it);
+				break;
+			}
+		}
+	}
+
+	inline void ReplaceChild(TreeNodeSptr oldChild, TreeNodeSptr newChild)
+	{
+		if(childs.empty())
+		{//TODO
+			throw 'n';
+		}
+
+		for(auto it = childs.begin(); it != childs.end(); it++)
+		{
+			if(*it == oldChild)
+			{
+				newChild->parent = oldChild->parent;
+				oldChild->parent = nullptr;
+				*it = newChild;
+				break;
+			}
+		}
 	}
 
 	inline void ReplaceFrontChild(TreeNodeSptr node)

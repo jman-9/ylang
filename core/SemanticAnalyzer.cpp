@@ -113,6 +113,15 @@ bool SemanticAnalyzer::AnalyzeExp(const TreeNode& stmt)
 		return true;
 	}
 
+	if(stmt.self.IsIncDecOp())
+	{
+		if(!CanBeLValue(*stmt.childs.front()))
+		{
+			_errors.push_back(ErrorBuilder::LValueError(stmt.self.line, stmt.self.val));
+			return false;
+		}
+	}
+
 	for(auto& c : stmt.childs)
 	{
 		if(!AnalyzeExp(*c))
@@ -292,5 +301,26 @@ bool SemanticAnalyzer::AnalyzeCompound(const TreeNode& stmt, const std::vector<P
 	}
 
 	_symTbl.pop_back();
+	return true;
+}
+
+bool SemanticAnalyzer::CanBeLValue(const TreeNode& stmt)
+{
+	const TreeNode* cur = &stmt;
+	for( ; cur; cur = cur->childs.front().get())
+	{
+		auto& curTok = cur->self;
+		if(curTok == EToken::LParen)
+		{
+			continue;
+		}
+		if(curTok != EToken::Id && curTok != EToken::Dot && curTok != EToken::Index && curTok != EToken::LValueIndex)
+		{
+			return false;
+		}
+
+		if(cur->childs.empty()) break;
+	}
+
 	return true;
 }

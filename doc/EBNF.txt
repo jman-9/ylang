@@ -14,8 +14,8 @@ RelExp   -> ShiftExp | RelExp ('<' | '<=' | '>' | '>=') ShiftExp
 ShiftExp -> AddExp | ShiftExp ('<<' | '>>') AddExp
 AddExp   -> MulExp | AddExp ('+' | '-') MulExp
 MulExp   -> PrefixExp | MulExp ('*' | '/' | '%') PrefixExp
-PrefixExp -> ('!' | '~' | '+' | '-') PrefixExp | PostfixExp
-PostfixExp → PrimaryExp { '(' [Args] ')' | '[' Exp ']' | '.' Id }
+PrefixExp -> ('!' | '~' | '+' | '--' | '++') PrefixExp | PostfixExp
+PostfixExp → PrimaryExp { '(' [Args] ')' | '[' Exp ']' | '.' Id | '++' | '--' }
 PrimaryExp -> '('Exp')' | Id | Literal | ListExp | DictExp
 
 Code -> {Stmt}

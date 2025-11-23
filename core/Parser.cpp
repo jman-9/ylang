@@ -1,4 +1,5 @@
 #include "Parser.h"
+#include <queue>
 using namespace std;
 
 
@@ -91,10 +92,14 @@ static bool InitParser()
 	s_precMap[ EToken::Tilde ] = 180;
 	s_precMap[ EToken::UnaryMinus ] = 180;
 	s_precMap[ EToken::UnaryPlus ] = 180;
+	s_precMap[ EToken::PreInc ] = 180;
+	s_precMap[ EToken::PreDec ] = 180;
 
 	s_precMap[ EToken::Invoke ] = 190;
 	s_precMap[ EToken::Dot ] = 190;
 	s_precMap[ EToken::Index ] = 190;
+	s_precMap[ EToken::PostInc ] = 190;
+	s_precMap[ EToken::PostDec ] = 190;
 
  	s_precMap[ EToken::LParen ] = 200;
  	s_precMap[ EToken::Id ] = 200;
@@ -123,13 +128,21 @@ static bool IsOperator(const Token& tok)
 {
 	return IsOperator(tok.kind);
 }
-static bool IsPrimary(EToken tok)
+static bool IsPrimaryPrefix(EToken tok)
 {
-	return tok == EToken::Id || Token::IsLiteral(tok);
+	return tok == EToken::LParen || tok == EToken::LBracket || tok == EToken::LBrace || tok == EToken::Id || Token::IsLiteral(tok);
 }
-static bool IsPrimary(const Token& tok)
+static bool IsPrimaryPrefix(const Token& tok)
 {
-	return IsPrimary(tok.kind);
+	return IsPrimaryPrefix(tok.kind);
+}
+static bool IsPrimaryPostfix(EToken tok)
+{
+	return tok == EToken::RParen || tok == EToken::RBracket || tok == EToken::RBrace || tok == EToken::Id || Token::IsLiteral(tok);
+}
+static bool IsPrimaryPostfix(const Token& tok)
+{
+	return IsPrimaryPostfix(tok.kind);
 }
 
 static int CompPrec(EToken lhs, EToken rhs)
@@ -145,9 +158,27 @@ static int CompPrec(EToken lhs, EToken rhs)
 	return lfound->second - rfound->second;
 }
 
-static int CompPrec(const Token& lhs, const Token& rhs)
+static int CompPrec(const shared_ptr<TreeNode>& lhs, const shared_ptr<TreeNode>& rhs)
 {
-	return CompPrec(lhs.kind, rhs.kind);
+	int lpri = lhs->priority;
+	if(!lpri)
+	{
+		auto lfound = s_precMap.find(lhs->self.kind);
+		if(lfound == s_precMap.end())
+			return 1;
+		lpri = lfound->second;
+	}
+
+	int rpri = rhs->priority;
+	if(!rpri)
+	{
+		auto rfound = s_precMap.find(rhs->self.kind);
+		if(rfound == s_precMap.end())
+			return -1;
+		rpri = rfound->second;
+	}
+
+	return lpri - rpri;
 }
 
 
@@ -177,7 +208,7 @@ TreeNodeSptr Parser::ParseExpLoop(EToken endToken /* = EToken::None */, EToken e
 			break;
 		}
 
-		if(CompPrec(ast->self, node->self) >= 0)
+		if(CompPrec(ast, node) >= 0)
 		{
 			if(node->self.IsAssign())
 			{//TODO LValue check
@@ -200,7 +231,7 @@ TreeNodeSptr Parser::ParseExpLoop(EToken endToken /* = EToken::None */, EToken e
 		{
 			for(TreeNodeSptr curNode = ast; ; curNode = curNode->childs.back() )
 			{
-				if(CompPrec(curNode->self, node->self) >= 0)
+				if(CompPrec(curNode, node) >= 0)
 				{
 					TreeNode* parent = curNode->parent;
 					node->PushFrontChild(curNode);
@@ -223,53 +254,99 @@ TreeNodeSptr Parser::ParseExp(bool first)
 {
 	TreeNodeSptr node;
 
-	if(GetCur() == EToken::LParen)
+	for( ; ; )
 	{
-		if(!IsPrimary(GetPrev()) && GetPrev().kind != EToken::RParen)
-			if(node = ParsePrimaryExp()) return node;
-	}
-	else if(GetCur() == EToken::LBracket)
-	{
-		if(!IsPrimary(GetPrev()) && GetPrev().kind != EToken::RBracket)
-			if(node = ParsePrimaryExp()) return node;
-	}
-	else
-	{
-		if(node = ParsePrimaryExp()) return node;
+		if(GetCur() == EToken::LParen)
+		{
+			if(!IsPrimaryPostfix(GetPrev()))
+				if(node = ParsePrimaryExp()) break;
+		}
+		else if(GetCur() == EToken::LBracket)
+		{
+			if(!IsPrimaryPostfix(GetPrev()))
+				if(node = ParsePrimaryExp()) break;
+		}
+		else
+		{
+			if(node = ParsePrimaryExp()) break;
+		}
+
+		if(node = ParsePostfixExp()) break;
+
+		//TODO modify logic
+		auto& cur = GetCur();
+		auto& prev = GetPrev();
+		if(cur.IsPrefixUnary() && (prev.IsPrefixUnary() || IsOperator(prev) || first))
+		{
+			if(node = ParsePrefixExp()) break;
+		}
+
+		node = ParseOpExp();
+		break;
 	}
 
-	if(node = ParsePostfixExp()) return node;
-
-	auto& cur = GetCur();
-	auto& prev = GetPrev();
-	if(cur.IsPrefixUnary() && (prev.IsPrefixUnary() || IsOperator(prev) || first))
+	if(node)
 	{
-		if(node = ParsePrefixExp()) return node;
+		queue<TreeNodeSptr> q;
+		q.push(node);
+		for( ; !q.empty(); )
+		{
+			TreeNodeSptr cur = q.front();
+			q.pop();
+
+			if(cur->self == EToken::LParen)
+			{
+				auto overridedChild = cur->childs.front();
+
+				//TODO only 1?
+				overridedChild->priority = s_precMap[EToken::LParen];
+
+				if(cur->parent)
+				{
+					auto parent = cur->parent;
+					parent->ReplaceChild(cur, overridedChild);
+				}
+				else
+				{
+				}
+
+				if(cur == node)
+				{
+					node = overridedChild;
+				}
+
+				cur = overridedChild;
+			}
+
+			for(auto& n : cur->childs)
+				q.push(n);
+		}
 	}
 
-	if(node = ParseOpExp()) return node;
-
-	return nullptr;
+	return node;
 }
 
 TreeNodeSptr Parser::ParsePrimaryExp()
 {
 	const Token& cur = GetCur();
+	if(!IsPrimaryPrefix(cur))
+		return nullptr;
+
 	if(cur.kind == EToken::LParen)
 	{
+		int stack = _pos;
 		TreeNodeSptr node = NewNode();
 		node->self = cur;
 		MoveNext();
 		TreeNodeSptr child = ParseExpLoop(EToken::RParen);
-		//TODO memory leak
 		if(!child)
 		{
-			_errors.push_back(ErrorBuilder::SyntaxError(node->self.line, ')'));
+			_pos = stack;
 			return nullptr;
 		}
 		if(GetCur().kind != EToken::RParen)
 		{
-			_errors.push_back(ErrorBuilder::Missing(node->self.line, ')'));
+			_pos = stack;
 			return nullptr;
 		}
 		MoveNext();
@@ -294,7 +371,7 @@ TreeNodeSptr Parser::ParsePrimaryExp()
 
 			TreeNodeSptr child = ParseExpLoop(EToken::Comma, EToken::RBracket);
 			if(!child)
-			{//todo leak
+			{
 				_errors.push_back(ErrorBuilder::SyntaxError(cur.line, ','));
 				return nullptr;
 			}
@@ -326,7 +403,7 @@ TreeNodeSptr Parser::ParsePrimaryExp()
 
 			TreeNodeSptr child = ParseExpLoop(EToken::Colon);
 			if(!child)
-			{//todo leak
+			{
 				_errors.push_back(ErrorBuilder::SyntaxError(cur.line, ':'));
 				return nullptr;
 			}
@@ -335,7 +412,7 @@ TreeNodeSptr Parser::ParsePrimaryExp()
 
 			child = ParseExpLoop(EToken::Comma, EToken::RBrace);
 			if(!child)
-			{//todo leak
+			{
 				_errors.push_back(ErrorBuilder::SyntaxError(cur.line, ','));
 				return nullptr;
 			}
@@ -350,7 +427,7 @@ TreeNodeSptr Parser::ParsePrimaryExp()
 		}
 		return node;
 	}
-	else if(IsPrimary(cur))
+	else
 	{
 		TreeNodeSptr node = NewNode();
 		node->self = cur;
@@ -363,6 +440,10 @@ TreeNodeSptr Parser::ParsePrimaryExp()
 
 TreeNodeSptr Parser::ParsePostfixExp()
 {
+	const Token prev = GetPrev();
+	if(!IsPrimaryPostfix(prev))
+		return nullptr;
+
 	const Token cur = GetCur();
 	if(cur.kind == EToken::LParen)
 	{
@@ -385,7 +466,6 @@ TreeNodeSptr Parser::ParsePostfixExp()
 			}
 			else if(GetPrev().kind != EToken::Comma)
 			{
-				//TODO 메모리 릭
 				_errors.push_back(ErrorBuilder::Missing(cur.line, ','));
 				return nullptr;
 			}
@@ -402,7 +482,7 @@ TreeNodeSptr Parser::ParsePostfixExp()
 		TreeNodeSptr val = ParseExpLoop(EToken::RBracket);
 		MoveNext();
 		if(GetPrev().kind != EToken::RBracket)
-		{//TODO 메모리 릭
+		{
 			_errors.push_back(ErrorBuilder::Missing(cur.line, ']'));
 			return nullptr;
 		}
@@ -416,8 +496,7 @@ TreeNodeSptr Parser::ParsePostfixExp()
 
 		MoveNext();
 		if(GetCur().kind != EToken::Id)
-		{//TODO leak
-			//TODO classify
+		{	//TODO classify
 			_errors.push_back(ErrorBuilder::SyntaxError(cur.line, '.'));
 			return nullptr;
 		}
@@ -433,28 +512,41 @@ TreeNodeSptr Parser::ParsePostfixExp()
 		node->PushBackChild(id);
 		return node;
 	}
+	else if(cur == EToken::PlusPlus || cur == EToken::MinusMinus)
+	{
+		TreeNodeSptr node = NewNode();
+		node->self = cur;
+		node->self.kind = cur == EToken::PlusPlus ? EToken::PostInc : EToken::PostDec;
+		MoveNext();
+		return node;
+	}
 
 	return nullptr;
 }
 
 TreeNodeSptr Parser::ParsePrefixExp()
 {
+	//TODO modify logic
+
 	auto& cur = GetCur();
 	if(!cur.IsPrefixUnary())
 	{
 		return nullptr;
 	}
 
+	int stack = _pos;
 	MoveNext();
 
 	TreeNodeSptr rhs = ParsePrefixExp();
 	if(!rhs) rhs = ParsePrimaryExp();
-	if(!rhs) return nullptr;
+	if(!rhs) { _pos = stack; return nullptr; }
 
 	TreeNodeSptr node = NewNode();
 	node->self = cur;
 	if(cur.kind == EToken::Plus) node->self.kind = EToken::UnaryPlus;
 	if(cur.kind == EToken::Minus) node->self.kind = EToken::UnaryMinus;
+	if(cur.kind == EToken::PlusPlus) node->self.kind = EToken::PreInc;
+	if(cur.kind == EToken::MinusMinus) node->self.kind = EToken::PreDec;
 
 	node->PushBackChild(rhs);
 	return node;
@@ -495,14 +587,14 @@ TreeNodeSptr Parser::ParseCompoundStmt(const std::set<EToken>& allowed /* = std:
 	for( ; GetCur().kind != EToken::RBrace; )
 	{
 		if(IsEnd())
-		{//todo leak
+		{
 			_errors.push_back(ErrorBuilder::Missing(compound->self.line, '}'));
 			return nullptr;
 		}
 
 		TreeNodeSptr stmt = ParseStmt(allowed);
 		if(!stmt)
-		{//todo leak
+		{
 			return nullptr;
 		}
 
@@ -528,7 +620,7 @@ TreeNodeSptr Parser::ParseStmt(const std::set<EToken>& allowed /* = std::set<ETo
 	if(ast = ParseExpLoop(EToken::Semicolon))
 	{
 		if(GetCur().kind != EToken::Semicolon)
-		{//todo leak
+		{
 			_errors.push_back(ErrorBuilder::Missing(GetCur().line, ';'));
 			return nullptr;
 		}
@@ -580,7 +672,7 @@ TreeNodeSptr Parser::ParseStmt(const std::set<EToken>& allowed /* = std::set<ETo
 		}
 
 		if(GetCur().kind != EToken::Semicolon)
-		{//todo leak
+		{
 			_errors.push_back(ErrorBuilder::Missing(cur.line, ';'));
 			return nullptr;
 		}
@@ -639,7 +731,7 @@ TreeNodeSptr Parser::ParseIf(const std::set<EToken>& allowed /* = std::set<EToke
 		return nullptr;
 	}
 	if(GetCur().kind != EToken::RParen)
-	{//todo leak
+	{
 		_errors.push_back(ErrorBuilder::Missing(_if.line, ')'));
 		return nullptr;
 	}
@@ -651,7 +743,7 @@ TreeNodeSptr Parser::ParseIf(const std::set<EToken>& allowed /* = std::set<EToke
 
 	TreeNodeSptr _true = ParseStmt(allowed);
 	if(!_true)
-	{//todo leak
+	{
 		_errors.push_back(ErrorBuilder::ExpectedExpression(_if.line, "if"));
 		return nullptr;
 	}
@@ -664,7 +756,7 @@ TreeNodeSptr Parser::ParseIf(const std::set<EToken>& allowed /* = std::set<EToke
 		MoveNext();
 		TreeNodeSptr _false = ParseStmt(allowed);
 		if(!_false)
-		{//todo leak
+		{
 			_errors.push_back(ErrorBuilder::ExpectedExpression(_if.line, "else"));
 			return nullptr;
 		}
@@ -692,7 +784,6 @@ TreeNodeSptr Parser::ParseFor(const std::set<EToken>& allowed /* = std::set<ETok
 	}
 	MoveNext();
 
-	//TODO 메모리 릭
 	TreeNodeSptr init = ParseExpLoop(EToken::Semicolon);
 	if(!init)
 	{
@@ -700,13 +791,12 @@ TreeNodeSptr Parser::ParseFor(const std::set<EToken>& allowed /* = std::set<ETok
 		init->self = { EToken::Int, _for.line, "1" };
 	}
 	if(GetCur().kind != EToken::Semicolon)
-	{	//TODO 메모리 릭
+	{
 		_errors.push_back(ErrorBuilder::Missing(_for.line, ';'));
 		return nullptr;
 	}
 	MoveNext();
 
-	//TODO 메모리 릭
 	TreeNodeSptr cond = ParseExpLoop(EToken::Semicolon);
 	if(!cond)
 	{
@@ -714,13 +804,12 @@ TreeNodeSptr Parser::ParseFor(const std::set<EToken>& allowed /* = std::set<ETok
 		cond->self = { EToken::Int, _for.line, "1" };
 	}
 	if(GetCur().kind != EToken::Semicolon)
-	{//TODO 메모리 릭
+	{
 		_errors.push_back(ErrorBuilder::Missing(_for.line, ';'));
 		return nullptr;
 	}
 	MoveNext();
 
-	//TODO 메모리 릭
 	TreeNodeSptr update = ParseExpLoop(EToken::RParen);
 	if(!update)
 	{
@@ -728,7 +817,7 @@ TreeNodeSptr Parser::ParseFor(const std::set<EToken>& allowed /* = std::set<ETok
 		update->self = { EToken::Int, _for.line, "1" };
 	}
 	if(GetCur().kind != EToken::RParen)
-	{//TODO 메모리 릭
+	{
 		_errors.push_back(ErrorBuilder::Missing(_for.line, ')'));
 		return nullptr;
 	}
@@ -745,8 +834,7 @@ TreeNodeSptr Parser::ParseFor(const std::set<EToken>& allowed /* = std::set<ETok
 
 	TreeNodeSptr loop = ParseStmt(localAllowed);
 	if(!loop)
-	{//todo leak
-		//todo need message
+	{	//todo need message
 		return nullptr;
 	}
 

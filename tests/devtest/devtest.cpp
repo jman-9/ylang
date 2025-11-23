@@ -173,15 +173,24 @@ else
 const char* testcode2 =
 R"TEST(
 
-include file;
-a = file.open("test.txt", "w+");
-a.write("hahahaha");
-a.close();
+a = 0;
+for(i=0; i<10; i++)
+{
+	println("a += i -> {a += i}");
+	println("++a -> {++a}");
+}
 
-a.open("test.txt", "r");
-r = a.read(100);
-println(r);
-a.close();
+a = [1];
+(((b))) = (((a[((0))])))++;
+
+println(a[0]);
+println(b);
+
+println((a[0])++);
+println(++((a)[(0)]));
+println(++a[0]);
+
+println(a[0]);
 
 )TEST";
 

@@ -27,4 +27,6 @@ protected:
 	bool AnalyzeIf(const TreeNode& stmt);
 	bool AnalyzeFn(const TreeNode& stmt);
 	bool AnalyzeCompound(const TreeNode& stmt, const std::vector<Param>& stackVars = std::vector<Param>());
+
+	bool CanBeLValue(const TreeNode& stmt);
 };

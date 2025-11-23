@@ -75,7 +75,7 @@ Error Missing(uint32_t line, char c)
 
 Error LValueError(uint32_t line, const std::string& s)
 {
-	return { line, EErr::LValueError, format("'{}': left operand must be l-value", s) };
+	return { line, EErr::LValueError, format("'{}': operand must be l-value", s) };
 }
 
 

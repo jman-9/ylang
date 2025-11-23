@@ -72,6 +72,11 @@ enum class EToken : uint8_t
 	LValueIndex,
 	UnaryPlus,
 	UnaryMinus,
+	PreInc,
+	PreDec,
+	PostInc,
+	PostDec,
+
 	List,
 	Dict,
 };
@@ -88,6 +93,7 @@ struct Token
 	bool IsLiteral() const;
 	bool IsPrefixUnary() const;
 	bool IsAssign() const;
+	bool IsIncDecOp() const;
 	bool Is(EToken tok) const;
 	bool operator==(EToken rhs) const;
 
@@ -96,10 +102,12 @@ struct Token
 	static bool IsLiteral(EToken tok);
 	static bool IsPrefixUnary(EToken tok);
 	static bool IsAssign(EToken tok);
+	static bool IsIncDecOp(EToken tok);
 	static bool IsWhiteSpace(const Token& tok);
 	static bool IsLiteral(const Token& tok);
 	static bool IsPrefixUnary(const Token& tok);
 	static bool IsAssign(const Token& tok);
+	static bool IsIncDecOp(const Token& tok);
 
 	static std::string_view TokenString(EToken tok);
 };
