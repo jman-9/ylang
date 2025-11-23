@@ -173,6 +173,8 @@ else
 const char* testcode2 =
 R"TEST(
 
+a = b = 9810;
+
 a = 0;
 for(i=0; i<10; i++)
 {

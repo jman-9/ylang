@@ -197,8 +197,8 @@ Parser::~Parser()
 
 TreeNodeSptr Parser::ParseExpLoop(EToken endToken /* = EToken::None */, EToken endToken2 /* = EToken::None */)
 {
-	TreeNodeSptr ast = ParseExp(true);
-	if(!ast) return nullptr;
+	TreeNodeSptr root = ParseExp(true);
+	if(!root) return nullptr;
 
 	for( ; !IsEnd() && GetCur().kind != endToken && GetCur().kind != endToken2; )
 	{
@@ -208,46 +208,40 @@ TreeNodeSptr Parser::ParseExpLoop(EToken endToken /* = EToken::None */, EToken e
 			break;
 		}
 
-		if(CompPrec(ast, node) >= 0)
+		for(TreeNodeSptr curNode = root; ; curNode = curNode->childs.back())
 		{
-			if(node->self.IsAssign())
-			{//TODO LValue check
-				if(ast->self != EToken::Id && ast->self != EToken::Index)
-				{
-					_errors.push_back(ErrorBuilder::LValueError(node->self.line, node->self.val));
-					return nullptr;
+			int prec = CompPrec(curNode, node);
+			if(prec > 0 || (prec == 0 && (!curNode->self.IsAssign() && !node->self.IsAssign())))
+			{
+				if(node->self.IsAssign())
+				{//TODO clarify LValue check
+					if(curNode->self != EToken::Id && curNode->self != EToken::Index)
+					{
+						_errors.push_back(ErrorBuilder::LValueError(node->self.line, node->self.val));
+						return nullptr;
+					}
+
+					if(curNode->self == EToken::Index)
+					{//TODO algorithm..
+						curNode->self.kind = EToken::LValueIndex;
+					}
 				}
 
-				if(ast->self == EToken::Index)
-				{//TODO algo..
-					ast->self.kind = EToken::LValueIndex;
-				}
+				TreeNode* parent = curNode->parent;
+				node->PushFrontChild(curNode);
+				if(parent) parent->ReplaceBackChild(node);
+				if(curNode == root) root = node;
+				break;
 			}
 
-			node->PushFrontChild(ast);
-			ast = node;
-		}
-		else
-		{
-			for(TreeNodeSptr curNode = ast; ; curNode = curNode->childs.back() )
+			if(curNode->childs.empty())
 			{
-				if(CompPrec(curNode, node) >= 0)
-				{
-					TreeNode* parent = curNode->parent;
-					node->PushFrontChild(curNode);
-					if(parent) parent->ReplaceBackChild(node);
-					break;
-				}
-
-				if(curNode->childs.empty())
-				{
-					throw 'a';
-				}
+				throw 'a';
 			}
 		}
 	}
 
-	return ast;
+	return root;
 }
 
 TreeNodeSptr Parser::ParseExp(bool first)

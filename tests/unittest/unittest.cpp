@@ -14,7 +14,7 @@ using namespace std;
 using namespace yvm;
 
 
-// #define DEBUG_OUT
+#define DEBUG_OUT
 
 
 static std::vector<Error> Build(const std::string& src, Bytecode& retBytecode)
@@ -79,84 +79,98 @@ static std::vector<Error> Build(const std::string& src, Bytecode& retBytecode)
 
 	} while(0);
 
+#ifdef DEBUG_OUT
+	for(auto e : errs)
+	{
+		string errStr = format("{}({}): error E{}: {}", "some file", e.line, (int)e.code, e.msg);
+		cout << errStr << endl;
+	}
+#endif
 	return errs;
 }
 
 
-static pair<int, vector<Error>> Run(const std::string& src)
+struct Result
+{
+	int code;
+	bool build;
+	vector<Error> errs;
+};
+
+static Result Run(const std::string& src)
 {
 	vector<Error> errs;
 
 	Bytecode c;
 	errs = Build(src, c);
 	if(!errs.empty())
-		return { 1, errs };
+		return { -98765432, false, errs };
 
 	yvm::Machine m;
-	return { m.Run(c), errs };
+	return { m.Run(c), true, errs };
 }
 
 
 TEST_CASE( "Primitive String Test", "[primstr]" )
 {
-	pair<int, vector<Error>> ret;
+	Result ret;
 
 	ret = Run( R"YT( a = 'hello'; if(a.len() != 5) exit(1); )YT" );
-	REQUIRE( ret.first == 0 );
+	REQUIRE( ret.code == 0 );
 
 	ret = Run( R"YT( a = 'a b c d t'; if(a.find(' c d') != 3) exit(1); )YT" );
-	REQUIRE( ret.first == 0 );
+	REQUIRE( ret.code == 0 );
 
 	ret = Run( R"YT( a = 'pika pika chu'; if(a.substr(5, 4) + a.substr(10) != 'pikachu') exit(1); )YT" );
-	REQUIRE( ret.first == 0 );
+	REQUIRE( ret.code == 0 );
 
 	ret = Run( R"YT( a = 'hello world'; a = a.replace('world', 'ylang'); if(a != 'hello ylang') exit(1); )YT" );
-	REQUIRE( ret.first == 0 );
+	REQUIRE( ret.code == 0 );
 
 	ret = Run( R"YT( a = 'a b c d t'; if(a.split().len() != 5) exit(1); )YT" );
-	REQUIRE( ret.first == 0 );
+	REQUIRE( ret.code == 0 );
 
 	ret = Run( R"YT( a = '\r \n \t \v 12345 7\t9 \r \n \t \v '; if(a.trim().len() != 9) exit(1); )YT" );
-	REQUIRE( ret.first == 0 );
+	REQUIRE( ret.code == 0 );
 
 	ret = Run( R"YT( a = '  \t  12345 7\t9 \t\n'; if(a.ltrim().len() != 12) exit(1); )YT" );
-	REQUIRE( ret.first == 0 );
+	REQUIRE( ret.code == 0 );
 
 	ret = Run( R"YT( a = ' \v 12345 7\t9 \t\n\r\v '; if(a.rtrim().len() != 12) exit(1); )YT" );
-	REQUIRE( ret.first == 0 );
+	REQUIRE( ret.code == 0 );
 
 	ret = Run( R"YT( delim = '::'; list = ['aa' , 'bb', 'cc', 'dd']; if(delim.join(list) != 'aa::bb::cc::dd') exit(1); )YT" );
-	REQUIRE( ret.first == 0 );
+	REQUIRE( ret.code == 0 );
 }
 
 TEST_CASE( "Builtin Random Test", "[bltrand]" )
 {
-	pair<int, vector<Error>> ret;
+	Result ret;
 
 	ret = Run( R"YT( include rand; rand.randomize_timer(); )YT" );
-	REQUIRE( ret.first == 0 );
+	REQUIRE( ret.code == 0 );
 
 	ret = Run( R"YT( include rand; for(i=0; i<20000; i+=1) { r=rand.get(-2052, 9810); if(!(-2052 <= r && r <= 9810)) exit(1); } )YT" );
-	REQUIRE( ret.first == 0 );
+	REQUIRE( ret.code == 0 );
 }
 
 TEST_CASE( "Builtin Sys Test", "[bltsys]" )
 {
-	pair<int, vector<Error>> ret;
+	Result ret;
 
 	ret = Run( R"YT( include sys; println(sys.version); if(sys.version.empty()) exit(1); )YT" );
-	REQUIRE( ret.first == 0 );
+	REQUIRE( ret.code == 0 );
 
 	ret = Run( R"YT( include sys; println(sys.executable); if(sys.executable.empty()) exit(1); )YT" );
-	REQUIRE( ret.first == 0 );
+	REQUIRE( ret.code == 0 );
 
 	ret = Run( R"YT( include sys; println(sys.argv); )YT" );
-	REQUIRE( ret.first == 0 );
+	REQUIRE( ret.code == 0 );
 }
 
 TEST_CASE( "Builtin File Test", "[bltfile]" )
 {
-	pair<int, vector<Error>> ret;
+	Result ret;
 
 	ret = Run( R"YT(
 		w = "hahahaha";
@@ -172,12 +186,12 @@ TEST_CASE( "Builtin File Test", "[bltfile]" )
 		println("{r} {r.len()}");
 		if(r != w) exit(1);
 	)YT" );
-	REQUIRE( ret.first == 0 );
+	REQUIRE( ret.code == 0 );
 }
 
 TEST_CASE( "Builtin Json Test", "[bltjson]" )
 {
-	pair<int, vector<Error>> ret;
+	Result ret;
 
 	ret = Run( R"YT(
 		include json;
@@ -222,8 +236,39 @@ TEST_CASE( "Builtin Json Test", "[bltjson]" )
 
 		println(json.dump(b, 2));
 	)YT" );
-	REQUIRE( ret.first == 0 );
+	REQUIRE( ret.code == 0 );
 }
+
+TEST_CASE( "Expression Test", "[exp]" )
+{
+	Result ret;
+
+	ret = Run( R"YT( a = b = 9; exit(a); )YT" );
+	REQUIRE( ret.code == 9 );
+
+	ret = Run( R"YT( a = (b = 9); exit(a); )YT" );
+	REQUIRE( ret.code == 9 );
+
+	ret = Run( R"YT( (a = b) = 9; exit(a); )YT" );
+	REQUIRE( !ret.build );
+
+	ret = Run( R"YT( c = 0; a = b + c = 0; )YT" );
+	REQUIRE( !ret.build );
+
+	ret = Run( R"YT( b = 0; a = b - (c = 1); exit(a); )YT" );
+	REQUIRE( ret.code == -1 );
+
+	ret = Run( R"YT( b = 1; a = b += 1; exit(a); )YT" );
+	REQUIRE( ret.code == 2 );
+
+	ret = Run( R"YT( a = c += 1; )YT" );
+	REQUIRE( !ret.build );
+
+
+	ret = Run( R"YT( b = 1; a -= b += 1; )YT" );
+	REQUIRE( !ret.build );
+}
+
 
 
 static const Catch::LeakDetector leakDetector;
@@ -244,7 +289,8 @@ int main(int argc, const char** argv)
 	//cfg.testsOrTags.push_back("[bltrand]");
 	//cfg.testsOrTags.push_back("[bltsys]");
 	//cfg.testsOrTags.push_back("[bltfile]");
-	cfg.testsOrTags.push_back("[bltjson]");
+	//cfg.testsOrTags.push_back("[bltjson]");
+	cfg.testsOrTags.push_back("[exp]");
 
 	int numFailed = _session.run();
 };

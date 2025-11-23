@@ -200,7 +200,7 @@ name = Alice, age = 25
 * [x] Automated tests
 * [ ] Documentation
 * [ ] Unicode
-* [ ] Increment and decrement operators
+* [x] Increment and decrement operators
 * [ ] Optimization
 * ...and more
 
