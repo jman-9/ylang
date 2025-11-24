@@ -302,6 +302,7 @@ TreeNodeSptr Parser::ParseExp(bool first)
 				}
 				else
 				{
+					overridedChild->parent = nullptr;
 				}
 
 				if(cur == node)
