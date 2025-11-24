@@ -303,6 +303,10 @@ void BytecodeBuilder::FillBytecode(int ln, const OpType& inst, const TreeNode* s
 	{
 		_bytecodeStr[ln] = format("include {}{}", ValKindChar(ERefKind::Const), inst.inc);
 	}
+	else if constexpr (is_same_v<Op::Jnz, OpType>)
+	{
+		_bytecodeStr[ln] = format("jnz {}{}, {}", ValKindChar(inst.testKind), inst.test, inst.pos);
+	}
 	else
 	{
 		throw 'n';
@@ -324,16 +328,16 @@ int BytecodeBuilder::PushBytecode()
 {
 	_bytecode.push_back(Instruction());
 	_bytecodeStr.push_back("");
-	FillBytecode<Op>((int)_bytecode.size() - 1);
-	return (int)_bytecode.size() - 1;
+	FillBytecode<Op>(endOfCode());
+	return endOfCode();
 }
 template<class OpType>
 int BytecodeBuilder::PushBytecode(const OpType& inst, const TreeNode* stmt /* = nullptr */)
 {
 	_bytecode.push_back(Instruction());
 	_bytecodeStr.push_back("");
-	FillBytecode((int)_bytecode.size() - 1, inst, stmt);
-	return (int)_bytecode.size() - 1;
+	FillBytecode(endOfCode(), inst, stmt);
+	return endOfCode();
 }
 template<class OpType>
 int BytecodeBuilder::PushBytecode(const OpType& inst, const TreeNode& stmt)
@@ -578,6 +582,14 @@ bool BytecodeBuilder::BuildExp(const TreeNode& stmt, bool root)
 		}
 	}
 
+
+	int logicalOpLine = -1;
+	if(stmt.self == EToken::And || stmt.self == EToken::Or)
+	{
+		logicalOpLine = nextCodeSlot();
+		PushBytecode<EOpcode::Noop>();
+	}
+
 	if(rhs)
 	{
 		if(rhs->self != EToken::Id && !rhs->self.IsLiteral())
@@ -638,7 +650,7 @@ bool BytecodeBuilder::BuildExp(const TreeNode& stmt, bool root)
 
 					const Op::Index& idx = *((Op::Index*)idxInst.code.data());
 					Op::LValueIndex lidx = { idx.dstKind, idx.idxKind, idx.dst, idx.idx };
-					FillBytecode(_bytecode.size()-1, lidx, stmt);
+					FillBytecode(endOfCode(), lidx, stmt);
 
 					srcKind = inst.src1Kind;
 					srcIdx = inst.src1;
@@ -696,7 +708,36 @@ bool BytecodeBuilder::BuildExp(const TreeNode& stmt, bool root)
 		inst.dst = 0;
 	}
 
-	PushBytecode(inst, stmt);
+	if(stmt.self == EToken::And || stmt.self == EToken::Or)
+	{
+		Op::Assign as;
+		as.dstKind = inst.dstKind;
+		as.dst = inst.dst;
+		as.src1Kind = inst.src2Kind;
+		as.src1 = inst.src2;
+		PushBytecode(as, stmt);
+
+		if(stmt.self == EToken::And)
+		{
+			Op::Jz jz;
+			jz.testKind = (uint8_t)inst.src1Kind;
+			jz.test = inst.src1;
+			jz.pos = nextCodeSlot();
+			FillBytecode(logicalOpLine, jz, stmt);
+		}
+		else
+		{
+			Op::Jnz jnz;
+			jnz.testKind = (uint8_t)inst.src1Kind;
+			jnz.test = inst.src1;
+			jnz.pos = nextCodeSlot();
+			FillBytecode(logicalOpLine, jnz, stmt);
+		}
+	}
+	else
+	{
+		PushBytecode(inst, stmt);
+	}
 	return true;
 }
 
@@ -730,8 +771,8 @@ bool BytecodeBuilder::BuildContinue(const TreeNode& stmt)
 	{
 		PushBytecode<EOpcode::PopSp>();
 	}
-	_loopStack.top().contLines.push_back((int)_bytecode.size());
 	PushBytecode<EOpcode::Noop>();
+	_loopStack.top().contLines.push_back(endOfCode());
 	return true;
 }
 
@@ -744,8 +785,8 @@ bool BytecodeBuilder::BuildBreak(const TreeNode& stmt)
 	{
 		PushBytecode<EOpcode::PopSp>();
 	}
-	_loopStack.top().breakLines.push_back((int)_bytecode.size());
 	PushBytecode<EOpcode::Noop>();
+	_loopStack.top().breakLines.push_back(endOfCode());
 	return true;
 }
 
@@ -859,10 +900,10 @@ bool BytecodeBuilder::BuildFor(const TreeNode& stmt)
 
 	BuildExp(init, true);
 
-	size_t loopStart = _bytecode.size();
+	size_t loopStart = nextCodeSlot();
 	BuildExp(cond, false);
 
-	size_t condLine = _bytecode.size();
+	size_t condLine = nextCodeSlot();
 	PushBytecode<EOpcode::Noop>();
 
 	Op::Jz jz;
@@ -873,13 +914,13 @@ bool BytecodeBuilder::BuildFor(const TreeNode& stmt)
 
 	BuildStmt(block);
 
-	size_t loopEnd = _bytecode.size();
+	size_t loopEnd = nextCodeSlot();
 	BuildExp(update, true);
 
 	Op::Jmp jmp{ .pos = (uint32_t)loopStart };
 	PushBytecode(jmp, stmt);
 
-	size_t updateEnd = _bytecode.size();
+	size_t updateEnd = nextCodeSlot();
 	jz.pos = (uint32_t)updateEnd;
 	FillBytecode((int)condLine, jz, stmt);
 
@@ -910,7 +951,7 @@ bool BytecodeBuilder::BuildIf(const TreeNode& stmt)
 
 	BuildExp(test, false);
 
-	size_t condLine = _bytecode.size();
+	size_t condLine = nextCodeSlot();
 	PushBytecode<EOpcode::Noop>();
 
 	Op::Jz jz;
@@ -919,10 +960,10 @@ bool BytecodeBuilder::BuildIf(const TreeNode& stmt)
 
 	BuildStmt(_true);
 
-	size_t skipLine = _bytecode.size();
+	size_t skipLine = nextCodeSlot();
 	PushBytecode<EOpcode::Noop>();
 
-	jz.pos = (uint32_t)_bytecode.size();
+	jz.pos = (uint32_t)nextCodeSlot();
 	FillBytecode((int)condLine, jz, stmt);
 
 	if(stmt.childs.size() > 2)
@@ -934,7 +975,7 @@ bool BytecodeBuilder::BuildIf(const TreeNode& stmt)
 		}
 	}
 
-	Op::Jmp jmp{ .pos = (uint32_t)_bytecode.size() };
+	Op::Jmp jmp{ .pos = (uint32_t)nextCodeSlot() };
 	FillBytecode((int)skipLine, jmp, stmt);
 	return true;
 }
@@ -947,7 +988,7 @@ bool BytecodeBuilder::BuildFn(const TreeNode& stmt)
 	if(stmt.self != EToken::Fn)
 		throw 'n';
 
-	size_t skipLine = _bytecode.size();
+	size_t skipLine = nextCodeSlot();
 	PushBytecode<EOpcode::Noop>();
 
 	auto& name = stmt.self.val;
@@ -963,7 +1004,7 @@ bool BytecodeBuilder::BuildFn(const TreeNode& stmt)
 
 	Symbol sym;
 	sym.name = name;
-	sym.pos = _bytecode.size() - 1;
+	sym.pos = endOfCode();
 	sym.kind = ESymbol::Fn;
 	_symTbl.AddOrNot(sym);
 
@@ -1002,7 +1043,7 @@ bool BytecodeBuilder::BuildFn(const TreeNode& stmt)
 	BuildBlockClose();
 	PushBytecode<EOpcode::Ret>();
 
-	Op::Jmp jmp{ .pos = (uint32_t)_bytecode.size() };
+	Op::Jmp jmp{ .pos = (uint32_t)nextCodeSlot() };
 	FillBytecode((int)skipLine, jmp, stmt);
 	return true;
 }
@@ -1021,4 +1062,13 @@ bool BytecodeBuilder::BuildCompound(const TreeNode& stmt)
 
 	BuildBlockClose();
 	return true;
+}
+
+int BytecodeBuilder::endOfCode() const
+{
+	return (int)_bytecode.size() - 1;
+}
+int BytecodeBuilder::nextCodeSlot() const
+{
+	return (int)_bytecode.size();
 }

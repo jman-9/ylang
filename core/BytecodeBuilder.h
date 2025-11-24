@@ -149,6 +149,9 @@ protected:
 	bool BuildDict(const TreeNode& stmt);
 	bool BuildIndex(const TreeNode& stmt);
 
+	inline int endOfCode() const;
+	inline int nextCodeSlot() const;
+
 private:
 	template<EOpcode Op>
 	void FillBytecode(int ln);

@@ -48,6 +48,7 @@ protected:
 	inline bool LValueIndex(const Op::LValueIndex& lli);
 	inline bool Invoke(const Op::Invoke& ivk);
 	inline bool Inc(const Op::Inc& inc);
+	inline bool Jnz(const Op::Jnz& jnz);
 };
 
 }

@@ -21,6 +21,7 @@ enum class EOpcode : uint16_t
 	LValueIndex,
 	Invoke,
 	Inc,
+	Jnz,
 };
 
 enum class ERefKind : uint8_t
@@ -128,6 +129,14 @@ struct Inc
 {
 	uint16_t inc = 0;
 	uint16_t rsvd = 0;
+};
+
+struct Jnz
+{
+	uint8_t testKind = (uint8_t)ERefKind::None;
+	uint8_t rsvd = 0;
+	uint16_t test = 0;
+	uint32_t pos = 0;
 };
 
 

@@ -90,6 +90,10 @@ void Instruction::Fill(const OpType& inst)
 	{
 		kind = (uint8_t)EOpcode::Inc;
 	}
+	else if constexpr (std::is_same_v<Op::Jnz, OpType>)
+	{
+		kind = (uint8_t)EOpcode::Jnz;
+	}
 	else
 	{
 		throw 'n';

@@ -597,6 +597,17 @@ bool Machine::Inc(const Op::Inc& inc)
 	return true;
 }
 
+bool Machine::Jnz(const Op::Jnz& jnz)
+{
+	Variable* test = ResolveVar((ERefKind)jnz.testKind, jnz.test);
+	if(test->_int)
+	{
+		_pc = jnz.pos - 1;
+	}
+	return true;
+}
+
+
 int Machine::Run(const Bytecode& code, int start /* = 0 */)
 {
 	_retCode = INT_MAX;
@@ -635,6 +646,9 @@ int Machine::Run(const Bytecode& code, int start /* = 0 */)
 		case EOpcode::LValueIndex: LValueIndex(*(Op::LValueIndex*)inst.code.data()); break;
 		case EOpcode::Invoke: Invoke(*(Op::Invoke*)inst.code.data()); break;
 		case EOpcode::Inc: Inc(*(Op::Inc*)inst.code.data()); break;
+		case EOpcode::Jnz: Jnz(*(Op::Jnz*)inst.code.data()); break;
+		default:
+			throw 'n';//TODO
 		}
 	}
 	if(_pc >= code._code.size() && _retCode == INT_MAX) _retCode = 0;

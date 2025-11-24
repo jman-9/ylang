@@ -264,9 +264,54 @@ TEST_CASE( "Expression Test", "[exp]" )
 	ret = Run( R"YT( a = c += 1; )YT" );
 	REQUIRE( !ret.build );
 
-
 	ret = Run( R"YT( b = 1; a -= b += 1; )YT" );
 	REQUIRE( !ret.build );
+}
+
+TEST_CASE( "Logical Operator Test", "[logop]" )
+{
+	Result ret;
+	ret = Run( R"YT( a = 1; b = 1; c = 2; d = a+1>0 && b < 0 || c > 2; if(d) exit(1); )YT" );
+	REQUIRE( ret.code == 0 );
+
+	ret = Run( R"YT(
+		fn Sum(a, b) {
+			return a + b;
+		}
+
+		a = b = c = 0;
+		c = (a = Sum(0, 1)) || (b = Sum(1, 1));
+		if(b) exit(1);
+
+		a = b = c = 0;
+		c = (a = Sum(0, 0)) && (b = Sum(1, 1));
+		if(b) exit(2);
+
+		a = b = c = 0;
+		d = (a = Sum(1, 0)) && (b = Sum(0, 0)) || (c = Sum(1, 1));
+		if(!d) exit(3);
+		if(c != 2) exit(3);
+
+		a = b = c = 0;
+		d = (a = Sum(0, 0)) && ((b = Sum(1, 2)) || (c = Sum(1, 1)));
+		if(d) exit(4);
+		if(b) exit(4);
+		if(c) exit(4);
+
+		a = b = c = 0;
+		d = (a = Sum(1, 0)) && ((b = Sum(1, 2)) || (c = Sum(1, 1)));
+		if(!d) exit(5);
+		if(b != 3) exit(5);
+		if(c) exit(5);
+
+		a = b = c = 0;
+		d = (a = Sum(0, 0)) || (b = Sum(0, 0)) && (c = Sum(1, 0));
+		if(d) exit(6);
+		if(c) exit(6);
+
+		if(a = 0 || 1) if(!a) exit(7);
+	)YT" );
+	REQUIRE( ret.code == 0 );
 }
 
 
@@ -290,7 +335,8 @@ int main(int argc, const char** argv)
 	//cfg.testsOrTags.push_back("[bltsys]");
 	//cfg.testsOrTags.push_back("[bltfile]");
 	//cfg.testsOrTags.push_back("[bltjson]");
-	cfg.testsOrTags.push_back("[exp]");
+	//cfg.testsOrTags.push_back("[exp]");
+	cfg.testsOrTags.push_back("[logop]");
 
 	int numFailed = _session.run();
 };

@@ -173,26 +173,15 @@ else
 const char* testcode2 =
 R"TEST(
 
-a = b = 9810;
+		fn Sum(a, b) {
+			return a + b;
+		}
 
-a = 0;
-for(i=0; i<10; i++)
-{
-	println("a += i -> {a += i}");
-	println("++a -> {++a}");
-}
-
-a = [1];
-(((b))) = (((a[((0))])))++;
-
-println(a[0]);
-println(b);
-
-println((a[0])++);
-println(++((a)[(0)]));
-println(++a[0]);
-
-println(a[0]);
+		a = b = c = 0;
+		d = (a = Sum(0, 0)) && ((b = Sum(1, 2)) || (c = Sum(1, 1)));
+		if(d) exit(4);
+		if(b) exit(4);
+		if(c) exit(4);
 
 )TEST";
 
