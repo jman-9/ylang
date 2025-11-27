@@ -314,6 +314,23 @@ TEST_CASE( "Logical Operator Test", "[logop]" )
 	REQUIRE( ret.code == 0 );
 }
 
+TEST_CASE( "Struct Test", "[struct]" )
+{
+	Result ret;
+	ret = Run( R"YT(
+		struct Hello {
+			front = "hello";
+			back = "world";
+
+			fn Say() {
+				println("{front}, {back}");
+				return;
+			}
+		}
+	)YT" );
+	REQUIRE( ret.code == 0 );
+}
+
 
 
 static const Catch::LeakDetector leakDetector;
@@ -336,7 +353,8 @@ int main(int argc, const char** argv)
 	//cfg.testsOrTags.push_back("[bltfile]");
 	//cfg.testsOrTags.push_back("[bltjson]");
 	//cfg.testsOrTags.push_back("[exp]");
-	cfg.testsOrTags.push_back("[logop]");
+	//cfg.testsOrTags.push_back("[logop]");
+	cfg.testsOrTags.push_back("[struct]");
 
 	int numFailed = _session.run();
 };

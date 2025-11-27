@@ -79,6 +79,8 @@ enum class EToken : uint8_t
 
 	List,
 	Dict,
+
+	Struct,
 };
 
 

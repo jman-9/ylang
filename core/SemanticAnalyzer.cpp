@@ -31,6 +31,7 @@ bool SemanticAnalyzer::AnalyzeStmt(const TreeNode& stmt)
 	case EToken::If : return AnalyzeIf(stmt);
 	case EToken::Fn : return AnalyzeFn(stmt);
 	case EToken::LBrace : return AnalyzeCompound(stmt);
+	case EToken::Struct: return AnalyzeStruct(stmt);
 	default: ;
 	}
 	return AnalyzeExp(stmt);
@@ -298,6 +299,40 @@ bool SemanticAnalyzer::AnalyzeCompound(const TreeNode& stmt, const std::vector<P
 	{
 		if(!AnalyzeStmt(*itm))
 			return false;
+	}
+
+	_symTbl.pop_back();
+
+	return true;
+}
+
+bool SemanticAnalyzer::AnalyzeStruct(const TreeNode& stmt)
+{
+	if(stmt.self != EToken::Struct)
+		throw 'n';
+
+	auto& name = stmt.self.val;
+
+	auto found = _symTbl.back().find(name);
+	if(found != _symTbl.back().end())
+	{
+		//todo message
+		_errors.push_back(ErrorBuilder::Default(stmt.self.line, format("'{}': already defined", stmt.self.val)));
+		return false;
+	}
+
+	_symTbl.resize(_symTbl.size() + 1);
+	_symTbl.back() = _symTbl[_symTbl.size() - 2];
+
+	for(auto& itm : stmt.childs)
+	{
+		switch(itm->self.kind)
+		{
+		case EToken::Fn: if(!AnalyzeFn(*itm)) return false; break;
+		case EToken::Assign: if(!AnalyzeExp(*itm)) return false; break;
+		default:
+			throw 'n';//TODO
+		}
 	}
 
 	_symTbl.pop_back();

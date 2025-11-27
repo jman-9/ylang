@@ -46,6 +46,7 @@ namespace ErrorBuilder
 	Error UnsupportedCharacterEscapeSequence(uint32_t line, char c);
 	Error SyntaxError(uint32_t line, const std::string& s);
 	Error SyntaxError(uint32_t line, char c);
+	Error Missing(uint32_t line, const std::string& s);
 	Error Missing(uint32_t line, char c);
 	Error LValueError(uint32_t line, const std::string& s);
 	Error ExpectedExpression(uint32_t line, const std::string& s);

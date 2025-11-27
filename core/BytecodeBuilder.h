@@ -148,6 +148,7 @@ protected:
 	bool BuildList(const TreeNode& stmt);
 	bool BuildDict(const TreeNode& stmt);
 	bool BuildIndex(const TreeNode& stmt);
+	bool BuildStruct(const TreeNode& stmt);
 
 	inline int endOfCode() const;
 	inline int nextCodeSlot() const;

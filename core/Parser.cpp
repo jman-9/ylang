@@ -611,6 +611,7 @@ TreeNodeSptr Parser::ParseStmt(const std::set<EToken>& allowed /* = std::set<ETo
 	if(ast = ParseIf(allowed)) return ast;
 	if(ast = ParseFor(allowed)) return ast;
 	if(ast = ParseFn()) return ast;
+	if(ast = ParseStruct()) return ast;
 
 	if(ast = ParseExpLoop(EToken::Semicolon))
 	{
@@ -909,6 +910,82 @@ TreeNodeSptr Parser::ParseFn()
 	fnNode->PushBackChild(params);
 	fnNode->PushBackChild(body);
 	return fnNode;
+}
+
+TreeNodeSptr Parser::ParseStruct()
+{
+	if(GetCur() != EToken::Struct)
+	{
+		return nullptr;
+	}
+	MoveNext();
+
+	Token id = GetCur();
+	if(id != EToken::Id)
+	{
+		_errors.push_back(ErrorBuilder::Expected(id.line, "identifier"));
+		return nullptr;
+	}
+	MoveNext();
+
+	TreeNodeSptr _struct = NewNode(id);
+	_struct->self.kind = EToken::Struct;
+
+	if(GetCur().kind != EToken::LBrace)
+	{
+		_errors.push_back(ErrorBuilder::SyntaxError(GetCur().line, GetCur().val));
+		return nullptr;
+	}
+	MoveNext();
+
+	for( ; GetCur().kind != EToken::RBrace; )
+	{
+		if(IsEnd())
+		{
+			_errors.push_back(ErrorBuilder::Missing(_struct->self.line, '}'));
+			return nullptr;
+		}
+
+		if(GetCur() == EToken::Semicolon)
+		{
+			MoveNext();
+			continue;
+		}
+
+		TreeNodeSptr stmt;
+		if(!stmt)
+		{
+			stmt = ParseFn();
+		}
+		if(!stmt)
+		{
+			if(stmt = ParseExpLoop(EToken::Semicolon))
+			{
+				if(stmt->self != EToken::Assign)
+				{
+					_errors.push_back(ErrorBuilder::SyntaxError(stmt->self.line, stmt->self.val));
+					return nullptr;
+				}
+
+				if(GetCur().kind != EToken::Semicolon)
+				{
+					_errors.push_back(ErrorBuilder::Missing(GetCur().line, GetCur().val));
+					return nullptr;
+				}
+				MoveNext();
+			}
+		}
+		if(!stmt)
+		{
+			_errors.push_back(ErrorBuilder::SyntaxError(GetCur().line, GetCur().val));
+			return nullptr;
+		}
+
+		_struct->PushBackChild(stmt);
+	}
+	MoveNext();
+
+	return _struct;
 }
 
 

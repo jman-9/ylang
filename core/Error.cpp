@@ -68,9 +68,13 @@ Error SyntaxError(uint32_t line, char c)
 	return SyntaxError(line, string(1, c));
 }
 
+Error Missing(uint32_t line, const string& s)
+{
+	return { line, EErr::Missing, format("'{}': missing", s) };
+}
 Error Missing(uint32_t line, char c)
 {
-	return { line, EErr::Missing, format("'{}': missing", c) };
+	return Missing(line, string(1, c));
 }
 
 Error LValueError(uint32_t line, const std::string& s)

@@ -362,12 +362,8 @@ bool BytecodeBuilder::Build(const TreeNode& code, Bytecode& retCode)
 		PushBytecode(cal, code);
 	}
 
-	map<int, Token> sorted;
-	for(auto& c : _constTbl._constMap)
-	{
-		sorted[ c.second ] = c.first;
-	}
-	for(auto& [idx, tok] : sorted)
+	retCode._consts.resize(_constTbl._constMap.size());
+	for(auto& [tok, idx] : _constTbl._constMap)
 	{
 		Constant c;
 		if(tok == EToken::Int)
@@ -386,7 +382,7 @@ bool BytecodeBuilder::Build(const TreeNode& code, Bytecode& retCode)
 			c._str = tok.val;
 		}
 
-		retCode._consts.push_back(c);
+		retCode._consts[idx] = c;
 	}
 
 	retCode._code = _bytecode;
@@ -422,6 +418,7 @@ bool BytecodeBuilder::BuildStmt(const TreeNode& stmt)
 	case EToken::Return : return BuildReturn(stmt);
 	case EToken::Continue : return BuildContinue(stmt);
 	case EToken::Break : return BuildBreak(stmt);
+	case EToken::Struct : return BuildStruct(stmt);
 	default: ;
 	}
 	return BuildExp(stmt, true);
@@ -886,6 +883,26 @@ bool BytecodeBuilder::BuildIndex(const TreeNode& stmt)
 	}
 
 	return true;
+}
+
+bool BytecodeBuilder::BuildStruct(const TreeNode& stmt)
+{
+	if(stmt.self != EToken::Struct)
+		throw 'n';
+
+	Struct st;
+
+	for(auto& substmt : stmt.childs)
+	{
+		if(substmt->self == EToken::Assign)
+		{
+			int a = 1;
+			//TODO
+		}
+
+		//st._symbols.add
+	}
+	int a = 1;
 }
 
 bool BytecodeBuilder::BuildFor(const TreeNode& stmt)

@@ -34,3 +34,6 @@ ListElems -> Exp {',' Exp} [',']
 
 DictExp -> '{' [DictElems] '}'
 DictElems -> Exp ':' Exp {',' Exp ':' Exp} [',']
+
+StructField -> LValue AssignOp AssignExp ';'
+StructStmt -> 'struct' Id '{' {FnStmt | StructField} '}'

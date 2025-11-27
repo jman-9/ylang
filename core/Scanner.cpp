@@ -96,6 +96,7 @@ void Scanner::ProcessIdKeywords()
 		else if(t.val == "continue") t.kind = EToken::Continue;
 		else if(t.val == "fn") t.kind = EToken::Fn;
 		else if(t.val == "return") t.kind = EToken::Return;
+		else if(t.val == "struct") t.kind = EToken::Struct;
 	}
 }
 
