@@ -1,39 +1,23 @@
 #pragma once
 #include "Symbol.h"
 #include "Instruction.h"
-#include <cstdint>
-#include <string>
-#include <vector>
-#include <unordered_map>
-
-struct Constant
-{
-	enum Type
-	{
-		NONE,
-
-		INT,
-		FLOAT,
-		STR,
-	};
-
-	Type _type;
-
-	int64_t _int;
-	std::string _str;
-	double _float;
-};
 
 struct Bytecode
 {
-	std::vector<Constant> _consts;
+	std::vector<std::string> _codeStr;
 	std::vector<Instruction> _code;
+
+	template<EOpcode Op>
+	void FillBytecode(int ln, int srcLine = -1);
+	template<class OpType>
+	void FillBytecode(int ln, const OpType& inst, int srcLine = -1);
+	template<EOpcode Op>
+	int PushBytecode(int srcLine = -1);
+	template<class OpType>
+	int PushBytecode(const OpType& inst, int srcLine = -1);
+
+	inline int endOfCode() const;
+	inline int nextCodeSlot() const;
 };
 
-
-struct Struct
-{
-	std::vector<Symbol> _fields;
-	std::vector<Instruction> _initer;
-	std::unordered_map<std::string, std::vector<Instruction>> _funcTable;
-};
+#include "Bytecode.inl"

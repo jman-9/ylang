@@ -321,6 +321,11 @@ bool SemanticAnalyzer::AnalyzeStruct(const TreeNode& stmt)
 		return false;
 	}
 
+	Symbol sym;
+	sym.name = name;
+	sym.kind = ESymbol::Cls;
+	_symTbl.back()[ name ] = sym;
+
 	_symTbl.resize(_symTbl.size() + 1);
 	_symTbl.back() = _symTbl[_symTbl.size() - 2];
 

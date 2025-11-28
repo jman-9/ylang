@@ -2,6 +2,7 @@
 #include "../Token.h"
 #include "module/Module.h"
 #include "../contract/ycontract.h"
+#include "../Program.h"
 #include <stdint.h>
 #include <string>
 #include <vector>
@@ -12,7 +13,13 @@ namespace yvm
 {
 
 struct Attribute;
-struct Object;
+struct Variable;
+
+struct StructObject
+{
+	std::vector<Variable*> _members;
+	Struct _st;
+};
 
 struct Variable
 {
@@ -30,6 +37,7 @@ struct Variable
 		REF,
 		ATTR,
 		MODULE,
+		STRUCT,
 	};
 
 	Type _type = NONE;
@@ -43,6 +51,7 @@ struct Variable
 	Variable* _ref = nullptr;
 	Attribute* _attr = nullptr;
 	ymod::Module _mod;
+	StructObject _sto;
 
 	void Clear();
 	void SetInt(int64_t num);

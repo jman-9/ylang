@@ -68,6 +68,7 @@ void Variable::Clear()
 	_ref = nullptr;
 	_attr = nullptr;
 	_mod = ymod::Module();
+	_sto = StructObject();
 }
 
 void Variable::SetInt(int64_t argNum)

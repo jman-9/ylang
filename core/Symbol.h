@@ -11,6 +11,7 @@ enum class ESymbol
 	Fn,
 	Cls,
 	Mod,
+	MemberVar,
 };
 
 struct Param

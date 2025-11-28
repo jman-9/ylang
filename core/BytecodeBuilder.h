@@ -3,6 +3,7 @@
 #include "Symbol.h"
 #include "Instruction.h"
 #include "Bytecode.h"
+#include "Program.h"
 #include <string>
 #include <vector>
 #include <map>
@@ -49,6 +50,7 @@ public:
 
 			GLOBAL,
 			LOCAL,
+			MEMBER,
 		};
 		Kind kind = NONE;
 		int idx = 0;
@@ -105,13 +107,11 @@ public:
 	BytecodeBuilder();
 	~BytecodeBuilder();
 
-	bool Build(const TreeNode& code, Bytecode& retCode);
-
-	std::vector<std::string> _bytecodeStr;
+	bool Build(const TreeNode& code, Program& retProgram);
 
 protected:
 	uint32_t _reg;
-	std::vector<Instruction> _bytecode;
+	Program _prg;
 	ConstTable _constTbl;
 	SymbolTable _symTbl;
 
@@ -132,29 +132,29 @@ protected:
 
 
 
-	void BuildBlockOpen();
-	void BuildBlockClose();
+	void BuildBlockOpen(Bytecode& retCtx);
+	void BuildBlockClose(Bytecode& retCtx);
 
-	bool BuildStmt(const TreeNode& stmt);
-	bool BuildInclude(const TreeNode& stmt);
-	bool BuildFor(const TreeNode& stmt);
-	bool BuildIf(const TreeNode& stmt);
-	bool BuildFn(const TreeNode& stmt);
-	bool BuildCompound(const TreeNode& stmt);
-	bool BuildExp(const TreeNode& stmt, bool root);
-	bool BuildReturn(const TreeNode& stmt);
-	bool BuildContinue(const TreeNode& stmt);
-	bool BuildBreak(const TreeNode& stmt);
-	bool BuildList(const TreeNode& stmt);
-	bool BuildDict(const TreeNode& stmt);
-	bool BuildIndex(const TreeNode& stmt);
-	bool BuildStruct(const TreeNode& stmt);
+	bool BuildStmt(Bytecode& retCtx, const TreeNode& stmt);
+	bool BuildInclude(Bytecode& retCtx, const TreeNode& stmt);
+	bool BuildFor(Bytecode& retCtx, const TreeNode& stmt);
+	bool BuildIf(Bytecode& retCtx, const TreeNode& stmt);
+	bool BuildFn(Bytecode& retCtx, const TreeNode& stmt);
+	bool BuildCompound(Bytecode& retCtx, const TreeNode& stmt);
+	bool BuildExp(Bytecode& retCtx, const TreeNode& stmt, bool root);
+	bool BuildReturn(Bytecode& retCtx, const TreeNode& stmt);
+	bool BuildContinue(Bytecode& retCtx, const TreeNode& stmt);
+	bool BuildBreak(Bytecode& retCtx, const TreeNode& stmt);
+	bool BuildList(Bytecode& retCtx, const TreeNode& stmt);
+	bool BuildDict(Bytecode& retCtx, const TreeNode& stmt);
+	bool BuildIndex(Bytecode& retCtx, const TreeNode& stmt);
+	bool BuildStruct(Bytecode& retCtx, const TreeNode& stmt);
 
-	inline int endOfCode() const;
-	inline int nextCodeSlot() const;
+	//inline int endOfCode() const;
+	//inline int nextCodeSlot() const;
 
 private:
-	template<EOpcode Op>
+/*	template<EOpcode Op>
 	void FillBytecode(int ln);
 	template<class OpType>
 	void FillBytecode(int ln, const OpType& inst, const TreeNode* stmt = nullptr);
@@ -165,5 +165,5 @@ private:
 	template<class OpType>
 	int PushBytecode(const OpType& inst, const TreeNode* stmt = nullptr);
 	template<class OpType>
-	int PushBytecode(const OpType& inst, const TreeNode& stmt);
+	int PushBytecode(const OpType& inst, const TreeNode& stmt);*/
 };

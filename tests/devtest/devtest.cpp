@@ -173,15 +173,18 @@ else
 const char* testcode2 =
 R"TEST(
 
-		fn Sum(a, b) {
-			return a + b;
+		struct Hello {
+			front = "hello";
+			back = "world";
+
+			fn Say() {
+				println("{front}, {back}");
+				return;
+			}
 		}
 
-		a = b = c = 0;
-		d = (a = Sum(0, 0)) && ((b = Sum(1, 2)) || (c = Sum(1, 1)));
-		if(d) exit(4);
-		if(b) exit(4);
-		if(c) exit(4);
+		hello = Hello();
+		hello.Say();
 
 )TEST";
 
@@ -249,16 +252,16 @@ int main()
 		}
 
 		BytecodeBuilder bb;
-		Bytecode c;
-		if(!bb.Build(*ast, c)) throw 'n';
+		Program prg;
+		if(!bb.Build(*ast, prg)) throw 'n';
 
-		for(int i=0; i<bb._bytecodeStr.size(); i++)
+		for(int i=0; i<prg._mainCode._codeStr.size(); i++)
 		{
-			cout << format("{:4} {}\n", i, bb._bytecodeStr[i]);
+			cout << format("{:4} {}\n", i, prg._mainCode._codeStr[i]);
 		}
 
 		yvm::Machine m;
-		m.Run(c);
+		m.Run(prg);
 	}
 
 	return 0;

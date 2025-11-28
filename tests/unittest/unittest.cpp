@@ -17,7 +17,7 @@ using namespace yvm;
 #define DEBUG_OUT
 
 
-static std::vector<Error> Build(const std::string& src, Bytecode& retBytecode)
+static std::vector<Error> Build(const std::string& src, Program& retProgram)
 {
 	vector<Error> errs;
 
@@ -65,15 +65,15 @@ static std::vector<Error> Build(const std::string& src, Bytecode& retBytecode)
 		}
 
 		BytecodeBuilder bb;
-		if(!bb.Build(*ast, retBytecode))
+		if(!bb.Build(*ast, retProgram))
 		{//TODO trace
 			throw 'n';
 		}
 
 	#ifdef DEBUG_OUT
-		for(int i=0; i<bb._bytecodeStr.size(); i++)
+		for(int i=0; i<retProgram._mainCode._codeStr.size(); i++)
 		{
-			cout << format("{:4} {}\n", i, bb._bytecodeStr[i]);
+			cout << format("{:4} {}\n", i, retProgram._mainCode._codeStr[i]);
 		}
 	#endif
 
@@ -101,13 +101,13 @@ static Result Run(const std::string& src)
 {
 	vector<Error> errs;
 
-	Bytecode c;
-	errs = Build(src, c);
+	Program p;
+	errs = Build(src, p);
 	if(!errs.empty())
 		return { -98765432, false, errs };
 
 	yvm::Machine m;
-	return { m.Run(c), true, errs };
+	return { m.Run(p), true, errs };
 }
 
 
@@ -327,6 +327,9 @@ TEST_CASE( "Struct Test", "[struct]" )
 				return;
 			}
 		}
+
+		hello = Hello();
+		hello.Say();
 	)YT" );
 	REQUIRE( ret.code == 0 );
 }

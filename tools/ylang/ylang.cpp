@@ -18,7 +18,7 @@ using namespace std;
 #endif
 
 
-static std::vector<Error> Build(const std::string& src, Bytecode& retBytecode)
+static std::vector<Error> Build(const std::string& src, Program& retProgram)
 {
 	vector<Error> errs;
 
@@ -66,15 +66,15 @@ static std::vector<Error> Build(const std::string& src, Bytecode& retBytecode)
 		}
 
 		BytecodeBuilder bb;
-		if(!bb.Build(*ast, retBytecode))
+		if(!bb.Build(*ast, retProgram))
 		{//TODO trace
 			throw 'n';
 		}
 
 	#ifdef DEBUG_OUT
-		for(int i=0; i<bb._bytecodeStr.size(); i++)
+		for(int i=0; i<retProgram._mainCode._codeStr.size(); i++)
 		{
-			cout << format("{:4} {}\n", i, bb._bytecodeStr[i]);
+			cout << format("{:4} {}\n", i, retProgram._mainCode._codeStr[i]);
 		}
 	#endif
 
@@ -88,13 +88,13 @@ static std::vector<Error> Run(const std::string& src)
 {
 	vector<Error> errs;
 
-	Bytecode c;
-	errs = Build(src, c);
+	Program p;
+	errs = Build(src, p);
 	if(!errs.empty())
 		return errs;
 
 	yvm::Machine m;
-	m.Run(c);
+	m.Run(p);
 	return errs;
 }
 
@@ -236,10 +236,10 @@ bool ylang::StartRepl()
 				break;
 			}
 
-			Bytecode c;
-			if(!bb.Build(*ast, c)) throw 'n';
-			replMachine.Run(c, pc);
-			pc = (int)c._code.size();
+			Program prg;
+			if(!bb.Build(*ast, prg)) throw 'n';
+			replMachine.Run(prg, pc);
+			pc = (int)prg._mainCode._code.size();
 			run = true;
 		} while(0);
 

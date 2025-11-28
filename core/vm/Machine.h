@@ -1,5 +1,5 @@
 #pragma once
-#include "../Bytecode.h"
+#include "../Program.h"
 #include "module/ModuleManager.h"
 #include "Variable.h"
 #include <vector>
@@ -14,10 +14,12 @@ class Machine
 public:
 	Machine();
 
-	int Run(const Bytecode& code, int start = 0);
+	int Run(const Program& program, int start = 0);
 
 protected:
 	Variable* ResolveVar(ERefKind k, int idx);
+
+	int Exec(const Bytecode& code, int start = 0);
 
 	std::vector<Variable> _consts;
 	std::vector<Variable> _regs;
@@ -26,6 +28,7 @@ protected:
 	std::stack<uint16_t> _cspStack;
 	std::stack<uint16_t> _rpStack;
 	std::stack<uint32_t> _retStack;
+	std::stack<Variable*> _structStack;
 	int _sp;
 	int _rp;
 	int _pc;

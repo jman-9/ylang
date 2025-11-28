@@ -10,6 +10,10 @@ using namespace std;
 namespace yvm
 {
 
+
+unordered_map<string, Struct> _structTable;
+
+
 Machine::Machine()
 {
 	_rp = 0;
@@ -30,6 +34,8 @@ Variable* Machine::ResolveVar(ERefKind k, int idx)
 {
 	switch(k)
 	{
+	case ERefKind::Const: return &_consts[idx];
+
 	case ERefKind::Reg:
 		{
 			_rp = _rpStack.top() + idx + 1;
@@ -42,11 +48,49 @@ Variable* Machine::ResolveVar(ERefKind k, int idx)
 				_sp = _cspStack.top() + idx + 1;
 			return &_stack[idx + _cspStack.top()];
 		}
-	case ERefKind::Const: return &_consts[idx];
+
+	case ERefKind::MemberVar:
+		{
+			if(_structStack.empty()) throw 'n';
+
+			return _structStack.top()->_sto._members[idx];
+		}
+
 	default: return nullptr;
 	}
 }
 
+
+int Machine::Exec(const Bytecode& code, int start /*= 0*/)
+{
+	for(int i=0; i < code._code.size(); i++)
+	{
+		auto& inst = code._code[i];
+		switch((EOpcode)inst.kind)
+		{
+		case EOpcode::Noop: break;
+		case EOpcode::Assign: Assign(*(Op::Assign*)inst.code.data()); break;
+		case EOpcode::PushSp: PushSp(); break;
+		case EOpcode::PopSp: PopSp(); break;
+		case EOpcode::Jmp:	Jmp(*(Op::Jmp*)inst.code.data()); break;
+		case EOpcode::Call: Call(*(Op::Call*)inst.code.data()); break;
+		case EOpcode::Ret: Ret(); break;
+		case EOpcode::Jz: Jz(*(Op::Jz*)inst.code.data()); break;
+		case EOpcode::ListSet: ListSet(*(Op::ListSet*)inst.code.data()); break;
+		case EOpcode::ListAdd: ListAdd(*(Op::ListAdd*)inst.code.data()); break;
+		case EOpcode::DictSet: DictSet(*(Op::DictSet*)inst.code.data()); break;
+		case EOpcode::DictAdd: DictAdd(*(Op::DictAdd*)inst.code.data()); break;
+		case EOpcode::Index: Index(*(Op::Index*)inst.code.data()); break;
+		case EOpcode::LValueIndex: LValueIndex(*(Op::LValueIndex*)inst.code.data()); break;
+		case EOpcode::Invoke: Invoke(*(Op::Invoke*)inst.code.data()); break;
+		case EOpcode::Inc: Inc(*(Op::Inc*)inst.code.data()); break;
+		case EOpcode::Jnz: Jnz(*(Op::Jnz*)inst.code.data()); break;
+		default:
+			throw 'n';//TODO
+		}
+	}
+	return 0;
+}
 
 bool Machine::Assign(const Op::Assign& as)
 {
@@ -428,49 +472,81 @@ bool Machine::Invoke(const Op::Invoke& ivk)
 	if(*dst == Variable::STR)
 	{//newer
 		const auto& modDesc = _modMgr.GetModuleDesc(dst->_str);
-		if(modDesc.IsNull())
-		{//TODO
-			throw 'n';
-		}
-		if(!modDesc.newer)
-		{//TODO
-			throw 'n';
-		}
-
-		YRet yr = modDesc.newer(nullptr);
-		if(yr.single.tp != YEArg::Object)
+		if(!modDesc.IsNull())
 		{
-			throw 'n';
-		}
+			if(!modDesc.newer)
+			{//TODO
+				throw 'n';
+			}
 
-		ymod::Module mod { .modDesc = &modDesc };
-		if(modDesc.initer)
+			YRet yr = modDesc.newer(nullptr);
+			if(yr.single.tp != YEArg::Object)
+			{
+				throw 'n';
+			}
+
+			ymod::Module mod { .modDesc = &modDesc };
+			if(modDesc.initer)
+			{
+				mod = modDesc.initer();
+			}
+
+			_rpStack.pop();
+			auto v = ResolveVar(ERefKind::Reg, 0);
+			v->Clear();
+			v->_type = Variable::OBJECT;
+			v->_obj = yr.single.o;
+			v->_mod = mod;
+			return true;
+		}
+		auto found = _structTable.find(dst->_str);
+		if(found != _structTable.end())
 		{
-			mod = modDesc.initer();
+			auto v = ResolveVar(ERefKind::Reg, 0);
+			v->Clear();
+			v->_type = Variable::STRUCT;
+			v->_sto._st = found->second;
+			for(size_t i=0; i<v->_sto._st._fields.size(); i++)
+			{
+				v->_sto._members.push_back(new Variable());
+			}
+			_structStack.push(v);
+			Exec(v->_sto._st._initer);
+			_structStack.pop();
+			return true;
 		}
-
-		_rpStack.pop();
-		auto v = ResolveVar(ERefKind::Reg, 0);
-		v->Clear();
-		v->_type = Variable::OBJECT;
-		v->_obj = yr.single.o;
-		v->_mod = mod;
-		return true;
+		throw 'n';
 	}
 	if(dst->_type != Variable::ATTR)
 	{
 		throw 'n';
 	}
 
+
 	auto& owner = dst->_attr->owner;
 	const ymod::ModuleDesc* modDesc = primitive::GetModuleDesc(owner._type);
 	if(!modDesc)
 	{
-		if(owner != Variable::MODULE && owner != Variable::OBJECT)
-		{//TODO
-			throw 'n';
+		if(owner == Variable::STRUCT)
+		{
+			auto found = owner._sto._st._funcTable.find(dst->_attr->name);
+
+			_rpStack.push(_rp);
+			_retStack.push((uint32_t)_pc+1);
+			_cspStack.push(_sp);
+
+			_structStack.push(&owner);
+			Exec(found->second);
+			_structStack.pop();
 		}
-		modDesc = owner._mod.modDesc;
+		else
+		{
+			if(owner != Variable::MODULE && owner != Variable::OBJECT)
+			{//TODO
+				throw 'n';
+			}
+			modDesc = owner._mod.modDesc;
+		}
 	}
 
 	auto found = modDesc->memberTbl.find(dst->_attr->name);
@@ -608,12 +684,12 @@ bool Machine::Jnz(const Op::Jnz& jnz)
 }
 
 
-int Machine::Run(const Bytecode& code, int start /* = 0 */)
+int Machine::Run(const Program& program, int start /* = 0 */)
 {
 	_retCode = INT_MAX;
 
 	_consts.clear();
-	for(auto& c : code._consts)
+	for(auto& c : program._consts)
 	{
 		switch(c._type)
 		{
@@ -625,9 +701,11 @@ int Machine::Run(const Bytecode& code, int start /* = 0 */)
 		}
 	}
 
-	for(_pc = start; _pc < code._code.size() && _retCode == INT_MAX; _pc++)
+	_structTable = program._structTable;
+
+	for(_pc = start; _pc < program._mainCode._code.size() && _retCode == INT_MAX; _pc++)
 	{
-		auto& inst = code._code[_pc];
+		auto& inst = program._mainCode._code[_pc];
 		switch((EOpcode)inst.kind)
 		{
 		case EOpcode::Noop: break;
@@ -651,7 +729,7 @@ int Machine::Run(const Bytecode& code, int start /* = 0 */)
 			throw 'n';//TODO
 		}
 	}
-	if(_pc >= code._code.size() && _retCode == INT_MAX) _retCode = 0;
+	if(_pc >= program._mainCode._code.size() && _retCode == INT_MAX) _retCode = 0;
 
 	return _retCode;
 }
