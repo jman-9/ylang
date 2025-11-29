@@ -68,7 +68,7 @@ static bool Init()
 	s_tokenStrMap[EToken::PostDec] = "--";
 	s_tokenStrMap[EToken::List] = "list";
 	s_tokenStrMap[EToken::Dict] = "dict";
-	s_tokenStrMap[EToken::Struct] = "struct";
+	s_tokenStrMap[EToken::Class] = "class";
 	return true;
 }
 static bool init = Init();

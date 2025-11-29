@@ -314,11 +314,11 @@ TEST_CASE( "Logical Operator Test", "[logop]" )
 	REQUIRE( ret.code == 0 );
 }
 
-TEST_CASE( "Struct Test", "[struct]" )
+TEST_CASE( "Class Test", "[class]" )
 {
 	Result ret;
 	ret = Run( R"YT(
-		struct Hello {
+		class Hello {
 			front = "hello";
 			back = "world";
 
@@ -357,7 +357,7 @@ int main(int argc, const char** argv)
 // 	cfg.testsOrTags.push_back("[bltjson],");
 // 	cfg.testsOrTags.push_back("[exp],");
 // 	cfg.testsOrTags.push_back("[logop],");
-	cfg.testsOrTags.push_back("[struct],");
+	cfg.testsOrTags.push_back("[class],");
 
 	int numFailed = _session.run();
 };

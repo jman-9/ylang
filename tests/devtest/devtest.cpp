@@ -7,10 +7,9 @@
 #include "core/Args.h"
 #include <iostream>
 #include <format>
-
-
 using namespace std;
 
+#if 0
 const char* lextestcode =
 R"TEST(
 
@@ -171,6 +170,7 @@ else
 }
 */
 )TEST";
+#endif
 
 const char* testcode2 =
 R"TEST(
@@ -182,7 +182,7 @@ R"TEST(
 		}
 
 
-		struct Hello {
+		class Hello {
 			front = "hello";
 			back = "world";
 

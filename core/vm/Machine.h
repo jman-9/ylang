@@ -32,7 +32,7 @@ protected:
 	std::stack<uint16_t> _cspStack;
 	std::stack<uint16_t> _rpStack;
 	std::stack<uint32_t> _retStack;
-	std::stack<const Variable*> _structStack;
+	std::stack<const Variable*> _clsStack;
 	int _sp;
 	int _rp;
 	int _pc;

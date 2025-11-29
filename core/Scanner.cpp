@@ -82,21 +82,28 @@ void Scanner::Init()
 
 
 void Scanner::ProcessIdKeywords()
-{
+{		//TODO to move global
+	static EToken s_Keywords[] =
+	{
+		EToken::Include,
+		EToken::If,
+		EToken::Else,
+		EToken::For,
+		EToken::Break,
+		EToken::Continue,
+		EToken::Fn,
+		EToken::Return,
+		EToken::Class,
+	};
+
 	for(auto& t : _tokens)
 	{
 		if(t.kind != EToken::Id) continue;
 
-		if(0) {}
-		else if(t.val == "include") t.kind = EToken::Include;
-		else if(t.val == "if") t.kind = EToken::If;
-		else if(t.val == "else") t.kind = EToken::Else;
-		else if(t.val == "for") t.kind = EToken::For;
-		else if(t.val == "break") t.kind = EToken::Break;
-		else if(t.val == "continue") t.kind = EToken::Continue;
-		else if(t.val == "fn") t.kind = EToken::Fn;
-		else if(t.val == "return") t.kind = EToken::Return;
-		else if(t.val == "struct") t.kind = EToken::Struct;
+		for(auto kt : s_Keywords)
+		{
+			if(t.val == Token::TokenString(kt)) t.kind = kt;
+		}
 	}
 }
 

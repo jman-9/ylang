@@ -31,7 +31,7 @@ protected:
 	TreeNodeSptr ParseIf(const std::set<EToken>& allowed = std::set<EToken>());
 	TreeNodeSptr ParseFor(const std::set<EToken>& allowed = std::set<EToken>());
 	TreeNodeSptr ParseFn();
-	TreeNodeSptr ParseStruct();
+	TreeNodeSptr ParseClass();
 
 	bool MoveNext();
 	bool MovePrev();

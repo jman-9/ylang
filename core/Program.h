@@ -24,7 +24,7 @@ struct Constant
 };
 
 
-struct Struct
+struct Class
 {
 	std::string name;
 	std::vector<Symbol> _fields;
@@ -35,7 +35,7 @@ struct Struct
 
 struct Program
 {
-	std::unordered_map<std::string, Struct> _structTable;
+	std::unordered_map<std::string, Class> _classTable;
 	std::unordered_map<std::string, int> _moduleTable;
 
 	std::vector<Constant> _consts;

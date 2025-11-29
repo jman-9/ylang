@@ -46,11 +46,11 @@ Variable* Machine::ResolveVar(ERefKind k, int idx)
 			return &_stack[idx + _cspStack.top()];
 		}
 
-	case ERefKind::MemberVar:
+	case ERefKind::FieldVar:
 		{
-			if(_structStack.empty()) throw 'n';
+			if(_clsStack.empty()) throw 'n';
 
-			return _structStack.top()->_sto._members[idx];
+			return _clsStack.top()->_clso._fields[idx];
 		}
 
 	default: return nullptr;
@@ -454,17 +454,17 @@ bool Machine::Invoke(const Op::Invoke& ivk)
 	}
 
 	auto& owner = dst->_attr->owner;
-	if(owner == Variable::STRUCT)
+	if(owner == Variable::CLASS)
 	{
-		auto found = owner._sto._st._funcTable.find(dst->_attr->name);
-		if(found == owner._sto._st._funcTable.end())
+		auto found = owner._clso._st._funcTable.find(dst->_attr->name);
+		if(found == owner._clso._st._funcTable.end())
 		{//TODO
 			throw 'n';
 		}
 
-		_structStack.push(&owner);
+		_clsStack.push(&owner);
 		Exec(found->second, 1);
-		_structStack.pop();
+		_clsStack.pop();
 		//TODO
 		auto vs = ResolveVar(ERefKind::Reg, _rp-1);
 		_rp = rpBackup;
@@ -672,28 +672,28 @@ bool Machine::NewCls(const Op::NewCls& nc)
 		throw 'n';
 	}
 
-	auto found = _prg->_structTable.find(dst->_str);
-	if(found == _prg->_structTable.end())
+	auto found = _prg->_classTable.find(dst->_str);
+	if(found == _prg->_classTable.end())
 	{//TODO
 		throw 'n';
 	}
 
 	auto v = ResolveVar(ERefKind::Reg, 0);
 	v->Clear();
-	v->_type = Variable::STRUCT;
-	v->_sto._st = found->second;
-	for(size_t i=0; i<v->_sto._st._fields.size(); i++)
+	v->_type = Variable::CLASS;
+	v->_clso._st = found->second;
+	for(size_t i=0; i<v->_clso._st._fields.size(); i++)
 	{
-		v->_sto._members.push_back(new Variable());
+		v->_clso._fields.push_back(new Variable());
 	}
-	_structStack.push(v);
+	_clsStack.push(v);
 	_retStack.push(_pc);
 	//TODO
 	_pc = 0;
-	Exec(v->_sto._st._initer);
+	Exec(v->_clso._st._initer);
 	_pc = _retStack.top();
 	_retStack.pop();
-	_structStack.pop();
+	_clsStack.pop();
 	return true;
 }
 

@@ -50,7 +50,7 @@ public:
 
 			GLOBAL,
 			LOCAL,
-			MEMBER,
+			FIELD,
 		};
 		Kind kind = NONE;
 		int idx = 0;
@@ -131,7 +131,6 @@ protected:
 	std::stack<FnControl> _fnStack;
 
 
-
 	void BuildBlockOpen(Bytecode& retCtx);
 	void BuildBlockClose(Bytecode& retCtx);
 
@@ -148,22 +147,5 @@ protected:
 	bool BuildList(Bytecode& retCtx, const TreeNode& stmt);
 	bool BuildDict(Bytecode& retCtx, const TreeNode& stmt);
 	bool BuildIndex(Bytecode& retCtx, const TreeNode& stmt);
-	bool BuildStruct(Bytecode& retCtx, const TreeNode& stmt);
-
-	//inline int endOfCode() const;
-	//inline int nextCodeSlot() const;
-
-private:
-/*	template<EOpcode Op>
-	void FillBytecode(int ln);
-	template<class OpType>
-	void FillBytecode(int ln, const OpType& inst, const TreeNode* stmt = nullptr);
-	template<class OpType>
-	void FillBytecode(int ln, const OpType& inst, const TreeNode& stmt);
-	template<EOpcode Op>
-	int PushBytecode();
-	template<class OpType>
-	int PushBytecode(const OpType& inst, const TreeNode* stmt = nullptr);
-	template<class OpType>
-	int PushBytecode(const OpType& inst, const TreeNode& stmt);*/
+	bool BuildClass(Bytecode& retCtx, const TreeNode& stmt);
 };

@@ -34,7 +34,7 @@ enum class ERefKind : uint8_t
 	Reg,
 	GlobalVar,
 	LocalVar,
-	MemberVar,
+	FieldVar,
 };
 
 namespace Op

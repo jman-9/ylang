@@ -611,7 +611,7 @@ TreeNodeSptr Parser::ParseStmt(const std::set<EToken>& allowed /* = std::set<ETo
 	if(ast = ParseIf(allowed)) return ast;
 	if(ast = ParseFor(allowed)) return ast;
 	if(ast = ParseFn()) return ast;
-	if(ast = ParseStruct()) return ast;
+	if(ast = ParseClass()) return ast;
 
 	if(ast = ParseExpLoop(EToken::Semicolon))
 	{
@@ -912,9 +912,9 @@ TreeNodeSptr Parser::ParseFn()
 	return fnNode;
 }
 
-TreeNodeSptr Parser::ParseStruct()
+TreeNodeSptr Parser::ParseClass()
 {
-	if(GetCur() != EToken::Struct)
+	if(GetCur() != EToken::Class)
 	{
 		return nullptr;
 	}
@@ -928,8 +928,8 @@ TreeNodeSptr Parser::ParseStruct()
 	}
 	MoveNext();
 
-	TreeNodeSptr _struct = NewNode(id);
-	_struct->self.kind = EToken::Struct;
+	TreeNodeSptr cls = NewNode(id);
+	cls->self.kind = EToken::Class;
 
 	if(GetCur().kind != EToken::LBrace)
 	{
@@ -942,7 +942,7 @@ TreeNodeSptr Parser::ParseStruct()
 	{
 		if(IsEnd())
 		{
-			_errors.push_back(ErrorBuilder::Missing(_struct->self.line, '}'));
+			_errors.push_back(ErrorBuilder::Missing(cls->self.line, '}'));
 			return nullptr;
 		}
 
@@ -981,11 +981,11 @@ TreeNodeSptr Parser::ParseStruct()
 			return nullptr;
 		}
 
-		_struct->PushBackChild(stmt);
+		cls->PushBackChild(stmt);
 	}
 	MoveNext();
 
-	return _struct;
+	return cls;
 }
 
 

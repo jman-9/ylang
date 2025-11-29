@@ -15,10 +15,10 @@ namespace yvm
 struct Attribute;
 struct Variable;
 
-struct StructObject
+struct ClassObject
 {
-	std::vector<Variable*> _members;
-	Struct _st;
+	std::vector<Variable*> _fields;
+	Class _st;
 };
 
 struct Variable
@@ -37,7 +37,7 @@ struct Variable
 		REF,
 		ATTR,
 		MODULE,
-		STRUCT,
+		CLASS,
 	};
 
 	Type _type = NONE;
@@ -51,7 +51,7 @@ struct Variable
 	Variable* _ref = nullptr;
 	Attribute* _attr = nullptr;
 	ymod::Module _mod;
-	StructObject _sto;
+	ClassObject _clso;
 
 	void Clear();
 	void SetInt(int64_t num);

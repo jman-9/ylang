@@ -14,7 +14,7 @@ inline ERefKind ToRefKind(SymbolTable::Idx::Kind idxKind)
 	{
 	case SymbolTable::Idx::LOCAL: return ERefKind::LocalVar;
 	case SymbolTable::Idx::GLOBAL: return ERefKind::GlobalVar;
-	case SymbolTable::Idx::MEMBER: return ERefKind::MemberVar;
+	case SymbolTable::Idx::FIELD: return ERefKind::FieldVar;
 	}
 	return ERefKind::None;
 }
@@ -56,9 +56,9 @@ SymbolTable::SymbolData SymbolTable::GetSymbolData(const string& name) const
 		auto found = _symTbl[i].find( { .name = name } );
 		if(found != _symTbl[i].end())
 		{
-			if(found->first.kind == ESymbol::MemberVar)
+			if(found->first.kind == ESymbol::Field)
 			{
-				return SymbolData{ .idx = { .kind = Idx::MEMBER, .idx = found->second }, .sym = found->first };
+				return SymbolData{ .idx = { .kind = Idx::FIELD, .idx = found->second }, .sym = found->first };
 			}
 			else
 			{
@@ -266,7 +266,7 @@ bool BytecodeBuilder::BuildStmt(Bytecode& retCtx, const TreeNode& stmt)
 	case EToken::Return : return BuildReturn(retCtx, stmt);
 	case EToken::Continue : return BuildContinue(retCtx, stmt);
 	case EToken::Break : return BuildBreak(retCtx, stmt);
-	case EToken::Struct : return BuildStruct(retCtx, stmt);
+	case EToken::Class : return BuildClass(retCtx, stmt);
 	default: ;
 	}
 	return BuildExp(retCtx, stmt, true);
@@ -356,7 +356,7 @@ bool BytecodeBuilder::BuildExp(Bytecode& retCtx, const TreeNode& stmt, bool root
 		int constIdx = _constTbl.GetIdx(ivkType);
 		if(constIdx >= 0)
 		{
-			if(_prg._structTable.contains(ivkType.val))
+			if(_prg._classTable.contains(ivkType.val))
 			{//TODO
 				Op::NewCls nc{ .dstKind = (uint8_t)ERefKind::Const, .dst = (uint16_t)constIdx, .numArgs = (uint8_t)(stmt.childs.size()-1) };
 				retCtx.PushBytecode(nc, stmt.self.line);
@@ -738,34 +738,34 @@ bool BytecodeBuilder::BuildIndex(Bytecode& retCtx, const TreeNode& stmt)
 	return true;
 }
 
-bool BytecodeBuilder::BuildStruct(Bytecode& retCtx, const TreeNode& stmt)
+bool BytecodeBuilder::BuildClass(Bytecode& retCtx, const TreeNode& stmt)
 {
-	if(stmt.self != EToken::Struct)
+	if(stmt.self != EToken::Class)
 		throw 'n';
 
-	Struct st;
-	st.name = stmt.self.val;
+	Class cls;
+	cls.name = stmt.self.val;
 
-	int memidx = 0;
+	int fieldidx = 0;
 	for(auto& substmt : stmt.childs)
 	{
 		if(substmt->self == EToken::Assign)
 		{
 			Symbol sym;
 			sym.name = substmt->childs.front()->self.val;
-			sym.kind = ESymbol::MemberVar;
-			_symTbl.AddOrNot(sym, memidx++);
+			sym.kind = ESymbol::Field;
+			_symTbl.AddOrNot(sym, fieldidx++);
 
-			st._fields.push_back(sym);
+			cls._fields.push_back(sym);
 
-			if(!BuildExp(st._initer, *substmt, true))
+			if(!BuildExp(cls._initer, *substmt, true))
 			{
 				return false;
 			}
 		}
 		else
 		{//fn
-			auto insert = st._funcTable.insert({substmt->self.val, {}});
+			auto insert = cls._funcTable.insert({substmt->self.val, {}});
 			if(!BuildFn(insert.first->second, *substmt))
 			{
 				return false;
@@ -776,7 +776,7 @@ bool BytecodeBuilder::BuildStruct(Bytecode& retCtx, const TreeNode& stmt)
 	Token id = stmt.self;
 	id.kind = EToken::Id;
 	int idx = _constTbl.AddOrNot(id);
-	_prg._structTable[ st.name ] = st;
+	_prg._classTable[ cls.name ] = cls;
 	return true;
 }
 

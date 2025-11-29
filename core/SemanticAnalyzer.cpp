@@ -35,7 +35,7 @@ bool SemanticAnalyzer::AnalyzeStmt(const TreeNode& stmt)
 	case EToken::If : return AnalyzeIf(stmt);
 	case EToken::Fn : return AnalyzeFn(stmt);
 	case EToken::LBrace : return AnalyzeCompound(stmt);
-	case EToken::Struct: return AnalyzeStruct(stmt);
+	case EToken::Class: return AnalyzeClass(stmt);
 	default: ;
 	}
 	return AnalyzeExp(stmt);
@@ -308,9 +308,9 @@ bool SemanticAnalyzer::AnalyzeCompound(const TreeNode& stmt, const std::vector<P
 	return true;
 }
 
-bool SemanticAnalyzer::AnalyzeStruct(const TreeNode& stmt)
+bool SemanticAnalyzer::AnalyzeClass(const TreeNode& stmt)
 {
-	if(stmt.self != EToken::Struct)
+	if(stmt.self != EToken::Class)
 		throw 'n';
 
 	auto& name = stmt.self.val;
