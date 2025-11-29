@@ -1,8 +1,11 @@
 #include "BytecodeBuilder.h"
+#include "BuiltinFuncTable.h"
 #include <format>
 #include <iostream>
 using namespace std;
 
+
+static const BuiltinFuncTable _builtinFuncTbl;
 
 
 inline ERefKind ToRefKind(SymbolTable::Idx::Kind idxKind)
@@ -157,7 +160,7 @@ void SymbolTable::PopScope()
 	_scopeTbl.pop_back();
 }
 
-SymbolTable::Idx SymbolTable::AddOrNot(const Symbol& sym)
+SymbolTable::Idx SymbolTable::AddOrNot(const Symbol& sym, int wantIdx /* = -1 */)
 {
 	auto idx = GetIdx(sym.name);
 	if(idx.kind != Idx::NONE)
@@ -165,7 +168,7 @@ SymbolTable::Idx SymbolTable::AddOrNot(const Symbol& sym)
 		return idx;
 	}
 
-	int newIdx = GetNewSlotIdx();
+	int newIdx = wantIdx < 0 ?GetNewSlotIdx() : wantIdx;
 	_symTbl.back()[sym] = newIdx;
 
 	return Idx{ .kind = Idx::LOCAL, .idx = newIdx - GetBehindFuncScopeCnt((int)_symTbl.size()-1) };
@@ -204,7 +207,7 @@ bool BytecodeBuilder::Build(const TreeNode& code, Program& retProgram)
 	auto main = _symTbl.GetSymbol("main");
 	if(main.kind == ESymbol::Fn)
 	{
-		Op::Call cal{ .pos = (uint32_t)main.pos, .numPrms = (uint32_t)main.params.size() };
+		Op::Call cal{ (uint16_t)main.params.size(), 0, (uint32_t)main.pos,  };
 		_prg._mainCode.PushBytecode(cal, code.self.line);
 	}
 
@@ -278,6 +281,9 @@ bool BytecodeBuilder::BuildInclude(Bytecode& retCtx, const TreeNode& stmt)
 	int idx = _constTbl.AddOrNot(incName.self);
 	Op::Inc inc { .inc = (uint16_t)idx };
 	retCtx.PushBytecode(inc, stmt.self.line);
+
+	//TODO
+	_prg._moduleTable[ incName.self.val ] = idx;
 	return true;
 }
 
@@ -339,21 +345,10 @@ bool BytecodeBuilder::BuildExp(Bytecode& retCtx, const TreeNode& stmt, bool root
 			return true;
 		}
 
-		if(ivkType.val == "print")
-		{//TODO new architecture
-			Op::Call cal{ .pos = 0xFFFF0000, .numPrms = (uint32_t)stmt.childs.size()-1 };
-			retCtx.PushBytecode(cal, stmt.self.line);
-			return true;
-		}
-		else if(ivkType.val == "println")
+		auto builtinFuncId = _builtinFuncTbl.GetFuncId(ivkType.val);
+		if(builtinFuncId)
 		{
-			Op::Call cal{ .pos = 0xFFFF0000+1, .numPrms = (uint32_t)stmt.childs.size()-1 };
-			retCtx.PushBytecode(cal, stmt.self.line);
-			return true;
-		}
-		else if(ivkType.val == "exit")
-		{
-			Op::Call cal{ .pos = 0xFFFF0000+2, .numPrms = (uint32_t)stmt.childs.size()-1 };
+			Op::Call cal{ (uint16_t)(stmt.childs.size()-1), 0, builtinFuncId };
 			retCtx.PushBytecode(cal, stmt.self.line);
 			return true;
 		}
@@ -361,12 +356,25 @@ bool BytecodeBuilder::BuildExp(Bytecode& retCtx, const TreeNode& stmt, bool root
 		int constIdx = _constTbl.GetIdx(ivkType);
 		if(constIdx >= 0)
 		{
-			Op::Invoke ivk{ .dstKind = (uint8_t)ERefKind::Const, .dst = (uint16_t)constIdx, .numArgs = (uint8_t)(stmt.childs.size()-1) };
-			retCtx.PushBytecode(ivk, stmt.self.line);
+			if(_prg._structTable.contains(ivkType.val))
+			{//TODO
+				Op::NewCls nc{ .dstKind = (uint8_t)ERefKind::Const, .dst = (uint16_t)constIdx, .numArgs = (uint8_t)(stmt.childs.size()-1) };
+				retCtx.PushBytecode(nc, stmt.self.line);
+			}
+			else if(_prg._moduleTable.contains(ivkType.val))
+			{//TODO
+				Op::NewMod nm{ .dstKind = (uint8_t)ERefKind::Const, .dst = (uint16_t)constIdx, .numArgs = (uint8_t)(stmt.childs.size()-1) };
+				retCtx.PushBytecode(nm, stmt.self.line);
+			}
+			else
+			{
+				Op::Invoke ivk{ .dstKind = (uint8_t)ERefKind::Const, .dst = (uint16_t)constIdx, .numArgs = (uint8_t)(stmt.childs.size()-1) };
+				retCtx.PushBytecode(ivk, stmt.self.line);
+			}
 		}
 		else
 		{
-			Op::Call cal{ .pos = (uint32_t)_symTbl.GetSymbol(stmt.childs[0]->self.val).pos, .numPrms = (uint32_t)stmt.childs.size()-1 };
+			Op::Call cal{ (uint16_t)(stmt.childs.size()-1), 0, (uint32_t)_symTbl.GetSymbol(stmt.childs[0]->self.val).pos  };
 			retCtx.PushBytecode(cal, stmt.self.line);
 		}
 		return true;
@@ -738,6 +746,7 @@ bool BytecodeBuilder::BuildStruct(Bytecode& retCtx, const TreeNode& stmt)
 	Struct st;
 	st.name = stmt.self.val;
 
+	int memidx = 0;
 	for(auto& substmt : stmt.childs)
 	{
 		if(substmt->self == EToken::Assign)
@@ -745,7 +754,7 @@ bool BytecodeBuilder::BuildStruct(Bytecode& retCtx, const TreeNode& stmt)
 			Symbol sym;
 			sym.name = substmt->childs.front()->self.val;
 			sym.kind = ESymbol::MemberVar;
-			_symTbl.AddOrNot(sym);
+			_symTbl.AddOrNot(sym, memidx++);
 
 			st._fields.push_back(sym);
 
@@ -946,13 +955,3 @@ bool BytecodeBuilder::BuildCompound(Bytecode& retCtx, const TreeNode& stmt)
 	BuildBlockClose(retCtx);
 	return true;
 }
-/*
-int BytecodeBuilder::endOfCode() const
-{
-	return (int)_bytecode.size() - 1;
-}
-int BytecodeBuilder::nextCodeSlot() const
-{
-	return (int)_bytecode.size();
-}
-*/

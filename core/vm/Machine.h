@@ -19,7 +19,11 @@ public:
 protected:
 	Variable* ResolveVar(ERefKind k, int idx);
 
-	int Exec(const Bytecode& code, int start = 0);
+	inline void PushState();
+	inline void PopState();
+	inline int Exec(const Bytecode& code, int start = 0);
+
+	const Program* _prg;
 
 	std::vector<Variable> _consts;
 	std::vector<Variable> _regs;
@@ -28,7 +32,7 @@ protected:
 	std::stack<uint16_t> _cspStack;
 	std::stack<uint16_t> _rpStack;
 	std::stack<uint32_t> _retStack;
-	std::stack<Variable*> _structStack;
+	std::stack<const Variable*> _structStack;
 	int _sp;
 	int _rp;
 	int _pc;
@@ -52,6 +56,14 @@ protected:
 	inline bool Invoke(const Op::Invoke& ivk);
 	inline bool Inc(const Op::Inc& inc);
 	inline bool Jnz(const Op::Jnz& jnz);
+	inline bool NewMod(const Op::NewMod& nm);
+	inline bool NewCls(const Op::NewCls& nc);
+
+	inline bool CallBuiltinFunc(const Op::Call& cal);
+
+	//TODO
+	//inline bool InvokeClsFunc(const Variable& owner, const std::string& attrName);
+	//inline bool InvokeModFunc(const Variable& owner, const std::string& attrName);
 };
 
 }

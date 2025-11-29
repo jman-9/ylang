@@ -350,14 +350,14 @@ int main(int argc, const char** argv)
 	Catch::ConfigData& cfg = _session.configData();
 
 	cfg.showSuccessfulTests = true;
-	//cfg.testsOrTags.push_back("[primstr]");
-	//cfg.testsOrTags.push_back("[bltrand]");
-	//cfg.testsOrTags.push_back("[bltsys]");
-	//cfg.testsOrTags.push_back("[bltfile]");
-	//cfg.testsOrTags.push_back("[bltjson]");
-	//cfg.testsOrTags.push_back("[exp]");
-	//cfg.testsOrTags.push_back("[logop]");
-	cfg.testsOrTags.push_back("[struct]");
+// 	cfg.testsOrTags.push_back("[primstr],");
+// 	cfg.testsOrTags.push_back("[bltrand],");
+// 	cfg.testsOrTags.push_back("[bltsys],");
+// 	cfg.testsOrTags.push_back("[bltfile],");
+// 	cfg.testsOrTags.push_back("[bltjson],");
+// 	cfg.testsOrTags.push_back("[exp],");
+// 	cfg.testsOrTags.push_back("[logop],");
+	cfg.testsOrTags.push_back("[struct],");
 
 	int numFailed = _session.run();
 };

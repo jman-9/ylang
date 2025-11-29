@@ -1,5 +1,9 @@
 #include "SemanticAnalyzer.h"
+#include "BuiltinFuncTable.h"
 #include <format>
+
+
+static const BuiltinFuncTable _builtinFuncTbl;
 
 
 SemanticAnalyzer::SemanticAnalyzer()
@@ -68,10 +72,8 @@ bool SemanticAnalyzer::AnalyzeExp(const TreeNode& stmt)
 		auto& name = stmt.childs[0];
 		if(name->self == EToken::Id)
 		{
-			if(name->self.val == "print" || name->self.val == "println" || name->self.val == "exit")
-			{//TODO builtin table
-			}
-			else
+			auto builtinFuncId = _builtinFuncTbl.GetFuncId(name->self.val);
+			if(!builtinFuncId)
 			{
 				auto found = _symTbl.back().find(name->self.val);
 				if(found == _symTbl.back().end())

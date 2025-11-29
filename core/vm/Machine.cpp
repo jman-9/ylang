@@ -10,12 +10,9 @@ using namespace std;
 namespace yvm
 {
 
-
-unordered_map<string, Struct> _structTable;
-
-
 Machine::Machine()
 {
+	_prg = nullptr;
 	_rp = 0;
 	_sp = 0;
 	_pc = 0;
@@ -61,11 +58,30 @@ Variable* Machine::ResolveVar(ERefKind k, int idx)
 }
 
 
+void Machine::PushState()
+{
+	_rpStack.push(_rp);
+	_retStack.push((uint32_t)_pc);
+	_cspStack.push(_sp);
+}
+
+void Machine::PopState()
+{
+	_sp = _cspStack.top();
+	_cspStack.pop();
+	_rp = _rpStack.top() + 1;
+	_rpStack.pop();
+	_pc = _retStack.top();
+	_retStack.pop();
+}
+
 int Machine::Exec(const Bytecode& code, int start /*= 0*/)
 {
-	for(int i=0; i < code._code.size(); i++)
+	PushState();
+
+	for(_pc = start; _pc < code._code.size() && _retCode == INT_MAX; _pc++)
 	{
-		auto& inst = code._code[i];
+		auto& inst = code._code[_pc];
 		switch((EOpcode)inst.kind)
 		{
 		case EOpcode::Noop: break;
@@ -74,7 +90,7 @@ int Machine::Exec(const Bytecode& code, int start /*= 0*/)
 		case EOpcode::PopSp: PopSp(); break;
 		case EOpcode::Jmp:	Jmp(*(Op::Jmp*)inst.code.data()); break;
 		case EOpcode::Call: Call(*(Op::Call*)inst.code.data()); break;
-		case EOpcode::Ret: Ret(); break;
+		case EOpcode::Ret: Ret(); return 0;
 		case EOpcode::Jz: Jz(*(Op::Jz*)inst.code.data()); break;
 		case EOpcode::ListSet: ListSet(*(Op::ListSet*)inst.code.data()); break;
 		case EOpcode::ListAdd: ListAdd(*(Op::ListAdd*)inst.code.data()); break;
@@ -85,10 +101,14 @@ int Machine::Exec(const Bytecode& code, int start /*= 0*/)
 		case EOpcode::Invoke: Invoke(*(Op::Invoke*)inst.code.data()); break;
 		case EOpcode::Inc: Inc(*(Op::Inc*)inst.code.data()); break;
 		case EOpcode::Jnz: Jnz(*(Op::Jnz*)inst.code.data()); break;
+		case EOpcode::NewMod: NewMod(*(Op::NewMod*)inst.code.data()); break;
+		case EOpcode::NewCls: NewCls(*(Op::NewCls*)inst.code.data()); break;
 		default:
 			throw 'n';//TODO
 		}
 	}
+
+	PopState();
 	return 0;
 }
 
@@ -226,73 +246,27 @@ bool Machine::Jmp(const Op::Jmp& jmp)
 
 bool Machine::Call(const Op::Call& cal)
 {
-	_rp -= (int)cal.numPrms;
-	_rpStack.push(_rp);
-
 	if(cal.pos >= 0xFFFF0000)
-	{// todo new architecture
-		if(cal.pos == 0xFFFF0000)
-		{
-			if(cal.numPrms == 0)
-			{//noop
-			}
-			else
-			{
-				auto v = ResolveVar(ERefKind::Reg, 0);
-				cout << v->ToStr();
-			}
-		}
-		else if(cal.pos == 0xFFFF0000 + 1)
-		{
-			if(cal.numPrms == 0)
-			{
-				cout << "\n";
-			}
-			else
-			{
-				auto v = ResolveVar(ERefKind::Reg, 0);
-				cout << v->ToStr() << "\n";
-			}
-		}
-		else if(cal.pos == 0xFFFF0000 + 2)
-		{
-			if(cal.numPrms == 0)
-			{
-				_retCode = 0;
-				return true;
-			}
-			else
-			{
-				auto v = ResolveVar(ERefKind::Reg, 0);
-				_retCode = v->_int;
-				return true;
-			}
-		}
-		else
-		{
-			throw 'n';
-		}
-		_rp = _rpStack.top();
-		_rpStack.pop();
+	{
+		return CallBuiltinFunc(cal);
+	}
+
+	_rp -= (int)cal.numPrms;
+
+	if(cal.seg == 0)
+	{//TODO
+		return Exec(_prg->_mainCode, cal.pos);
 	}
 	else
-	{
-		_retStack.push((uint32_t)_pc+1);
-		_cspStack.push(_sp);
-
-		_pc = cal.pos - 1;
+	{//TODO
+		throw 'n';
 	}
 	return true;
 }
 
 bool Machine::Ret()
 {
-	_sp = _cspStack.top();
-	_cspStack.pop();
-	_rp = _rpStack.top() + 1;
-	_rpStack.pop();
-	_pc = _retStack.top() - 1;
-	_retStack.pop();
+	PopState();
 	return true;
 }
 
@@ -470,51 +444,8 @@ bool Machine::Invoke(const Op::Invoke& ivk)
 
 	Variable* dst = ResolveVar((ERefKind)ivk.dstKind, ivk.dst);
 	if(*dst == Variable::STR)
-	{//newer
-		const auto& modDesc = _modMgr.GetModuleDesc(dst->_str);
-		if(!modDesc.IsNull())
-		{
-			if(!modDesc.newer)
-			{//TODO
-				throw 'n';
-			}
-
-			YRet yr = modDesc.newer(nullptr);
-			if(yr.single.tp != YEArg::Object)
-			{
-				throw 'n';
-			}
-
-			ymod::Module mod { .modDesc = &modDesc };
-			if(modDesc.initer)
-			{
-				mod = modDesc.initer();
-			}
-
-			_rpStack.pop();
-			auto v = ResolveVar(ERefKind::Reg, 0);
-			v->Clear();
-			v->_type = Variable::OBJECT;
-			v->_obj = yr.single.o;
-			v->_mod = mod;
-			return true;
-		}
-		auto found = _structTable.find(dst->_str);
-		if(found != _structTable.end())
-		{
-			auto v = ResolveVar(ERefKind::Reg, 0);
-			v->Clear();
-			v->_type = Variable::STRUCT;
-			v->_sto._st = found->second;
-			for(size_t i=0; i<v->_sto._st._fields.size(); i++)
-			{
-				v->_sto._members.push_back(new Variable());
-			}
-			_structStack.push(v);
-			Exec(v->_sto._st._initer);
-			_structStack.pop();
-			return true;
-		}
+	{//TODO dynamic resolution
+		//TBD
 		throw 'n';
 	}
 	if(dst->_type != Variable::ATTR)
@@ -522,31 +453,34 @@ bool Machine::Invoke(const Op::Invoke& ivk)
 		throw 'n';
 	}
 
-
 	auto& owner = dst->_attr->owner;
+	if(owner == Variable::STRUCT)
+	{
+		auto found = owner._sto._st._funcTable.find(dst->_attr->name);
+		if(found == owner._sto._st._funcTable.end())
+		{//TODO
+			throw 'n';
+		}
+
+		_structStack.push(&owner);
+		Exec(found->second, 1);
+		_structStack.pop();
+		//TODO
+		auto vs = ResolveVar(ERefKind::Reg, _rp-1);
+		_rp = rpBackup;
+		auto vt = ResolveVar(ERefKind::Reg, _rp);
+		*vt = *vs;
+		return true;
+	}
+
 	const ymod::ModuleDesc* modDesc = primitive::GetModuleDesc(owner._type);
 	if(!modDesc)
 	{
-		if(owner == Variable::STRUCT)
-		{
-			auto found = owner._sto._st._funcTable.find(dst->_attr->name);
-
-			_rpStack.push(_rp);
-			_retStack.push((uint32_t)_pc+1);
-			_cspStack.push(_sp);
-
-			_structStack.push(&owner);
-			Exec(found->second);
-			_structStack.pop();
+		if(owner != Variable::MODULE && owner != Variable::OBJECT)
+		{//TODO
+			throw 'n';
 		}
-		else
-		{
-			if(owner != Variable::MODULE && owner != Variable::OBJECT)
-			{//TODO
-				throw 'n';
-			}
-			modDesc = owner._mod.modDesc;
-		}
+		modDesc = owner._mod.modDesc;
 	}
 
 	auto found = modDesc->memberTbl.find(dst->_attr->name);
@@ -683,13 +617,144 @@ bool Machine::Jnz(const Op::Jnz& jnz)
 	return true;
 }
 
+bool Machine::NewMod(const Op::NewMod& nm)
+{
+	int rpBackup = _rp - nm.numArgs - 1;
+	int argsRp = rpBackup + 1;
+
+	Variable* dst = ResolveVar((ERefKind)nm.dstKind, nm.dst);
+	if(*dst != Variable::STR)
+	{//TOPDO
+		throw 'n';
+	}
+
+	const auto& modDesc = _modMgr.GetModuleDesc(dst->_str);
+	if(modDesc.IsNull())
+	{//TOPDO
+		throw 'n';
+	}
+
+	if(!modDesc.newer)
+	{//TODO
+		throw 'n';
+	}
+
+	YRet yr = modDesc.newer(nullptr);
+	if(yr.single.tp != YEArg::Object)
+	{
+		throw 'n';
+	}
+
+	ymod::Module mod { .modDesc = &modDesc };
+	if(modDesc.initer)
+	{
+		mod = modDesc.initer();
+	}
+
+	//_rpStack.pop(); //TODO confirm
+	_rp = rpBackup;
+	auto v = ResolveVar(ERefKind::Reg, 0);
+	v->Clear();
+	v->_type = Variable::OBJECT;
+	v->_obj = yr.single.o;
+	v->_mod = mod;
+	return true;
+}
+
+bool Machine::NewCls(const Op::NewCls& nc)
+{
+	int rpBackup = _rp - nc.numArgs - 1;
+	int argsRp = rpBackup + 1;
+
+	Variable* dst = ResolveVar((ERefKind)nc.dstKind, nc.dst);
+	if(*dst != Variable::STR)
+	{//TODO
+		throw 'n';
+	}
+
+	auto found = _prg->_structTable.find(dst->_str);
+	if(found == _prg->_structTable.end())
+	{//TODO
+		throw 'n';
+	}
+
+	auto v = ResolveVar(ERefKind::Reg, 0);
+	v->Clear();
+	v->_type = Variable::STRUCT;
+	v->_sto._st = found->second;
+	for(size_t i=0; i<v->_sto._st._fields.size(); i++)
+	{
+		v->_sto._members.push_back(new Variable());
+	}
+	_structStack.push(v);
+	_retStack.push(_pc);
+	//TODO
+	_pc = 0;
+	Exec(v->_sto._st._initer);
+	_pc = _retStack.top();
+	_retStack.pop();
+	_structStack.pop();
+	return true;
+}
+
+bool Machine::CallBuiltinFunc(const Op::Call& cal)
+{
+	_rp -= (int)cal.numPrms;
+	_rpStack.push(_rp);
+
+	switch(cal.pos)
+	{
+	case 0xFFFF0000:
+		if(cal.numPrms == 0)
+		{//noop
+		}
+		else
+		{
+			auto v = ResolveVar(ERefKind::Reg, 0);
+			cout << v->ToStr();
+		}
+		break;
+
+	case 0xFFFF0000 + 1:
+		if(cal.numPrms == 0)
+		{
+			cout << "\n";
+		}
+		else
+		{
+			auto v = ResolveVar(ERefKind::Reg, 0);
+			cout << v->ToStr() << "\n";
+		}
+		break;
+
+	case 0xFFFF0000 + 2:
+		if(cal.numPrms == 0)
+		{
+			_retCode = 0;
+		}
+		else
+		{
+			auto v = ResolveVar(ERefKind::Reg, 0);
+			_retCode = v->_int;
+		}
+		break;
+
+	default: throw 'n';
+	}
+
+	_rp = _rpStack.top();
+	_rpStack.pop();
+	return true;
+}
+
 
 int Machine::Run(const Program& program, int start /* = 0 */)
 {
+	_prg = &program;
 	_retCode = INT_MAX;
 
 	_consts.clear();
-	for(auto& c : program._consts)
+	for(auto& c : _prg->_consts)
 	{
 		switch(c._type)
 		{
@@ -701,35 +766,8 @@ int Machine::Run(const Program& program, int start /* = 0 */)
 		}
 	}
 
-	_structTable = program._structTable;
-
-	for(_pc = start; _pc < program._mainCode._code.size() && _retCode == INT_MAX; _pc++)
-	{
-		auto& inst = program._mainCode._code[_pc];
-		switch((EOpcode)inst.kind)
-		{
-		case EOpcode::Noop: break;
-		case EOpcode::Assign: Assign(*(Op::Assign*)inst.code.data()); break;
-		case EOpcode::PushSp: PushSp(); break;
-		case EOpcode::PopSp: PopSp(); break;
-		case EOpcode::Jmp:	Jmp(*(Op::Jmp*)inst.code.data()); break;
-		case EOpcode::Call: Call(*(Op::Call*)inst.code.data()); break;
-		case EOpcode::Ret: Ret(); break;
-		case EOpcode::Jz: Jz(*(Op::Jz*)inst.code.data()); break;
-		case EOpcode::ListSet: ListSet(*(Op::ListSet*)inst.code.data()); break;
-		case EOpcode::ListAdd: ListAdd(*(Op::ListAdd*)inst.code.data()); break;
-		case EOpcode::DictSet: DictSet(*(Op::DictSet*)inst.code.data()); break;
-		case EOpcode::DictAdd: DictAdd(*(Op::DictAdd*)inst.code.data()); break;
-		case EOpcode::Index: Index(*(Op::Index*)inst.code.data()); break;
-		case EOpcode::LValueIndex: LValueIndex(*(Op::LValueIndex*)inst.code.data()); break;
-		case EOpcode::Invoke: Invoke(*(Op::Invoke*)inst.code.data()); break;
-		case EOpcode::Inc: Inc(*(Op::Inc*)inst.code.data()); break;
-		case EOpcode::Jnz: Jnz(*(Op::Jnz*)inst.code.data()); break;
-		default:
-			throw 'n';//TODO
-		}
-	}
-	if(_pc >= program._mainCode._code.size() && _retCode == INT_MAX) _retCode = 0;
+	Exec(_prg->_mainCode, start);
+	if(_retCode == INT_MAX) _retCode = 0;
 
 	return _retCode;
 }

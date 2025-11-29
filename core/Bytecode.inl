@@ -134,6 +134,14 @@ void Bytecode::FillBytecode(int ln, const OpType& inst, int srcLine /* = -1 */)
 	{
 		_codeStr[ln] = std::format("jnz {}{}, {}", ValKindChar(inst.testKind), inst.test, inst.pos);
 	}
+	else if constexpr (std::is_same_v<Op::NewMod, OpType>)
+	{
+		_codeStr[ln] = std::format("newmod {}{}(...)", ValKindChar(ERefKind::Reg), "l", ValKindChar(inst.dstKind), inst.dst);
+	}
+	else if constexpr (std::is_same_v<Op::NewCls, OpType>)
+	{
+		_codeStr[ln] = std::format("newcls {}{}(...)", ValKindChar(ERefKind::Reg), "l", ValKindChar(inst.dstKind), inst.dst);
+	}
 	else
 	{
 		throw 'n';

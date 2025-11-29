@@ -36,6 +36,7 @@ struct Struct
 struct Program
 {
 	std::unordered_map<std::string, Struct> _structTable;
+	std::unordered_map<std::string, int> _moduleTable;
 
 	std::vector<Constant> _consts;
 	Bytecode _mainCode;

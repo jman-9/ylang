@@ -70,7 +70,7 @@ public:
 	void AddFuncScope();
 	void PopScope();
 
-	Idx AddOrNot(const Symbol& sym);
+	Idx AddOrNot(const Symbol& sym, int wantIdx = -1);
 	Idx GetIdx(const std::string& name) const;
 	Symbol GetSymbol(const std::string& name) const;
 

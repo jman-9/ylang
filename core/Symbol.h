@@ -25,6 +25,7 @@ struct Symbol
 	ESymbol kind = ESymbol::None;
 
 	// fn
+	size_t seg = 0;
 	size_t pos = 0;
 	std::vector<Param> params;
 };

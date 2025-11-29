@@ -4,8 +4,10 @@
 #include "core/SemanticAnalyzer.h"
 #include "core/BytecodeBuilder.h"
 #include "core/vm/Machine.h"
+#include "core/Args.h"
 #include <iostream>
 #include <format>
+
 
 using namespace std;
 
@@ -173,23 +175,35 @@ else
 const char* testcode2 =
 R"TEST(
 
+        include sys;
+
+		fn SayDele() {
+			println("test");
+		}
+
+
 		struct Hello {
 			front = "hello";
 			back = "world";
 
-			fn Say() {
-				println("{front}, {back}");
-				return;
+			fn Say(what) {
+				SayDele();
+				println(what);
+				println(sys.version);
+				return [front, back];
 			}
 		}
 
 		hello = Hello();
-		hello.Say();
+		ans = hello.Say("hahaha");
+		println(ans);
 
 )TEST";
 
-int main()
+int main(int argc, const char** argv)
 {
+	yrun::ArgsCollector::Collect(argc, argv);
+
 	Scanner s;
 	//s.Scan(testcode);
 	s.Scan(testcode2);
