@@ -31,7 +31,8 @@ struct Class
 	std::vector<Symbol> _fields;
 	Bytecode _initer;
 	Bytecode _ctor;
-	std::unordered_map<std::string, Bytecode> _funcTable;
+	std::unordered_map<std::string, int> _funcMap;
+	std::vector<Bytecode> _funcs;
 };
 
 

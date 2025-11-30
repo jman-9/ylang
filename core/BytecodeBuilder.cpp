@@ -168,7 +168,7 @@ SymbolTable::Idx SymbolTable::AddOrNot(const Symbol& sym, int wantIdx /* = -1 */
 		return idx;
 	}
 
-	int newIdx = wantIdx < 0 ?GetNewSlotIdx() : wantIdx;
+	int newIdx = wantIdx < 0 ? GetNewSlotIdx() : wantIdx;
 	_symTbl.back()[sym] = newIdx;
 
 	return Idx{ .kind = Idx::LOCAL, .idx = newIdx - GetBehindFuncScopeCnt((int)_symTbl.size()-1) };
@@ -374,8 +374,19 @@ bool BytecodeBuilder::BuildExp(Bytecode& retCtx, const TreeNode& stmt, bool root
 		}
 		else
 		{
-			Op::Call cal{ (uint16_t)(stmt.childs.size()-1), 0, (uint32_t)_symTbl.GetSymbol(stmt.childs[0]->self.val).pos  };
-			retCtx.PushBytecode(cal, stmt.self.line);
+			if(!_clsStack.empty() && _clsStack.top()->_funcMap.contains(stmt.childs.front()->self.val))
+			{
+				auto& fmap = _clsStack.top()->_funcMap;
+				uint16_t idx = (uint16_t)fmap[stmt.childs.front()->self.val];
+
+				Op::Invoke ivk{ .numArgs = (uint8_t)(stmt.childs.size()-1), .dstKind = (uint8_t)ERefKind::MemberFunc, .dst = idx };
+				retCtx.PushBytecode(ivk, stmt.self.line);
+			}
+			else
+			{
+				Op::Call cal{ (uint16_t)(stmt.childs.size()-1), 0, (uint32_t)_symTbl.GetSymbol(stmt.childs[0]->self.val).pos  };
+				retCtx.PushBytecode(cal, stmt.self.line);
+			}
 		}
 		return true;
 	}
@@ -748,13 +759,14 @@ bool BytecodeBuilder::BuildClass(Bytecode& retCtx, const TreeNode& stmt)
 	if(stmt.self != EToken::Class)
 		throw 'n';
 
-	Class cls;
+	Class& cls = _prg._classTable[ stmt.self.val ];
 	cls.name = stmt.self.val;
 
 	Token id = stmt.self;
 	id.kind = EToken::Id;
 	int idx = _constTbl.AddOrNot(id);
-	_prg._classTable[ cls.name ] = {};
+
+	_clsStack.push(&cls);
 
 	int fieldidx = 0;
 	for(auto& substmt : stmt.childs)
@@ -783,15 +795,16 @@ bool BytecodeBuilder::BuildClass(Bytecode& retCtx, const TreeNode& stmt)
 		}
 		else
 		{//fn
-			auto insert = cls._funcTable.insert({substmt->self.val, {}});
-			if(!BuildFn(insert.first->second, *substmt))
+			cls._funcMap[ substmt->self.val ] = cls._funcs.size();
+			cls._funcs.push_back({});
+			if(!BuildFn(cls._funcs.back(), *substmt))
 			{//TODO cleanup
 				return false;
 			}
 		}
 	}
 
-	_prg._classTable[ cls.name ] = cls;
+	_clsStack.pop();
 	return true;
 }
 
@@ -945,6 +958,7 @@ bool BytecodeBuilder::BuildFn(Bytecode& retCtx, const TreeNode& stmt)
 		sym.params.push_back(prm);
 
 		auto idx = _symTbl.AddOrNot( { .name = p->self.val, .kind = ESymbol::Var } );
+
 		Op::Assign as;
 		as.dstKind = (uint8_t)ERefKind::LocalVar;
 		as.dst = idx.idx;

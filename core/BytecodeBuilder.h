@@ -130,6 +130,8 @@ protected:
 	};
 	std::stack<FnControl> _fnStack;
 
+	std::stack<Class*> _clsStack;
+
 
 	void BuildBlockOpen(Bytecode& retCtx);
 	void BuildBlockClose(Bytecode& retCtx);

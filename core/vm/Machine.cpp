@@ -454,6 +454,18 @@ bool Machine::LValueIndex(const Op::LValueIndex& lli)
 
 bool Machine::Invoke(const Op::Invoke& ivk)
 {
+	if((ERefKind)ivk.dstKind == ERefKind::MemberFunc)
+	{
+		if(_clsStack.empty())
+		{//TODO
+			throw 'n';
+		}
+
+		auto& cls = _clsStack.top()->_clso._cls;
+		Exec(cls._funcs[ivk.dst], 1);
+		return true;
+	}
+
 	if((ERefKind)ivk.dstKind != ERefKind::Reg)
 	{//TODO
 		throw 'n';
@@ -475,14 +487,15 @@ bool Machine::Invoke(const Op::Invoke& ivk)
 	auto& owner = dst->_attr->owner;
 	if(owner == Variable::CLASS)
 	{
-		auto found = owner._clso._cls._funcTable.find(dst->_attr->name);
-		if(found == owner._clso._cls._funcTable.end())
+		auto& cls = owner._clso._cls;
+		auto found = cls._funcMap.find(dst->_attr->name);
+		if(found == cls._funcMap.end())
 		{//TODO
 			throw 'n';
 		}
 
 		_clsStack.push(&owner);
-		Exec(found->second, 1);
+		Exec(cls._funcs[found->second], 1);
 		_clsStack.pop();
 
 		auto vs = ResolveVar(ERefKind::Reg, ivk.dst + 1);

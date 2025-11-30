@@ -174,60 +174,171 @@ else
 
 const char* testcode2 =
 R"TEST(
-include sys;
-include math;
+include rand;
 
-class Vector2D {
-    _x = 0; _y = 0;
-    fn Vector2D(x, y) { _x = x; _y = y; }
-    fn add(other) { return Vector2D(_x + other._x, _y + other._y); }
-    fn scale(s) { return Vector2D(_x * s, _y * s); }
-    fn length() { return math.sqrt(_x*_x + _y*_y); }
-    fn toString() { return "Vector2D({_x}, {_y})"; }
-}
+class Character {
+    _name = "";
+    _hp = 100.0;
+    _attack = 10.0;
+    _defense = 3.0;
+    _crit = 0.1;
+    _alive = 1;
 
-class Particle {
-    _pos = 0; _vel = 0;
-    fn Particle(px, py, vx, vy) { _pos = Vector2D(px, py); _vel = Vector2D(vx, vy); }
+    fn Character(name, hp, attack, defense, crit) {
+        _name = name;
+        _hp = hp;
+        _attack = attack;
+        _defense = defense;
+        _crit = crit;
+        _alive = 1;
+    }
 
-    fn update(dt) { _pos = _pos.add(_vel.scale(dt)); }
+    fn isAlive() {
+        return _alive;
+    }
 
-    fn debug() { println("[Particle] pos={_pos.toString()}, vel={_vel.toString()}"); }
-}
+    fn takeDamage(dmg) {
+        _hp = _hp - dmg;
+        if (_hp <= 0) {
+            _hp = 0;
+            _alive = 0;
+        }
+    }
 
-class ParticleSystem {
-    _particles = [];
+    fn attackTarget(target) {
+        if (!_alive) {
+            println("{_name} is unable to attack.");
+            return;
+        }
 
-    fn add(p) { _particles.append(p); return 123456789; }
-    fn updateAll(dt) { for(i=0; i<_particles.len(); i++) _particles[i].update(dt); }
-    fn debug() {
-        println("=== ParticleSystem Debug ===");
-        for(i=0; i<_particles.len(); i++) _particles[i].debug();
+        base = _attack;
+        real = base;
+
+        if (rand.get(0.0, 1.0) < _crit) {
+            real = real * 2.0;
+            println("{_name} lands a CRITICAL HIT!");
+        }
+
+        dmg = real - target._defense;
+        if (dmg < 0) dmg = 0;
+
+        println("{_name} attacks {target._name} for {dmg}");
+        target.takeDamage(dmg);
+    }
+
+    fn status() {
+        return "{_name} [HP={_hp}]";
     }
 }
 
-println("ylang class test, version = {sys.version}");
+class Party {
+    _members = [];
+    _dc = Character("dead", 0, 0, 0, 0);
 
-p1 = Particle(0, 0, 1, 0.5);
-p2 = Particle(5, -2, -0.2, 0.1);
-p3 = Particle(-3, 4, 0.3, -0.8);
+    fn Party() {
+        _dc._alive = 0;
+    }
 
-ps = ParticleSystem();
+    fn add(c) {
+        _members.append(c);
+    }
 
-ps.add(p1);
-ps.add(p2);
-ps.add(p3);
+    fn aliveCount() {
+        count = 0;
+        for (i = 0; i < _members.len(); i++) {
+            if (_members[i].isAlive()) count++;
+        }
+        return count;
+    }
 
-println("--- Before Update ---");
-ps.debug();
+    fn getRandomAlive() {
+        alive_list = [];
+        for (i = 0; i < _members.len(); i++) {
+            if (_members[i].isAlive())
+                alive_list.append(_members[i]);
+        }
 
-println("--- Update dt=1.0 ---");
-ps.updateAll(1.0);
-ps.debug();
+        if (alive_list.len() == 0)
+            return _dc;
 
-println("--- Update dt=0.5 ---");
-ps.updateAll(0.5);
-ps.debug();
+        idx = rand.get(0, alive_list.len() - 1);
+        return alive_list[idx];
+    }
+
+    fn debug() {
+        for (i = 0; i < _members.len(); i++) {
+            println(_members[i].status());
+        }
+    }
+}
+
+class Battle {
+    _partyA = 0;
+    _partyB = 0;
+
+    fn Battle(a, b) {
+        _partyA = a;
+        _partyB = b;
+    }
+
+    fn step() {
+        if (_partyA.aliveCount() == 0 || _partyB.aliveCount() == 0) {
+            return 0;
+        }
+
+        a = _partyA.getRandomAlive();
+        b = _partyB.getRandomAlive();
+        if (a.isAlive() && b.isAlive()) {
+            println("a attack b");
+            a.attackTarget(b);
+        }
+
+        aa = _partyA.getRandomAlive();
+        bb = _partyB.getRandomAlive();
+        if (aa.isAlive() && bb.isAlive()) {
+            println("b attack a");
+            bb.attackTarget(aa);
+        }
+    }
+
+    fn run() {
+        for (turn = 1; _partyA.aliveCount() > 0 && _partyB.aliveCount() > 0; turn++) {
+            println("------ Turn {turn} ------");
+            step();
+
+            println("Party A:");
+            _partyA.debug();
+
+            println("Party B:");
+            _partyB.debug();
+
+            println("");
+        }
+
+        if (_partyA.aliveCount() > 0)
+            println("Party A wins!");
+        else
+            println("Party B wins!");
+    }
+}
+
+fn main() {
+    rand.randomize_timer();
+
+    a = Party();
+    a.add(Character("Alice", 120.0, 12.0, 4.0, 0.2));
+    a.add(Character("Bob",   100.0, 10.0, 3.0, 0.1));
+    a.add(Character("Clara",  80.0, 15.0, 2.0, 0.3));
+
+    b = Party();
+    b.add(Character("Orc",    130.0, 11.0, 3.0, 0.15));
+    b.add(Character("Goblin",  70.0,  8.0, 1.0, 0.05));
+    b.add(Character("Troll",  160.0, 14.0, 4.0, 0.12));
+
+    battle = Battle(a, b);
+    battle.run();
+}
+
 )TEST";
 
 int main(int argc, const char** argv)

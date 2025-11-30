@@ -12,6 +12,7 @@ static char ValKindChar(ERefKind k)
 	case ERefKind::LocalVar : return 'l';
 	case ERefKind::GlobalVar : return 'g';
 	case ERefKind::FieldVar : return 'f';
+	case ERefKind::MemberFunc : return 'm';
 	}
 	return ' ';
 }
