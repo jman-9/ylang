@@ -24,6 +24,7 @@ enum class EOpcode : uint16_t
 	Jnz,
 	NewMod,
 	NewCls,
+	LValueField,
 };
 
 enum class ERefKind : uint8_t
@@ -124,9 +125,9 @@ struct LValueIndex
 
 struct Invoke
 {
+	uint8_t numArgs = 0;
 	uint8_t dstKind = (uint8_t)ERefKind::None;
 	uint16_t dst = 0;
-	uint8_t numArgs = 0;
 };
 
 struct Inc
@@ -145,17 +146,24 @@ struct Jnz
 
 struct NewMod
 {
+	uint8_t numArgs = 0;
 	uint8_t dstKind = (uint8_t)ERefKind::None;
 	uint16_t dst = 0;
-	uint8_t numArgs = 0;
 };
 
 struct NewCls
 {
+	uint8_t numArgs = 0;
 	uint8_t dstKind = (uint8_t)ERefKind::None;
 	uint16_t dst = 0;
-	uint8_t numArgs = 0;
 };
 
+struct LValueField
+{
+	uint8_t dstKind = (uint8_t)ERefKind::None;
+	uint8_t fieldKind = (uint8_t)ERefKind::None;
+	uint16_t dst = 0;
+	uint16_t field = 0;
+};
 
 }

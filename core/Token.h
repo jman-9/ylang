@@ -81,6 +81,7 @@ enum class EToken : uint8_t
 	Dict,
 
 	Class,
+	LValueField,
 };
 
 

@@ -56,13 +56,30 @@ bool SemanticAnalyzer::AnalyzeExp(const TreeNode& stmt)
 		// TODO
 		// LValue 체크? 구문분석에서?
 		// postfix LValue 체크 필요
-		auto found = _symTbl.back().find(stmt.childs.front()->self.val);
-		if(found == _symTbl.back().end())
+		auto& lhs = stmt.childs.front();
+		auto& lhsTok = lhs->self;
+		if(lhsTok == EToken::LValueIndex)
+		{//TODO
+			if(!AnalyzeExp(*lhs->childs.front()))
+				return false;
+			if(!AnalyzeExp(*lhs->childs.back()))
+				return false;
+		}
+		else if(lhsTok == EToken::LValueField)
 		{
-			Symbol sym;
-			sym.name = stmt.childs.front()->self.val;
-			sym.kind = ESymbol::Var;
-			_symTbl.back()[ sym.name ] = sym;
+			if(!AnalyzeExp(*lhs->childs.front()))
+				return false;
+		}
+		else
+		{
+			auto found = _symTbl.back().find(lhsTok.val);
+			if(found == _symTbl.back().end())
+			{
+				Symbol sym;
+				sym.name = lhsTok.val;
+				sym.kind = ESymbol::Var;
+				_symTbl.back()[ sym.name ] = sym;
+			}
 		}
 		return true;
 	}
@@ -236,7 +253,7 @@ bool SemanticAnalyzer::AnalyzeFn(const TreeNode& stmt)
 	auto& block = *stmt.childs[1];
 
 	auto found = _symTbl.back().find(name);
-	if(found != _symTbl.back().end())
+	if(found != _symTbl.back().end() && found->second.kind != ESymbol::Cls)
 	{
 		//todo message
 		_errors.push_back(ErrorBuilder::Default(stmt.self.line, format("'{}': already defined", stmt.self.val)));
@@ -356,7 +373,7 @@ bool SemanticAnalyzer::CanBeLValue(const TreeNode& stmt)
 		{
 			continue;
 		}
-		if(curTok != EToken::Id && curTok != EToken::Dot && curTok != EToken::Index && curTok != EToken::LValueIndex)
+		if(curTok != EToken::Id && curTok != EToken::Dot && curTok != EToken::Index && curTok != EToken::LValueIndex && curTok != EToken::LValueField)
 		{
 			return false;
 		}

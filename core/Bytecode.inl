@@ -142,6 +142,10 @@ void Bytecode::FillBytecode(int ln, const OpType& inst, int srcLine /* = -1 */)
 	{
 		_codeStr[ln] = std::format("newcls {}{}(...)", ValKindChar(ERefKind::Reg), "l", ValKindChar(inst.dstKind), inst.dst);
 	}
+	else if constexpr (std::is_same_v<Op::LValueField, OpType>)
+	{
+		_codeStr[ln] = std::format("lvalueindex {}{}.{}{}", ValKindChar(inst.dstKind), inst.dst, ValKindChar(inst.fieldKind), inst.field);
+	}
 	else
 	{
 		throw 'n';
@@ -169,6 +173,12 @@ int Bytecode::PushBytecode(const OpType& inst, int srcLine /* = -1 */)
 	_codeStr.push_back("");
 	FillBytecode(_code.size()-1, inst, srcLine);
 	return _code.size()-1;
+}
+
+
+bool Bytecode::empty() const
+{
+	return _code.empty();
 }
 
 int Bytecode::endOfCode() const

@@ -31,10 +31,11 @@ protected:
 	std::stack<uint16_t> _spStack;
 	std::stack<uint16_t> _cspStack;
 	std::stack<uint16_t> _rpStack;
+	std::stack<uint16_t> _roffStack;
 	std::stack<uint32_t> _retStack;
 	std::stack<const Variable*> _clsStack;
 	int _sp;
-	int _rp;
+	int _roff;
 	int _pc;
 	int _retCode;
 
@@ -58,6 +59,7 @@ protected:
 	inline bool Jnz(const Op::Jnz& jnz);
 	inline bool NewMod(const Op::NewMod& nm);
 	inline bool NewCls(const Op::NewCls& nc);
+	inline bool LValueField(const Op::LValueField& lvf);
 
 	inline bool CallBuiltinFunc(const Op::Call& cal);
 

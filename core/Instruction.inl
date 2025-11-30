@@ -94,13 +94,17 @@ void Instruction::Fill(const OpType& inst)
 	{
 		kind = (uint8_t)EOpcode::Jnz;
 	}
+	else if constexpr (std::is_same_v<Op::NewMod, OpType>)
+	{
+		kind = (uint8_t)EOpcode::NewMod;
+	}
 	else if constexpr (std::is_same_v<Op::NewCls, OpType>)
 	{
 		kind = (uint8_t)EOpcode::NewCls;
 	}
-	else if constexpr (std::is_same_v<Op::NewMod, OpType>)
+	else if constexpr (std::is_same_v<Op::LValueField, OpType>)
 	{
-		kind = (uint8_t)EOpcode::NewMod;
+		kind = (uint8_t)EOpcode::LValueField;
 	}
 	else
 	{

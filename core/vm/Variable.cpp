@@ -6,6 +6,8 @@ using namespace std;
 namespace yvm
 {
 
+#define EPSILON (1e-9)
+
 
 Variable* Variable::NewInt(int64_t num)
 {
@@ -338,12 +340,12 @@ bool Variable::CalcAndAssign(const Variable& lhs, EToken calcOp, const Variable&
 				{
 				case EToken::And:			_int = lfloat && rfloat; break;
 				case EToken::Or:			_int = lfloat || rfloat; break;
-				case EToken::Greater:		_int = lfloat > rfloat; break;
-				case EToken::Less:			_int = lfloat < rfloat; break;
-				case EToken::GreaterEqual:	_int = lfloat >= rfloat; break;
-				case EToken::LessEqual:		_int = lfloat <= rfloat; break;
-				case EToken::Equal:			_int = lfloat == rfloat; break;
-				case EToken::NotEqual:		_int = lfloat != rfloat; break;
+				case EToken::Greater:		_int = abs(lfloat - rfloat) >= EPSILON && lfloat > rfloat; break;
+				case EToken::Less:			_int = abs(lfloat - rfloat) >= EPSILON && lfloat < rfloat; break;
+				case EToken::GreaterEqual:	_int = abs(lfloat - rfloat) < EPSILON || (abs(lfloat - rfloat) >= EPSILON && lfloat > rfloat); break;
+				case EToken::LessEqual:		_int = abs(lfloat - rfloat) < EPSILON || (abs(lfloat - rfloat) >= EPSILON && lfloat < rfloat); break;
+				case EToken::Equal:			_int = abs(lfloat - rfloat) < EPSILON; break;
+				case EToken::NotEqual:		_int = abs(lfloat - rfloat) >= EPSILON; break;
 				default:
 					throw 'n';
 				}
@@ -410,18 +412,36 @@ bool Variable::CalcUnaryAndAssign(EToken unaryOp, const Variable& rhs)
 	}
 
 	//TODO float
-	switch(unaryOp)
+	switch(rhs._type)
 	{
-	case EToken::UnaryPlus: _int = +rhs._int; break;
-	case EToken::UnaryMinus: _int = -rhs._int; break;
-	case EToken::Not: _int = (int64_t)(!rhs._int); break;
-	case EToken::Tilde: _int = ~rhs._int; break;
-	default:
-		throw 'n';
+	case INT:
+		switch(unaryOp)
+		{
+		case EToken::UnaryPlus: _int = +rhs._int; break;
+		case EToken::UnaryMinus: _int = -rhs._int; break;
+		case EToken::Not: _int = (int64_t)(!rhs._int); break;
+		case EToken::Tilde: _int = ~rhs._int; break;
+		default:
+			throw 'n';
+		}
+		_type = INT;
+		return true;
+	case FLOAT:
+		switch(unaryOp)
+		{
+		case EToken::UnaryPlus: _float = +rhs._float; break;
+		case EToken::UnaryMinus: _float = -rhs._float; break;
+		case EToken::Not: _float = !rhs._float; break;
+		case EToken::Tilde: _float = 0; throw 'n'; break; //TODO
+		default:
+			throw 'n';
+		}
+		_type = FLOAT;
+		return true;
 	}
-	_type = INT;
 
-	return true;
+	throw 'n';
+	return false;
 }
 
 bool Variable::CalcIncDec(EToken op)

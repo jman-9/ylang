@@ -332,6 +332,100 @@ TEST_CASE( "Class Test", "[class]" )
 		hello.Say();
 	)YT" );
 	REQUIRE( ret.code == 0 );
+
+	ret = Run( R"YT(
+		class Ctor { _test = 15; }
+		exit(Ctor()._test);
+	)YT" );
+	REQUIRE( ret.code == 15 );
+
+	ret = Run( R"YT(
+		class Ctor { _test = 15; fn Ctor(test) _test = 9; }
+		exit(Ctor()._test);
+	)YT" );
+	REQUIRE( ret.code == 9 );
+
+	ret = Run( R"YT(
+		class Ctor { _test = 15; fn Ctor(test) { _test = test; } }
+		exit(Ctor(789)._test);
+	)YT" );
+	REQUIRE( ret.code == 789 );
+
+	ret = Run( R"YT(
+		class Ctor { _test = 15; fn Ctor(test) { _test = test; } }
+		ctor = Ctor(789);
+		exit(ctor._test = 987);
+	)YT" );
+	REQUIRE( ret.code == 987 );
+
+	ret = Run( R"YT(
+		class Ctor { _test = 15; fn Ctor(test) { _test = test; } }
+		ctor = Ctor(789);
+		exit(ctor._test = 987);
+	)YT" );
+	REQUIRE( ret.code == 987 );
+
+	ret = Run( R"YT(
+		include sys;
+		include math;
+
+		class Vector2D {
+			_x = 0; _y = 0;
+			fn Vector2D(x, y) { _x = x; _y = y; }
+			fn add(other) { return Vector2D(_x + other._x, _y + other._y); }
+			fn scale(s) { return Vector2D(_x * s, _y * s); }
+			fn length() { return math.sqrt(_x*_x + _y*_y); }
+			fn toString() { return "Vector2D({_x}, {_y})"; }
+		}
+
+		class Particle {
+			_pos = 0; _vel = 0;
+			fn Particle(px, py, vx, vy) { _pos = Vector2D(px, py); _vel = Vector2D(vx, vy); }
+
+			fn update(dt) { _pos = _pos.add(_vel.scale(dt)); }
+
+			fn debug() { println("[Particle] pos={_pos.toString()}, vel={_vel.toString()}"); }
+		}
+
+		class ParticleSystem {
+			_particles = [];
+
+			fn add(p) { _particles.append(p); return 123456789; }
+			fn updateAll(dt) { for(i=0; i<_particles.len(); i++) _particles[i].update(dt); }
+			fn debug() {
+				println("=== ParticleSystem Debug ===");
+				for(i=0; i<_particles.len(); i++) _particles[i].debug();
+			}
+		}
+
+		println("ylang class test, version = {sys.version}");
+
+		p1 = Particle(0, 0, 1, 0.5);
+		p2 = Particle(5, -2, -0.2, 0.1);
+		p3 = Particle(-3, 4, 0.3, -0.8);
+
+		ps = ParticleSystem();
+
+		ps.add(p1);
+		ps.add(p2);
+		ps.add(p3);
+
+		println("--- Before Update ---");
+		ps.debug();
+
+		println("--- Update dt=1.0 ---");
+		ps.updateAll(1.0);
+		ps.debug();
+
+		println("--- Update dt=0.5 ---");
+		ps.updateAll(0.5);
+		ps.debug();
+
+		if(p1._pos._x != 1.5 || p1._pos._y != 0.75) exit(1);
+		if(p2._pos._x != 4.7 || p2._pos._y != -1.85) exit(2);
+		if(p3._pos._x != -2.55 || p3._pos._y != 2.8) exit(3);
+	)YT" );
+	REQUIRE( ret.code == 0 );
 }
 
 
@@ -350,13 +444,13 @@ int main(int argc, const char** argv)
 	Catch::ConfigData& cfg = _session.configData();
 
 	cfg.showSuccessfulTests = true;
-// 	cfg.testsOrTags.push_back("[primstr],");
-// 	cfg.testsOrTags.push_back("[bltrand],");
-// 	cfg.testsOrTags.push_back("[bltsys],");
-// 	cfg.testsOrTags.push_back("[bltfile],");
-// 	cfg.testsOrTags.push_back("[bltjson],");
-// 	cfg.testsOrTags.push_back("[exp],");
-// 	cfg.testsOrTags.push_back("[logop],");
+	cfg.testsOrTags.push_back("[primstr],");
+	cfg.testsOrTags.push_back("[bltrand],");
+	cfg.testsOrTags.push_back("[bltsys],");
+	cfg.testsOrTags.push_back("[bltfile],");
+	cfg.testsOrTags.push_back("[bltjson],");
+	cfg.testsOrTags.push_back("[exp],");
+	cfg.testsOrTags.push_back("[logop],");
 	cfg.testsOrTags.push_back("[class],");
 
 	int numFailed = _session.run();

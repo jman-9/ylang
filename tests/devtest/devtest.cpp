@@ -174,30 +174,60 @@ else
 
 const char* testcode2 =
 R"TEST(
+include sys;
+include math;
 
-        include sys;
+class Vector2D {
+    _x = 0; _y = 0;
+    fn Vector2D(x, y) { _x = x; _y = y; }
+    fn add(other) { return Vector2D(_x + other._x, _y + other._y); }
+    fn scale(s) { return Vector2D(_x * s, _y * s); }
+    fn length() { return math.sqrt(_x*_x + _y*_y); }
+    fn toString() { return "Vector2D({_x}, {_y})"; }
+}
 
-		fn SayDele() {
-			println("test");
-		}
+class Particle {
+    _pos = 0; _vel = 0;
+    fn Particle(px, py, vx, vy) { _pos = Vector2D(px, py); _vel = Vector2D(vx, vy); }
 
+    fn update(dt) { _pos = _pos.add(_vel.scale(dt)); }
 
-		class Hello {
-			front = "hello";
-			back = "world";
+    fn debug() { println("[Particle] pos={_pos.toString()}, vel={_vel.toString()}"); }
+}
 
-			fn Say(what) {
-				SayDele();
-				println(what);
-				println(sys.version);
-				return [front, back];
-			}
-		}
+class ParticleSystem {
+    _particles = [];
 
-		hello = Hello();
-		ans = hello.Say("hahaha");
-		println(ans);
+    fn add(p) { _particles.append(p); return 123456789; }
+    fn updateAll(dt) { for(i=0; i<_particles.len(); i++) _particles[i].update(dt); }
+    fn debug() {
+        println("=== ParticleSystem Debug ===");
+        for(i=0; i<_particles.len(); i++) _particles[i].debug();
+    }
+}
 
+println("ylang class test, version = {sys.version}");
+
+p1 = Particle(0, 0, 1, 0.5);
+p2 = Particle(5, -2, -0.2, 0.1);
+p3 = Particle(-3, 4, 0.3, -0.8);
+
+ps = ParticleSystem();
+
+ps.add(p1);
+ps.add(p2);
+ps.add(p3);
+
+println("--- Before Update ---");
+ps.debug();
+
+println("--- Update dt=1.0 ---");
+ps.updateAll(1.0);
+ps.debug();
+
+println("--- Update dt=0.5 ---");
+ps.updateAll(0.5);
+ps.debug();
 )TEST";
 
 int main(int argc, const char** argv)

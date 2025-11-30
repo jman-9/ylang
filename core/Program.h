@@ -27,8 +27,10 @@ struct Constant
 struct Class
 {
 	std::string name;
+	std::unordered_map<std::string, int> _fieldMap;
 	std::vector<Symbol> _fields;
 	Bytecode _initer;
+	Bytecode _ctor;
 	std::unordered_map<std::string, Bytecode> _funcTable;
 };
 

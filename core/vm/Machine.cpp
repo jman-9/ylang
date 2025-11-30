@@ -13,7 +13,7 @@ namespace yvm
 Machine::Machine()
 {
 	_prg = nullptr;
-	_rp = 0;
+	_roff = 0;
 	_sp = 0;
 	_pc = 0;
 	_retCode = INT_MAX;
@@ -35,7 +35,7 @@ Variable* Machine::ResolveVar(ERefKind k, int idx)
 
 	case ERefKind::Reg:
 		{
-			_rp = _rpStack.top() + idx + 1;
+			_roff = idx;
 			return &_regs[_rpStack.top() + idx];
 		}
 	case ERefKind::GlobalVar: return &_stack[idx];
@@ -60,7 +60,9 @@ Variable* Machine::ResolveVar(ERefKind k, int idx)
 
 void Machine::PushState()
 {
-	_rpStack.push(_rp);
+	_rpStack.push(_rpStack.top() + _roff);
+	_roffStack.push(_roff);
+	_roff = 0;
 	_retStack.push((uint32_t)_pc);
 	_cspStack.push(_sp);
 }
@@ -69,8 +71,9 @@ void Machine::PopState()
 {
 	_sp = _cspStack.top();
 	_cspStack.pop();
-	_rp = _rpStack.top() + 1;
 	_rpStack.pop();
+	_roff = _roffStack.top();
+	_roffStack.pop();
 	_pc = _retStack.top();
 	_retStack.pop();
 }
@@ -103,6 +106,7 @@ int Machine::Exec(const Bytecode& code, int start /*= 0*/)
 		case EOpcode::Jnz: Jnz(*(Op::Jnz*)inst.code.data()); break;
 		case EOpcode::NewMod: NewMod(*(Op::NewMod*)inst.code.data()); break;
 		case EOpcode::NewCls: NewCls(*(Op::NewCls*)inst.code.data()); break;
+		case EOpcode::LValueField: LValueField(*(Op::LValueField*)inst.code.data()); break;
 		default:
 			throw 'n';//TODO
 		}
@@ -146,6 +150,14 @@ bool Machine::Assign(const Op::Assign& as)
 					if(found != dst->_attr->owner._mod.memberVars.end())
 					{
 						dst->SetValueFromContract(found->second);
+					}
+				}
+				else if(dst->_attr->owner == Variable::CLASS)
+				{
+					auto found = dst->_attr->owner._clso._cls._fieldMap.find(dst->_attr->name);
+					if(found != dst->_attr->owner._clso._cls._fieldMap.end())
+					{
+						*dst = *dst->_attr->owner._clso._fields[found->second];
 					}
 				}
 			}
@@ -251,7 +263,10 @@ bool Machine::Call(const Op::Call& cal)
 		return CallBuiltinFunc(cal);
 	}
 
-	_rp -= (int)cal.numPrms;
+	if(cal.numPrms)
+	{
+		_roff -= (int)cal.numPrms - 1;
+	}
 
 	if(cal.seg == 0)
 	{//TODO
@@ -439,8 +454,10 @@ bool Machine::LValueIndex(const Op::LValueIndex& lli)
 
 bool Machine::Invoke(const Op::Invoke& ivk)
 {
-	int rpBackup = _rp - ivk.numArgs - 1;
-	int argsRp = rpBackup + 1;
+	if((ERefKind)ivk.dstKind != ERefKind::Reg)
+	{//TODO
+		throw 'n';
+	}
 
 	Variable* dst = ResolveVar((ERefKind)ivk.dstKind, ivk.dst);
 	if(*dst == Variable::STR)
@@ -453,11 +470,13 @@ bool Machine::Invoke(const Op::Invoke& ivk)
 		throw 'n';
 	}
 
+	_roff = ivk.dst + 1;
+
 	auto& owner = dst->_attr->owner;
 	if(owner == Variable::CLASS)
 	{
-		auto found = owner._clso._st._funcTable.find(dst->_attr->name);
-		if(found == owner._clso._st._funcTable.end())
+		auto found = owner._clso._cls._funcTable.find(dst->_attr->name);
+		if(found == owner._clso._cls._funcTable.end())
 		{//TODO
 			throw 'n';
 		}
@@ -465,10 +484,9 @@ bool Machine::Invoke(const Op::Invoke& ivk)
 		_clsStack.push(&owner);
 		Exec(found->second, 1);
 		_clsStack.pop();
-		//TODO
-		auto vs = ResolveVar(ERefKind::Reg, _rp-1);
-		_rp = rpBackup;
-		auto vt = ResolveVar(ERefKind::Reg, _rp);
+
+		auto vs = ResolveVar(ERefKind::Reg, ivk.dst + 1);
+		auto vt = ResolveVar(ERefKind::Reg, ivk.dst);
 		*vt = *vs;
 		return true;
 	}
@@ -521,11 +539,13 @@ bool Machine::Invoke(const Op::Invoke& ivk)
 		ya.Reset(ivk.numArgs);
 	}
 
+	int argsRoff = ivk.dst + 1;
+
 	if(modDesc->builtin)
 	{
 		for(int i=0; i<ivk.numArgs; i++)
 		{//TODO int value check
-			auto arg = ResolveVar(ERefKind::Reg, argsRp+i);
+			auto arg = ResolveVar(ERefKind::Reg, argsRoff+i);
 			YArg yo { (void*)arg, YEArg::YVar };
 			ya.args[i+off] = yo;
 		}
@@ -534,7 +554,7 @@ bool Machine::Invoke(const Op::Invoke& ivk)
 	{
 		for(int i=0; i<ivk.numArgs; i++)
 		{//TODO int value check
-			auto arg = ResolveVar(ERefKind::Reg, argsRp+i);
+			auto arg = ResolveVar(ERefKind::Reg, argsRoff+i);
 			ya.args[i+off] = arg->ToContract();
 		}
 	}
@@ -575,8 +595,7 @@ bool Machine::Invoke(const Op::Invoke& ivk)
 	{//TODO
 	}
 
-	_rp = rpBackup;
-	auto v = ResolveVar(ERefKind::Reg, _rp);
+	auto v = ResolveVar(ERefKind::Reg, ivk.dst);
 	*v = ret ? *ret : Variable();
 	return true;
 }
@@ -619,18 +638,15 @@ bool Machine::Jnz(const Op::Jnz& jnz)
 
 bool Machine::NewMod(const Op::NewMod& nm)
 {
-	int rpBackup = _rp - nm.numArgs - 1;
-	int argsRp = rpBackup + 1;
-
 	Variable* dst = ResolveVar((ERefKind)nm.dstKind, nm.dst);
 	if(*dst != Variable::STR)
-	{//TOPDO
+	{//TODO
 		throw 'n';
 	}
 
 	const auto& modDesc = _modMgr.GetModuleDesc(dst->_str);
 	if(modDesc.IsNull())
-	{//TOPDO
+	{//TODO
 		throw 'n';
 	}
 
@@ -651,9 +667,7 @@ bool Machine::NewMod(const Op::NewMod& nm)
 		mod = modDesc.initer();
 	}
 
-	//_rpStack.pop(); //TODO confirm
-	_rp = rpBackup;
-	auto v = ResolveVar(ERefKind::Reg, 0);
+	auto v = ResolveVar(ERefKind::Reg, _roff);
 	v->Clear();
 	v->_type = Variable::OBJECT;
 	v->_obj = yr.single.o;
@@ -663,9 +677,6 @@ bool Machine::NewMod(const Op::NewMod& nm)
 
 bool Machine::NewCls(const Op::NewCls& nc)
 {
-	int rpBackup = _rp - nc.numArgs - 1;
-	int argsRp = rpBackup + 1;
-
 	Variable* dst = ResolveVar((ERefKind)nc.dstKind, nc.dst);
 	if(*dst != Variable::STR)
 	{//TODO
@@ -678,29 +689,69 @@ bool Machine::NewCls(const Op::NewCls& nc)
 		throw 'n';
 	}
 
-	auto v = ResolveVar(ERefKind::Reg, 0);
-	v->Clear();
+	auto v = new Variable;
 	v->_type = Variable::CLASS;
-	v->_clso._st = found->second;
-	for(size_t i=0; i<v->_clso._st._fields.size(); i++)
+	v->_clso._cls = found->second;
+	for(size_t i=0; i<v->_clso._cls._fields.size(); i++)
 	{
 		v->_clso._fields.push_back(new Variable());
 	}
+
 	_clsStack.push(v);
-	_retStack.push(_pc);
-	//TODO
-	_pc = 0;
-	Exec(v->_clso._st._initer);
-	_pc = _retStack.top();
-	_retStack.pop();
+
+	Exec(v->_clso._cls._initer, 0);
+
+	if(nc.numArgs)
+	{
+		_roff -= (int)nc.numArgs - 1;
+	}
+
+	if(!v->_clso._cls._ctor.empty())
+	{
+		Exec(v->_clso._cls._ctor, 1);
+	}
+
 	_clsStack.pop();
+
+	dst = ResolveVar(ERefKind::Reg, _roff);
+	*dst = *v;
 	return true;
 }
 
+bool Machine::LValueField(const Op::LValueField& lvf)
+{
+	Variable* fld = ResolveVar((ERefKind)lvf.fieldKind, lvf.field);
+	Variable* dst = ResolveVar((ERefKind)lvf.dstKind, lvf.dst);
+
+	if(*fld != Variable::STR)
+	{//TODO
+		throw 'n';
+	}
+	if(*dst != Variable::CLASS)
+	{//TODO
+		throw 'n';
+	}
+
+	auto found = dst->_clso._cls._fieldMap.find(fld->_str);
+	if(found == dst->_clso._cls._fieldMap.end())
+	{
+		throw 'n';
+	}
+
+	auto t = dst->_clso._fields[found->second];
+	dst->Clear();
+	dst->_type = Variable::LVREF;
+	dst->_ref = t;
+	return true;
+}
+
+
 bool Machine::CallBuiltinFunc(const Op::Call& cal)
 {
-	_rp -= (int)cal.numPrms;
-	_rpStack.push(_rp);
+	if(cal.numPrms)
+	{
+		_roff -= (int)cal.numPrms - 1;
+	}
 
 	switch(cal.pos)
 	{
@@ -710,7 +761,7 @@ bool Machine::CallBuiltinFunc(const Op::Call& cal)
 		}
 		else
 		{
-			auto v = ResolveVar(ERefKind::Reg, 0);
+			auto v = ResolveVar(ERefKind::Reg, _roff);
 			cout << v->ToStr();
 		}
 		break;
@@ -722,7 +773,7 @@ bool Machine::CallBuiltinFunc(const Op::Call& cal)
 		}
 		else
 		{
-			auto v = ResolveVar(ERefKind::Reg, 0);
+			auto v = ResolveVar(ERefKind::Reg, _roff);
 			cout << v->ToStr() << "\n";
 		}
 		break;
@@ -734,7 +785,7 @@ bool Machine::CallBuiltinFunc(const Op::Call& cal)
 		}
 		else
 		{
-			auto v = ResolveVar(ERefKind::Reg, 0);
+			auto v = ResolveVar(ERefKind::Reg, _roff);
 			_retCode = v->_int;
 		}
 		break;
@@ -742,8 +793,6 @@ bool Machine::CallBuiltinFunc(const Op::Call& cal)
 	default: throw 'n';
 	}
 
-	_rp = _rpStack.top();
-	_rpStack.pop();
 	return true;
 }
 

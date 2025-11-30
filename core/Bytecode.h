@@ -16,6 +16,7 @@ struct Bytecode
 	template<class OpType>
 	int PushBytecode(const OpType& inst, int srcLine = -1);
 
+	inline bool empty() const;
 	inline int endOfCode() const;
 	inline int nextCodeSlot() const;
 };

@@ -193,7 +193,7 @@ name = Alice, age = 25
 * [x] f-string
 * [x] main() entrypoint
 * [ ] String formatting
-* [ ] Class
+* [x] Class
 * [ ] Memory management
 * [x] Module & import system
 * [ ] Optimized VM dispatch
@@ -201,6 +201,8 @@ name = Alice, age = 25
 * [ ] Documentation
 * [ ] Unicode
 * [x] Increment and decrement operators
+* [ ] Source code import system
+* [ ] Try-catch
 * [ ] Optimization
 * ...and more
 

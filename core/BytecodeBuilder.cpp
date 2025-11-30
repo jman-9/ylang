@@ -340,7 +340,7 @@ bool BytecodeBuilder::BuildExp(Bytecode& retCtx, const TreeNode& stmt, bool root
 
 		if(ivkType == EToken::Dot)
 		{	//TODO generalize
-			Op::Invoke ivk{ .dstKind = (uint8_t)ERefKind::Reg, .dst = (uint16_t)_reg, .numArgs = (uint8_t)(stmt.childs.size()-1) };
+			Op::Invoke ivk{ .numArgs = (uint8_t)(stmt.childs.size()-1), .dstKind = (uint8_t)ERefKind::Reg, .dst = (uint16_t)_reg };
 			retCtx.PushBytecode(ivk, stmt.self.line);
 			return true;
 		}
@@ -358,17 +358,17 @@ bool BytecodeBuilder::BuildExp(Bytecode& retCtx, const TreeNode& stmt, bool root
 		{
 			if(_prg._classTable.contains(ivkType.val))
 			{//TODO
-				Op::NewCls nc{ .dstKind = (uint8_t)ERefKind::Const, .dst = (uint16_t)constIdx, .numArgs = (uint8_t)(stmt.childs.size()-1) };
+				Op::NewCls nc{ .numArgs = (uint8_t)(stmt.childs.size()-1), .dstKind = (uint8_t)ERefKind::Const, .dst = (uint16_t)constIdx,  };
 				retCtx.PushBytecode(nc, stmt.self.line);
 			}
 			else if(_prg._moduleTable.contains(ivkType.val))
 			{//TODO
-				Op::NewMod nm{ .dstKind = (uint8_t)ERefKind::Const, .dst = (uint16_t)constIdx, .numArgs = (uint8_t)(stmt.childs.size()-1) };
+				Op::NewMod nm{ .numArgs = (uint8_t)(stmt.childs.size()-1), .dstKind = (uint8_t)ERefKind::Const, .dst = (uint16_t)constIdx };
 				retCtx.PushBytecode(nm, stmt.self.line);
 			}
 			else
 			{
-				Op::Invoke ivk{ .dstKind = (uint8_t)ERefKind::Const, .dst = (uint16_t)constIdx, .numArgs = (uint8_t)(stmt.childs.size()-1) };
+				Op::Invoke ivk{ .numArgs = (uint8_t)(stmt.childs.size()-1), .dstKind = (uint8_t)ERefKind::Const, .dst = (uint16_t)constIdx };
 				retCtx.PushBytecode(ivk, stmt.self.line);
 			}
 		}
@@ -394,6 +394,11 @@ bool BytecodeBuilder::BuildExp(Bytecode& retCtx, const TreeNode& stmt, bool root
 	if(stmt.self == EToken::Index || stmt.self == EToken::LValueIndex)
 	{
 		return BuildIndex(retCtx, stmt);
+	}
+
+	if(stmt.self == EToken::LValueField)
+	{
+		return BuildLValueField(retCtx, stmt);
 	}
 
 
@@ -746,6 +751,11 @@ bool BytecodeBuilder::BuildClass(Bytecode& retCtx, const TreeNode& stmt)
 	Class cls;
 	cls.name = stmt.self.val;
 
+	Token id = stmt.self;
+	id.kind = EToken::Id;
+	int idx = _constTbl.AddOrNot(id);
+	_prg._classTable[ cls.name ] = {};
+
 	int fieldidx = 0;
 	for(auto& substmt : stmt.childs)
 	{
@@ -756,10 +766,18 @@ bool BytecodeBuilder::BuildClass(Bytecode& retCtx, const TreeNode& stmt)
 			sym.kind = ESymbol::Field;
 			_symTbl.AddOrNot(sym, fieldidx++);
 
+			cls._fieldMap[ sym.name ] = cls._fields.size();
 			cls._fields.push_back(sym);
 
 			if(!BuildExp(cls._initer, *substmt, true))
-			{
+			{//TODO cleanup
+				return false;
+			}
+		}
+		else if(substmt->self.val == cls.name)
+		{//ctor
+			if(!BuildFn(cls._ctor, *substmt))
+			{//TODO cleanup
 				return false;
 			}
 		}
@@ -767,16 +785,34 @@ bool BytecodeBuilder::BuildClass(Bytecode& retCtx, const TreeNode& stmt)
 		{//fn
 			auto insert = cls._funcTable.insert({substmt->self.val, {}});
 			if(!BuildFn(insert.first->second, *substmt))
-			{
+			{//TODO cleanup
 				return false;
 			}
 		}
 	}
 
-	Token id = stmt.self;
-	id.kind = EToken::Id;
-	int idx = _constTbl.AddOrNot(id);
 	_prg._classTable[ cls.name ] = cls;
+	return true;
+}
+
+bool BytecodeBuilder::BuildLValueField(Bytecode& retCtx, const TreeNode& stmt)
+{
+	if(stmt.self != EToken::LValueField)
+		throw 'n';
+
+	uint32_t regStack = _reg;
+
+	for(size_t i = 0; i<stmt.childs.size(); i++)
+	{
+		if(!BuildExp(retCtx, *stmt.childs[i], false))
+			throw 'n';
+		_reg++;
+	}
+
+	_reg = regStack;
+
+	Op::LValueField lvf{ .dstKind = (uint8_t)ERefKind::Reg, .fieldKind = (uint8_t)ERefKind::Reg, .dst = (uint16_t)_reg, .field = (uint16_t)(_reg+1) };
+	retCtx.PushBytecode(lvf, stmt.self.line);
 	return true;
 }
 

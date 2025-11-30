@@ -148,4 +148,5 @@ protected:
 	bool BuildDict(Bytecode& retCtx, const TreeNode& stmt);
 	bool BuildIndex(Bytecode& retCtx, const TreeNode& stmt);
 	bool BuildClass(Bytecode& retCtx, const TreeNode& stmt);
+	bool BuildLValueField(Bytecode& retCtx, const TreeNode& stmt);
 };

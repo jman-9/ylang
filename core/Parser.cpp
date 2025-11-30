@@ -215,7 +215,7 @@ TreeNodeSptr Parser::ParseExpLoop(EToken endToken /* = EToken::None */, EToken e
 			{
 				if(node->self.IsAssign())
 				{//TODO clarify LValue check
-					if(curNode->self != EToken::Id && curNode->self != EToken::Index)
+					if(curNode->self != EToken::Id && curNode->self != EToken::Index && curNode->self != EToken::Dot)
 					{
 						_errors.push_back(ErrorBuilder::LValueError(node->self.line, node->self.val));
 						return nullptr;
@@ -224,6 +224,11 @@ TreeNodeSptr Parser::ParseExpLoop(EToken endToken /* = EToken::None */, EToken e
 					if(curNode->self == EToken::Index)
 					{//TODO algorithm..
 						curNode->self.kind = EToken::LValueIndex;
+					}
+
+					if(curNode->self == EToken::Dot)
+					{//TODO algorithm..
+						curNode->self.kind = EToken::LValueField;
 					}
 				}
 

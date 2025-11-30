@@ -18,7 +18,7 @@ struct Variable;
 struct ClassObject
 {
 	std::vector<Variable*> _fields;
-	Class _st;
+	Class _cls;
 };
 
 struct Variable
