@@ -749,7 +749,10 @@ bool Machine::NewCls(const Op::NewCls& nc)
 
 	_clsStack.push(v);
 
+	int roffbk = _roff;
+	_roff++;
 	Exec(v->_clso._cls._initer, 0);
+	_roff = roffbk;
 
 	if(nc.numArgs)
 	{
