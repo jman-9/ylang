@@ -263,7 +263,46 @@ bool Variable::CalcAndAssign(const Variable& lhs, EToken calcOp, const Variable&
 		return true;
 	}
 
-	if(lhs._type == STR || rhs._type == STR)
+	if(lhs == _NULL_ || rhs == _NULL_ || lhs == NONE || rhs == NONE)
+	{//todo refactor
+		int lv = (lhs == _NULL_ || lhs == NONE) ? 1 : (lhs == OBJECT && !lhs._obj);
+		int rv = (rhs == _NULL_ || rhs == NONE) ? 1 : (rhs == OBJECT && !rhs._obj);
+
+		switch(calcOp)
+		{
+		case EToken::Equal:			_int = lv && rv; break;
+		case EToken::NotEqual:		_int = !lv || !rv; break;
+		default: throw 'n'; //TODO
+		}
+		_type = INT;
+	}
+	else if(lhs == _TRUE_ || rhs == _TRUE_)
+	{//todo refactor
+		int lv = lhs == _TRUE_ ? 1 : ((lhs == INT && lhs._int) || (lhs == FLOAT && lhs._float));
+		int rv = rhs == _TRUE_ ? 1 : ((rhs == INT && rhs._int) || (rhs == FLOAT && rhs._float));
+
+		switch(calcOp)
+		{
+		case EToken::Equal:			_int = lv && rv; break;
+		case EToken::NotEqual:		_int = !lv || !rv; break;
+		default: throw 'n'; //TODO
+		}
+		_type = INT;
+	}
+	else if(lhs == _FALSE_ || rhs == _FALSE_)
+	{//todo refactor
+		int lv = lhs == _FALSE_ ? 1 : ((lhs == INT && !lhs._int) || (lhs == FLOAT && !lhs._float));
+		int rv = rhs == _FALSE_ ? 1 : ((rhs == INT && !rhs._int) || (rhs == FLOAT && !rhs._float));
+
+		switch(calcOp)
+		{
+		case EToken::Equal:			_int = lv && rv; break;
+		case EToken::NotEqual:		_int = !lv || !rv; break;
+		default: throw 'n'; //TODO
+		}
+		_type = INT;
+	}
+	else if(lhs._type == STR || rhs._type == STR)
 	{//todo refactor
 		if(calcOp == EToken::Plus)
 		{
@@ -287,8 +326,8 @@ bool Variable::CalcAndAssign(const Variable& lhs, EToken calcOp, const Variable&
 			{
 				switch(calcOp)
 				{
-				case EToken::Equal:			_int = lhs._str == rhs._str; break;
-				case EToken::NotEqual:		_int = lhs._str != rhs._str; break;
+				case EToken::Equal:			_int = lhs._str == rhs._str; _type = INT; break;
+				case EToken::NotEqual:		_int = lhs._str != rhs._str; _type = INT; break;
 				}
 			}
 			else
@@ -327,6 +366,7 @@ bool Variable::CalcAndAssign(const Variable& lhs, EToken calcOp, const Variable&
 			throw 'n';
 		}
 
+		_type = FLOAT;
 		switch(calcOp)
 		{
 		case EToken::Plus:			_float = lfloat + rfloat; break;
@@ -351,7 +391,6 @@ bool Variable::CalcAndAssign(const Variable& lhs, EToken calcOp, const Variable&
 				}
 			}
 		}
-		_type = FLOAT;
 	}
 	else
 	{
@@ -363,6 +402,7 @@ bool Variable::CalcAndAssign(const Variable& lhs, EToken calcOp, const Variable&
 			throw 'n';
 		}
 
+		_type = INT;
 		switch(calcOp)
 		{
 		case EToken::Plus:			_int = leftInt + rightInt; break;
@@ -386,7 +426,6 @@ bool Variable::CalcAndAssign(const Variable& lhs, EToken calcOp, const Variable&
 		default:
 			throw 'n';
 		}
-		_type = INT;
 	}
 
 	return true;
@@ -405,7 +444,7 @@ bool Variable::CalcUnaryAndAssign(EToken unaryOp, const Variable& rhs)
 		return true;
 	}
 
-	if(rhs._type == STR || rhs._type == NONE)
+	if(rhs._type == STR)
 	{
 		throw 'n';
 		return false;
@@ -437,6 +476,37 @@ bool Variable::CalcUnaryAndAssign(EToken unaryOp, const Variable& rhs)
 			throw 'n';
 		}
 		_type = FLOAT;
+		return true;
+
+	case _NULL_:
+		switch(unaryOp)
+		{
+		case EToken::Not: _int = 1; break;
+		default:
+			throw 'n';
+		}
+		_type = INT;
+		return true;
+
+	case _TRUE_:
+		switch(unaryOp)
+		{
+		case EToken::Not: _int = 0; break;
+		default:
+			throw 'n';
+		}
+		_type = INT;
+		return true;
+
+
+	case _FALSE_:
+		switch(unaryOp)
+		{
+		case EToken::Not: _int = 1; break;
+		default:
+			throw 'n';
+		}
+		_type = INT;
 		return true;
 	}
 

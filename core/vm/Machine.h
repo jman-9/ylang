@@ -25,6 +25,7 @@ protected:
 
 	const Program* _prg;
 
+	std::vector<Variable> _literals;
 	std::vector<Variable> _consts;
 	std::vector<Variable> _regs;
 	std::vector<Variable> _stack;

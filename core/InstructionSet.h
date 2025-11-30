@@ -31,6 +31,7 @@ enum class ERefKind : uint8_t
 {
 	None,
 
+	Literal,
 	Const,
 	Reg,
 	GlobalVar,

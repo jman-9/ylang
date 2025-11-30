@@ -23,6 +23,10 @@ Machine::Machine()
 	_regs.resize(1000);
 	_stack.resize(5000);
 
+	_literals.push_back({ ._type = Variable::_NULL_ });
+	_literals.push_back({ ._type = Variable::_TRUE_ });
+	_literals.push_back({ ._type = Variable::_FALSE_ });
+
 	ybuiltin::Garage::RegisterAll(_modMgr);
 }
 
@@ -31,6 +35,11 @@ Variable* Machine::ResolveVar(ERefKind k, int idx)
 {
 	switch(k)
 	{
+	case ERefKind::Literal:
+		{
+			return &_literals[idx];
+		}
+
 	case ERefKind::Const: return &_consts[idx];
 
 	case ERefKind::Reg:
@@ -198,7 +207,7 @@ bool Machine::Assign(const Op::Assign& as)
 	{
 		if(Token::IsAssign((EToken)as.op))
 		{
-			if((ERefKind)as.src1Kind == ERefKind::Const)
+			if((ERefKind)as.src1Kind == ERefKind::Const || (ERefKind)as.src1Kind == ERefKind::Literal)
 			{
 				throw 'n';
 			}
@@ -288,10 +297,23 @@ bool Machine::Ret()
 bool Machine::Jz(const Op::Jz& jz)
 {
 	Variable* test = ResolveVar((ERefKind)jz.testKind, jz.test);
-	if(!test->_int)
+
+	if(	(*test == Variable::INT && test->_int) ||
+		(*test == Variable::FLOAT && test->_float) ||
+		(*test == Variable::STR && !test->_str.empty()) ||
+		(*test == Variable::OBJECT && test->_obj) ||
+		(*test == Variable::CLASS && !test->_clso._cls.name.empty()) ||
+		(*test == Variable::MODULE && test->_mod.modDesc) ||
+		(*test == Variable::REF && test->_ref) ||
+		(*test == Variable::ATTR && test->_attr) ||
+		(*test == Variable::LIST && test->_list) ||
+		(*test == Variable::DICT && test->_dict) ||
+		(*test == Variable::_TRUE_))
 	{
-		_pc = jz.pos - 1;
+		return true;
 	}
+
+	_pc = jz.pos - 1;
 	return true;
 }
 
@@ -642,10 +664,25 @@ bool Machine::Inc(const Op::Inc& inc)
 bool Machine::Jnz(const Op::Jnz& jnz)
 {
 	Variable* test = ResolveVar((ERefKind)jnz.testKind, jnz.test);
-	if(test->_int)
+
+	if(	(*test == Variable::INT && !test->_int) ||
+		(*test == Variable::FLOAT && !test->_float) ||
+		(*test == Variable::STR && test->_str.empty()) ||
+		(*test == Variable::OBJECT && !test->_obj) ||
+		(*test == Variable::CLASS && test->_clso._cls.name.empty()) ||
+		(*test == Variable::MODULE && !test->_mod.modDesc) ||
+		(*test == Variable::REF && !test->_ref) ||
+		(*test == Variable::ATTR && !test->_attr) ||
+		(*test == Variable::LIST && !test->_list) ||
+		(*test == Variable::DICT && !test->_dict) ||
+		(*test == Variable::_FALSE_) ||
+		(*test == Variable::_NULL_) ||
+		(*test == Variable::NONE))
 	{
-		_pc = jnz.pos - 1;
+		return true;
 	}
+
+	_pc = jnz.pos - 1;
 	return true;
 }
 

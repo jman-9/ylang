@@ -3,20 +3,21 @@
 #include <format>
 
 
-static char ValKindChar(ERefKind k)
+static std::string_view ValKindChar(ERefKind k)
 {
 	switch(k)
 	{
-	case ERefKind::Const : return 'c';
-	case ERefKind::Reg : return 'r';
-	case ERefKind::LocalVar : return 'l';
-	case ERefKind::GlobalVar : return 'g';
-	case ERefKind::FieldVar : return 'f';
-	case ERefKind::MemberFunc : return 'm';
+	case ERefKind::Literal : return "li";
+	case ERefKind::Const : return "c";
+	case ERefKind::Reg : return "r";
+	case ERefKind::LocalVar : return "l";
+	case ERefKind::GlobalVar : return "g";
+	case ERefKind::FieldVar : return "f";
+	case ERefKind::MemberFunc : return "m";
 	}
-	return ' ';
+	return " ";
 }
-static char ValKindChar(uint8_t k)
+static std::string_view ValKindChar(uint8_t k)
 {
 	return ValKindChar(ERefKind(k));
 }

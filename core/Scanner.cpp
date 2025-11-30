@@ -94,6 +94,9 @@ void Scanner::ProcessIdKeywords()
 		EToken::Fn,
 		EToken::Return,
 		EToken::Class,
+		EToken::Null,
+		EToken::True,
+		EToken::False,
 	};
 
 	for(auto& t : _tokens)

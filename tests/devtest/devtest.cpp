@@ -233,11 +233,6 @@ class Character {
 
 class Party {
     _members = [];
-    _dc = Character("dead", 0, 0, 0, 0);
-
-    fn Party() {
-        _dc._alive = 0;
-    }
 
     fn add(c) {
         _members.append(c);
@@ -259,7 +254,7 @@ class Party {
         }
 
         if (alive_list.len() == 0)
-            return _dc;
+            return null;
 
         idx = rand.get(0, alive_list.len() - 1);
         return alive_list[idx];
@@ -288,17 +283,17 @@ class Battle {
 
         a = _partyA.getRandomAlive();
         b = _partyB.getRandomAlive();
-        if (a.isAlive() && b.isAlive()) {
-            println("a attack b");
+        if (a && b) {
             a.attackTarget(b);
         }
 
         aa = _partyA.getRandomAlive();
         bb = _partyB.getRandomAlive();
-        if (aa.isAlive() && bb.isAlive()) {
-            println("b attack a");
+        if (aa && bb) {
             bb.attackTarget(aa);
         }
+
+        return 1;
     }
 
     fn run() {
@@ -338,7 +333,6 @@ fn main() {
     battle = Battle(a, b);
     battle.run();
 }
-
 )TEST";
 
 int main(int argc, const char** argv)

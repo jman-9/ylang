@@ -38,6 +38,10 @@ struct Variable
 		ATTR,
 		MODULE,
 		CLASS,
+
+		_NULL_,
+		_TRUE_,
+		_FALSE_,
 	};
 
 	Type _type = NONE;

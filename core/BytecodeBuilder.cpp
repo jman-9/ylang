@@ -299,9 +299,16 @@ bool BytecodeBuilder::BuildExp(Bytecode& retCtx, const TreeNode& stmt, bool root
 
 		int srcNum = -1;
 		if(stmt.self.IsLiteral())
-		{
-			inst.src1Kind = (uint8_t)ERefKind::Const;
-			inst.src1 = _constTbl.AddOrNot(stmt.self);
+		{	//TODO make table
+			switch(stmt.self.kind)
+			{
+			case EToken::Null: inst.src1 = 0; inst.src1Kind = (uint8_t)ERefKind::Literal; break;
+			case EToken::True: inst.src1 = 1; inst.src1Kind = (uint8_t)ERefKind::Literal; break;
+			case EToken::False:inst.src1 = 2; inst.src1Kind = (uint8_t)ERefKind::Literal; break;
+			default:
+				inst.src1Kind = (uint8_t)ERefKind::Const;
+				inst.src1 = _constTbl.AddOrNot(stmt.self);
+			}
 		}
 		else
 		{
@@ -436,8 +443,16 @@ bool BytecodeBuilder::BuildExp(Bytecode& retCtx, const TreeNode& stmt, bool root
 	{
 		if(lhs->self.IsLiteral())
 		{
-			inst.src1Kind = (uint8_t)ERefKind::Const;
-			inst.src1 = _constTbl.AddOrNot(lhs->self);
+			//TODO make table
+			switch(lhs->self.kind)
+			{
+			case EToken::Null: inst.src1 = 0; inst.src1Kind = (uint8_t)ERefKind::Literal; break;
+			case EToken::True: inst.src1 = 1; inst.src1Kind = (uint8_t)ERefKind::Literal; break;
+			case EToken::False:inst.src1 = 2; inst.src1Kind = (uint8_t)ERefKind::Literal; break;
+			default:
+				inst.src1Kind = (uint8_t)ERefKind::Const;
+				inst.src1 = _constTbl.AddOrNot(lhs->self);
+			}
 		}
 		else
 		{
@@ -471,9 +486,16 @@ bool BytecodeBuilder::BuildExp(Bytecode& retCtx, const TreeNode& stmt, bool root
 		else
 		{
 			if(rhs->self.IsLiteral())
-			{
-				inst.src2Kind = (uint8_t)ERefKind::Const;
-				inst.src2 = _constTbl.AddOrNot(rhs->self);
+			{		//TODO make table
+				switch(rhs->self.kind)
+				{
+				case EToken::Null: inst.src2 = 0; inst.src2Kind = (uint8_t)ERefKind::Literal; break;
+				case EToken::True: inst.src2 = 1; inst.src2Kind = (uint8_t)ERefKind::Literal; break;
+				case EToken::False:inst.src2 = 2; inst.src2Kind = (uint8_t)ERefKind::Literal; break;
+				default:
+					inst.src2Kind = (uint8_t)ERefKind::Const;
+					inst.src2 = _constTbl.AddOrNot(rhs->self);
+				}
 			}
 			else
 			{

@@ -82,6 +82,10 @@ enum class EToken : uint8_t
 
 	Class,
 	LValueField,
+
+	Null,
+	True,
+	False,
 };
 
 
