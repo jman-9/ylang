@@ -1,3 +1,5 @@
+<img src="ylang_logo.png" height="100">
+
 # ylang 0.0.5
 
 yet another programming language — retro, C-like, and Pythonic
