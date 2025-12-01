@@ -632,7 +632,12 @@ bool BytecodeBuilder::BuildExp(Bytecode& retCtx, const TreeNode& stmt, bool root
 bool BytecodeBuilder::BuildReturn(Bytecode& retCtx, const TreeNode& stmt)
 {
 	if(stmt.childs.empty())
-	{//TODO
+	{//TODO to handle no return value
+		for(int i=0; i<_fnStack.top().pushSpCnt; i++)
+		{
+			retCtx.PushBytecode<EOpcode::PopSp>();
+		}
+		retCtx.PushBytecode<EOpcode::Ret>();
 	}
 	else
 	{
@@ -790,6 +795,8 @@ bool BytecodeBuilder::BuildClass(Bytecode& retCtx, const TreeNode& stmt)
 
 	_clsStack.push(&cls);
 
+	_symTbl.AddBlockScope();
+
 	int fieldidx = 0;
 	for(auto& substmt : stmt.childs)
 	{
@@ -825,6 +832,8 @@ bool BytecodeBuilder::BuildClass(Bytecode& retCtx, const TreeNode& stmt)
 			}
 		}
 	}
+
+	_symTbl.PopScope();
 
 	_clsStack.pop();
 	return true;
@@ -979,13 +988,20 @@ bool BytecodeBuilder::BuildFn(Bytecode& retCtx, const TreeNode& stmt)
 		prm.name = p->self.val;
 		sym.params.push_back(prm);
 
-		auto idx = _symTbl.AddOrNot( { .name = p->self.val, .kind = ESymbol::Var } );
+		auto idx = _symTbl.AddOrNot( { .name = prm.name, .kind = ESymbol::Var } );
+	}
+
+	_reg += params.size() - 1;
+	for(int i=params.size() - 1; i>=0; i--)
+	{
+		auto& p = params[i];
+		auto idx = _symTbl.GetIdx(p->self.val);
 
 		Op::Assign as;
 		as.dstKind = (uint8_t)ERefKind::LocalVar;
 		as.dst = idx.idx;
 		as.src1Kind = (uint8_t)ERefKind::Reg;
-		as.src1 = _reg++;
+		as.src1 = _reg--;
 		retCtx.PushBytecode(as, p->self.line);
 	}
 

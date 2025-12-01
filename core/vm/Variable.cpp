@@ -270,11 +270,12 @@ bool Variable::CalcAndAssign(const Variable& lhs, EToken calcOp, const Variable&
 
 		switch(calcOp)
 		{
-		case EToken::Equal:			_int = lv && rv; break;
-		case EToken::NotEqual:		_int = !lv || !rv; break;
+		case EToken::Equal:		_type = INT; _int = lv && rv; break;
+		case EToken::NotEqual:	_type = INT; _int = !lv || !rv; break;
+		case EToken::Plus:
+			if(lhs == STR) { _str = lhs._str + rhs.ToStr(); _type = STR; } break;
 		default: throw 'n'; //TODO
 		}
-		_type = INT;
 	}
 	else if(lhs == _TRUE_ || rhs == _TRUE_)
 	{//todo refactor
@@ -283,8 +284,8 @@ bool Variable::CalcAndAssign(const Variable& lhs, EToken calcOp, const Variable&
 
 		switch(calcOp)
 		{
-		case EToken::Equal:			_int = lv && rv; break;
-		case EToken::NotEqual:		_int = !lv || !rv; break;
+		case EToken::Equal:		_int = lv && rv; break;
+		case EToken::NotEqual:	_int = !lv || !rv; break;
 		default: throw 'n'; //TODO
 		}
 		_type = INT;
@@ -296,8 +297,8 @@ bool Variable::CalcAndAssign(const Variable& lhs, EToken calcOp, const Variable&
 
 		switch(calcOp)
 		{
-		case EToken::Equal:			_int = lv && rv; break;
-		case EToken::NotEqual:		_int = !lv || !rv; break;
+		case EToken::Equal:		_int = lv && rv; break;
+		case EToken::NotEqual:	_int = !lv || !rv; break;
 		default: throw 'n'; //TODO
 		}
 		_type = INT;
@@ -326,8 +327,8 @@ bool Variable::CalcAndAssign(const Variable& lhs, EToken calcOp, const Variable&
 			{
 				switch(calcOp)
 				{
-				case EToken::Equal:			_int = lhs._str == rhs._str; _type = INT; break;
-				case EToken::NotEqual:		_int = lhs._str != rhs._str; _type = INT; break;
+				case EToken::Equal:		_int = lhs._str == rhs._str; _type = INT; break;
+				case EToken::NotEqual:	_int = lhs._str != rhs._str; _type = INT; break;
 				}
 			}
 			else
@@ -369,10 +370,10 @@ bool Variable::CalcAndAssign(const Variable& lhs, EToken calcOp, const Variable&
 		_type = FLOAT;
 		switch(calcOp)
 		{
-		case EToken::Plus:			_float = lfloat + rfloat; break;
-		case EToken::Minus:			_float = lfloat - rfloat; break;
-		case EToken::Star:			_float = lfloat * rfloat; break;
-		case EToken::Slash:			_float = lfloat / rfloat; break;
+		case EToken::Plus:	_float = lfloat + rfloat; break;
+		case EToken::Minus:	_float = lfloat - rfloat; break;
+		case EToken::Star:	_float = lfloat * rfloat; break;
+		case EToken::Slash:	_float = lfloat / rfloat; break;
 		default:
 			{
 				_type = INT;
@@ -605,6 +606,8 @@ string Variable::ToStr() const
 {
 	switch(_type)
 	{
+	case NONE: return "none";
+
 	case INT:
 		return to_string(_int);
 	case FLOAT:
@@ -652,6 +655,14 @@ string Variable::ToStr() const
 		return "ref: " + _ref->ToStr();
 	case ATTR:
 		return "attr(wip): " + _attr->name;
+	case CLASS:
+		return "cls(wip): " + _clso._cls.name;
+	case _NULL_:
+		return "null";
+	case _TRUE_:
+		return "true";
+	case _FALSE_:
+		return "false";
 	}
 	return "";
 }

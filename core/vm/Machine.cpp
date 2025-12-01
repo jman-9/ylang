@@ -483,6 +483,11 @@ bool Machine::Invoke(const Op::Invoke& ivk)
 			throw 'n';
 		}
 
+		if(ivk.numArgs)
+		{
+			_roff -= (int)ivk.numArgs - 1;
+		}
+
 		auto& cls = _clsStack.top()->_clso._cls;
 		Exec(cls._funcs[ivk.dst], 1);
 		return true;
