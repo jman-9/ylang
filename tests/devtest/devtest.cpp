@@ -9,192 +9,10 @@
 #include <format>
 using namespace std;
 
-#if 0
-const char* lextestcode =
-R"TEST(
-
-func
-if
-
-++ -- += & % ! != hahaha	// i'm comment
-_3hjssdj 0x192
-037 890
-'sdokfosdkfoskdfokfsd' "sdofksdokfsdfofksdfk'erokdfgoixcjvojksdj;'sdflkcxvik4m12hbjh\"\\ckjr\"\n\r\\\\sodpfpsdlfpl\""
-
-else
-
-/*
-block
-comment
-*/
-
-"""
-spsdlfpsldfpl
-vcitimdmnxc
-
-for
-
-,
-.ddp fdfssdfpcc
-     spdflpsdlfpsldf
-"""
-
-for
-
-)TEST";
-
-const char* exptestcode =
-R"TEST(
-
-!!!a + b;
-c + b;
-
-)TEST";
-
-const char* iftestcode =
-R"TEST(
-
-if(1) { a = 1 } else { b = 1 }
-
-c = 1
-
-{
-  if(0) { a = 1 } else { b = 1 }
-
-  f = 10
-}
-
-)TEST";
-
-const char* fortestcode =
-R"TEST(
-
-for( ; ; ) { continue }
-
-for(i=1; i<10; i+=1) { break }
-
-)TEST";
-
-const char* fntestcode =
-R"TEST(
-
-fn test(a, b, c) {
-  d = a + b + c
-  return d
-}
-
-test(1, 2, 3)
-
-)TEST";
-
-const char* postfixtestcode =
-R"TEST(
-
-fn test(a, b, c) {
-  d = a + b + c;
-  return d;
-}
-
-p = 1 + 30 * (3 + 2) / (5 - ((test))(1, 2, 3));
-
-g[p] = 10;
-
-)TEST";
-
-const char* testcode =
-R"TEST(
-/*
-tt = 10;
-
-t = 20 + tt - 50 * ((61 - 3)) + 4;
-
-{
-  ttt = 20;
-  tt += ttt;
-}
-
-//tt = sum(1,1,1);
-*/
-fn sum(a, b, c) {
-  d = a + b + c;
-  return d;
-}
-/*
-//sum(1, 1);
-t += sum(1, 2, 3);
-tt += t * 10 / 2;
-*/
-
-a = 10;
-for(i=0; i<10; i+=1)
-{
-  a += sum(1,1,1);
-  if(a > 0)
-  {
-    break;
-  }
-  else
-  {
-    break;
-  }
-}
-
-/*
-if(a > 10)
-{
-  fn sum2(a1, b, c) {
-    d = a1 + b + c;
-    return d;
-  }
-
-  p = 1 + 30 * (3 + 2) / (5 - sum2(1, 2, 3));
-}
-else if(a < 5)
-{
-  fn sum2(a1, b, c) {
-    d = a1 + b + c;
-    return d;
-  }
-  p = 3 * 7 + sum2(4, 5, 6);
-}
-else
-{
-  if(a == 6)
-    p = 6 * 9;
-  else if(a == 7)
-    p = 7 * 9;
-  else
-  {
-    if(a == 8) p = 8 * 9; else p = 9 * 9;
-  }
-}
-*/
-)TEST";
-#endif
-
-const char* testcode2 =
-R"TEST(
-
+const char* testcode1 = R"TEST(
 include sys;
 include rand;
 include math;
-
-// =========================
-// Basic utility
-// =========================
-
-fn clamp(v, min, max) {
-    if (v < min) return min;
-    if (v > max) return max;
-    return v;
-}
-
-fn random_choice(list) {
-    if (list.len() == 0) return null;
-    idx = rand.get(0, list.len() - 1);
-    return list[idx];
-}
-
 
 class Item {
     _name = "";
@@ -213,839 +31,410 @@ class Item {
         return _name;
     }
 
-    fn kind() {
-        return _kind;
-    }
-
-    fn power() {
-        return _power;
-    }
-
-    fn value() {
-        return _value;
-    }
-
     fn info() {
         return "{_name}({_kind}, pow={_power}, val={_value})";
     }
 }
 
-class Inventory {
-    _items = [];
 
-    fn Inventory() { }
-
-    fn add(item) {
-        _items.append(item);
-    }
-
-    fn removeByIndex(index) {
-        if (index < 0 || index >= _items.len()) return null;
-        item = _items[index];
-        lastIndex = _items.len() - 1;
-        if (index != lastIndex) {
-            tmp = _items[lastIndex];
-            _items[lastIndex] = _items[index];
-            _items[index] = tmp;
-        }
-        _items.pop_back();
-        return item;
-    }
-
-    fn removeByName(name) {
-        found = null;
-        foundIndex = -1;
-        for (i = 0; i < _items.len(); i++) {
-            if (_items[i].name() == name) {
-                found = _items[i];
-                foundIndex = i;
-                break;
-            }
-        }
-        if (foundIndex == -1) return null;
-        return removeByIndex(foundIndex);
-    }
-
-    fn findFirst(kind) {
-        for (i = 0; i < _items.len(); i++) {
-            if (_items[i].kind() == kind) return _items[i];
-        }
-        return null;
-    }
-
-    fn isEmpty() {
-        return _items.len() == 0;
-    }
-
-    fn len() {
-        return _items.len();
-    }
-
-    fn get(index) {
-        if (index < 0 || index >= _items.len()) return null;
-        return _items[index];
-    }
-
-    fn describe() {
-        if (_items.len() == 0) return "[]";
-        parts = [];
-        for (i = 0; i < _items.len(); i++) {
-            parts.append(_items[i].info());
-        }
-        text = "[";
-        for (i = 0; i < parts.len(); i++) {
-            text += parts[i];
-            if (i + 1 < parts.len()) text += ", ";
-        }
-        text += "]";
-        return text;
-    }
-}
-
-
-class Stats {
-    _hp = 0;
-    _maxHp = 0;
-    _atk = 0;
-    _def = 0;
-    _spd = 0;
-
-    fn Stats(hp, atk, def, spd) {
-        _hp = hp;
-        _maxHp = hp;
-        _atk = atk;
-        _def = def;
-        _spd = spd;
-    }
-
-    fn isAlive() {
-        return _hp > 0;
-    }
-
-    fn takeDamage(dmg) {
-        _hp = _hp - dmg;
-        if (_hp < 0) _hp = 0;
-    }
-
-    fn heal(amount) {
-        _hp = _hp + amount;
-        if (_hp > _maxHp) _hp = _maxHp;
-    }
-
-    fn hp() {
-        return _hp;
-    }
-
-    fn maxHp() {
-        return _maxHp;
-    }
-
-    fn atk() {
-        return _atk;
-    }
-
-    fn def() {
-        return _def;
-    }
-
-    fn spd() {
-        return _spd;
-    }
-
-    fn info() {
-        return "HP={_hp}/{_maxHp}, ATK={_atk}, DEF={_def}, SPD={_spd}";
-    }
-}
-
-class Npc {
+class ResourceStack {
     _name = "";
-    _role = "";
-    _stats = 0;
-    _inventory = 0;
-    _aiKind = "";
-    _mood = 0;
+    _amount = 0;
 
-    fn Npc(name, role, stats, aiKind) {
+    fn ResourceStack(name, amount) {
         _name = name;
-        _role = role;
-        _stats = stats;
-        _aiKind = aiKind;
-        _inventory = Inventory();
-        _mood = 0;
+        _amount = amount;
     }
 
-    fn name() {
-        return _name;
-    }
+    fn name() { return _name; }
+    fn amount() { return _amount; }
 
-    fn stats() {
-        return _stats;
-    }
-
-    fn inv() {
-        return _inventory;
-    }
-
-    fn isAlive() {
-        return _stats.isAlive();
-    }
-
-    fn healSmall() {
-        _stats.heal(5);
-    }
-
-    fn describe() {
-        return "{_name}({_role}) { _stats.info() } inv={ _inventory.describe() }";
-    }
-
-    fn mood() {
-        return _mood;
-    }
-
-    fn changeMood(delta) {
-        _mood = _mood + delta;
-        _mood = clamp(_mood, -5, 5);
-    }
-
-    fn decideActionInBattle() {
-        if (!_stats.isAlive()) return "dead";
-
-        if (_stats.hp() < _stats.maxHp() * 0.3) {
-            if (_inventory.findFirst("potion") != null) {
-                if (rand.get(0.0, 1.0) < 0.7) return "heal";
-            }
-        }
-
-        r = rand.get(0.0, 1.0);
-        if (_aiKind == "aggressive") {
-            if (r < 0.8) return "attack";
-            return "wait";
-        } else if (_aiKind == "cautious") {
-            if (r < 0.5) return "attack";
-            if (r < 0.8) return "wait";
-            return "defend";
-        } else {
-            if (r < 0.6) return "attack";
-            if (r < 0.8) return "heal";
-            return "wait";
-        }
-    }
-}
-
-
-class Enemy {
-    _name = "";
-    _kind = "";
-    _stats = 0;
-    _lootTable = [];
-
-    fn Enemy(name, kind, stats) {
-        _name = name;
-        _kind = kind;
-        _stats = stats;
-        _lootTable = [];
-    }
-
-    fn addLoot(item) {
-        _lootTable.append(item);
-    }
-
-    fn name() {
-        return _name;
-    }
-
-    fn stats() {
-        return _stats;
-    }
-
-    fn isAlive() {
-        return _stats.isAlive();
-    }
-
-    fn randomLoot() {
-        if (_lootTable.len() == 0) return null;
-        idx = rand.get(0, _lootTable.len() - 1);
-        return _lootTable[idx];
-    }
-
-    fn describe() {
-        return "{_name}({_kind}) { _stats.info() }";
-    }
-}
-
-class Encounter {
-    _enemies = [];
-
-    fn Encounter() { }
-
-    fn addEnemy(e) {
-        _enemies.append(e);
-    }
-
-    fn allEnemies() {
-        return _enemies;
-    }
-
-    fn isCleared() {
-        for (i = 0; i < _enemies.len(); i++) {
-            if (_enemies[i].isAlive()) return 0;
-        }
+    fn add(v) { _amount += v; }
+    fn remove(v) {
+        if (_amount < v) return 0;
+        _amount -= v;
         return 1;
     }
 
-    fn describe() {
-        if (_enemies.len() == 0) return "No enemies.";
-        for (i = 0; i < _enemies.len(); i++) {
-            println("  " + _enemies[i].describe());
-        }
-    }
-
-    fn getRandomAliveEnemy() {
-        alive = [];
-        for (i = 0; i < _enemies.len(); i++) {
-            if (_enemies[i].isAlive()) alive.append(_enemies[i]);
-        }
-        if (alive.len() == 0) return null;
-        idx = rand.get(0, alive.len() - 1);
-        return alive[idx];
-    }
-
-    fn getRandomAliveEnemyIndex() {
-        aliveIndexes = [];
-        for (i = 0; i < _enemies.len(); i++) {
-            if (_enemies[i].isAlive()) aliveIndexes.append(i);
-        }
-        if (aliveIndexes.len() == 0) return -1;
-        idx = rand.get(0, aliveIndexes.len() - 1);
-        return aliveIndexes[idx];
-    }
+    fn info() { return "{_name}:{_amount}"; }
 }
 
+class Inventory {
+    _items = {};
 
-class DialogueLine {
-    _speaker = "";
-    _text = "";
+    fn Inventory() { }
 
-    fn DialogueLine(speaker, text) {
-        _speaker = speaker;
-        _text = text;
+    fn add(name, amt) {
+        if (_items.contains(name))
+            _items[name] = _items[name] + amt;
+        else
+            _items[name] = amt;
     }
 
-    fn render() {
-        println("{_speaker}: {_text}");
-    }
-}
-
-class Dialogue {
-    _lines = [];
-
-    fn Dialogue() { }
-
-    fn addLine(speaker, text) {
-        _lines.append(DialogueLine(speaker, text));
+    fn remove(name, amt) {
+        if (!_items.contains(name)) return 0;
+        if (_items[name] < amt) return 0;
+        _items[name] = _items[name] - amt;
+        return 1;
     }
 
-    fn play() {
-        for (i = 0; i < _lines.len(); i++) {
-            _lines[i].render();
-        }
-    }
-}
-
-
-class Party {
-    _members = [];
-    _gold = 0;
-
-    fn Party() { }
-
-    fn addMember(npc) {
-        _members.append(npc);
+    fn get(name) {
+        if (!_items.contains(name)) return 0;
+        return _items[name];
     }
 
-    fn members() {
-        return _members;
-    }
-
-    fn aliveCount() {
-        count = 0;
-        for (i = 0; i < _members.len(); i++) {
-            if (_members[i].isAlive()) count++;
-        }
-        return count;
-    }
-
-    fn isWiped() {
-        return aliveCount() == 0;
-    }
-
-    fn gainGold(amount) {
-        _gold = _gold + amount;
-    }
-
-    fn gold() {
-        return _gold;
-    }
-
-    fn findFirstAlive() {
-        for (i = 0; i < _members.len(); i++) {
-            if (_members[i].isAlive()) return _members[i];
-        }
-        return null;
-    }
-
-    fn randomAlive() {
-        alive = [];
-        for (i = 0; i < _members.len(); i++) {
-            if (_members[i].isAlive()) alive.append(_members[i]);
-        }
-        if (alive.len() == 0) return null;
-        idx = rand.get(0, alive.len() - 1);
-        return alive[idx];
-    }
+    fn keys() { return _items.keys(); }
 
     fn describe() {
-        println("Party (gold={_gold}):");
-        for (i = 0; i < _members.len(); i++) {
-            println("  " + _members[i].describe());
+        ks = _items.keys();
+        if (ks.len() == 0) return "{{}}";
+        out = "{{";
+        for (i = 0; i < ks.len(); i++) {
+            k = ks[i];
+            out += "{k}:{_items[k]}";
+            if (i + 1 < ks.len()) out += ", ";
         }
-    }
-
-    fn distributeLoot(item) {
-        if (item == null) return;
-        target = randomAlive();
-        if (target == null) return;
-        target.inv().add(item);
-        println("  -> {target.name()} obtained {item.info()}");
+        out += "}}";
+        return out;
     }
 }
 
+class Colonist {
+    _name = "";
+    _health = 100;
+    _energy = 100;
+    _morale = 0;
+    _role = "";
+    _inventory = 0;
 
-class Battle {
-    _party = 0;
-    _enc = 0;
-    _turn = 1;
-
-    fn Battle(party, enc) {
-        _party = party;
-        _enc = enc;
-        _turn = 1;
+    fn Colonist(name, role) {
+        _name = name;
+        _role = role;
+        _health = 100;
+        _energy = 100;
+        _morale = 0;
+        _inventory = Inventory();
     }
 
-    fn isOver() {
-        if (_party.isWiped()) return 1;
-        if (_enc.isCleared()) return 1;
+    fn isAlive() { return _health > 0; }
+
+    fn workEff() {
+        eff = 1.0;
+        if (_energy < 50) eff *= 0.7;
+        if (_morale < 0) eff *= 0.8;
+        return eff;
+    }
+
+    fn rest() {
+        _energy += 20;
+        if (_energy > 100) _energy = 100;
+    }
+
+    fn consume(inv, name, amt) {
+        if (inv.remove(name, amt)) return 1;
         return 0;
     }
 
-    fn partyAct() {
-        for (i = 0; i < _party.members().len(); i++) {
-            actor = _party.members()[i];
-            if (!actor.isAlive()) continue;
+    fn dailyUpdate() {
+        _energy -= 20;
+        if (_energy < 0) _energy = 0;
+        if (_energy == 0) _health -= 5;
 
-            action = actor.decideActionInBattle();
-
-            if (action == "attack") {
-                target = _enc.getRandomAliveEnemy();
-                if (target == null) return;
-
-                atk = actor.stats().atk();
-                def = target.stats().def();
-                base = atk - def;
-                if (base < 1) base = 1;
-                dmg = base + rand.get(0, 3);
-                println("{actor.name()} attacks {target.name()} for {dmg}");
-                target.stats().takeDamage(dmg);
-            } else if (action == "heal") {
-                potion = actor.inv().findFirst("potion");
-                if (potion == null) {
-                    println("{actor.name()} wanted to heal, but has no potion.");
-                } else {
-                    actor.inv().removeByName(potion.name());
-                    actor.healSmall();
-                    println("{actor.name()} uses {potion.name()} and heals.");
-                }
-            } else if (action == "defend") {
-                println("{actor.name()} defends cautiously.");
-            } else if (action == "wait") {
-                println("{actor.name()} is watching the situation.");
-            } else if (action == "dead") {
-                // do nothing
-            }
+        if (_health <= 0) {
+            _health = 0;
         }
     }
 
-    fn enemiesAct() {
-        for (i = 0; i < _enc.allEnemies().len(); i++) {
-            e = _enc.allEnemies()[i];
-            if (!e.isAlive()) continue;
-
-            target = _party.randomAlive();
-            if (target == null) return;
-
-            atk = e.stats().atk();
-            def = target.stats().def();
-            base = atk - def;
-            if (base < 1) base = 1;
-            variance = rand.get(0, 2);
-            dmg = base + variance;
-            println("{e.name()} hits {target.name()} for {dmg}");
-            target.stats().takeDamage(dmg);
-        }
+    fn moraleUp(v) {
+        _morale += v;
+        if (_morale > 5) _morale = 5;
+    }
+    fn moraleDown(v) {
+        _morale -= v;
+        if (_morale < -5) _morale = -5;
     }
 
-    fn dropLoot() {
-        println("Battle cleared. Checking loot...");
-        for (i = 0; i < _enc.allEnemies().len(); i++) {
-            e = _enc.allEnemies()[i];
-            if (!e.isAlive()) continue;
-        }
-        for (i = 0; i < _enc.allEnemies().len(); i++) {
-            e = _enc.allEnemies()[i];
-            if (!e.isAlive()) continue;
-        }
-
-        for (i = 0; i < _enc.allEnemies().len(); i++) {
-            e = _enc.allEnemies()[i];
-            if (e.isAlive()) continue;
-
-            loot = e.randomLoot();
-            if (loot != null) {
-                println(" Enemy {e.name()} dropped {loot.info()}");
-                _party.distributeLoot(loot);
-            }
-        }
-
-        goldReward = rand.get(10, 40);
-        _party.gainGold(goldReward);
-        println("Party gained {goldReward} gold.");
-    }
-
-    fn run() {
-        println("=== Battle Start ===");
-        _enc.describe();
-        _party.describe();
-
-        for (; !isOver(); ) {
-            println("--- Turn {_turn} ---");
-            partyAct();
-            if (_enc.isCleared()) break;
-            enemiesAct();
-            _turn++;
-        }
-
-        if (_party.isWiped()) {
-            println("The party was wiped out...");
-        } else {
-            println("The party survived the encounter.");
-            dropLoot();
-        }
-
-        println("=== Battle End ===");
+    fn info() {
+        return "{_name}({_role}) HP={_health}, EN={_energy}, MO={_morale}";
     }
 }
 
-
-class Location {
+class Building {
     _name = "";
-    _kind = "";
-    _danger = 0;
-    _neighbors = [];
-    _npcDialogues = [];
+    _type = "";
+    _inv = 0;
 
-    fn Location(name, kind, danger) {
+    fn Building(name, type) {
         _name = name;
-        _kind = kind;
-        _danger = danger;
-        _neighbors = [];
-        _npcDialogues = [];
+        _type = type;
+        _inv = Inventory();
     }
 
-    fn name() {
-        return _name;
-    }
+    fn name() { return _name; }
 
-    fn addNeighbor(loc) {
-        _neighbors.append(loc);
-    }
+    fn inv() { return _inv; }
 
-    fn randomNeighbor() {
-        if (_neighbors.len() == 0) return null;
-        idx = rand.get(0, _neighbors.len() - 1);
-        return _neighbors[idx];
+    fn describe() {
+        return "{_name}({_type}) inv={_inv.describe()}";
     }
+}
 
-    fn dangerLevel() {
-        return _danger;
-    }
+class Habitat {
+    _colonists = [];
+    _facilities = [];
 
-    fn addDialogue(dialog) {
-        _npcDialogues.append(dialog);
-    }
+    fn Habitat() { }
 
-    fn randomDialogue() {
-        if (_npcDialogues.len() == 0) return null;
-        idx = rand.get(0, _npcDialogues.len() - 1);
-        return _npcDialogues[idx];
+    fn addColonist(c) { _colonists.append(c); }
+    fn addFacility(b) { _facilities.append(b); }
+
+    fn allColonists() { return _colonists; }
+    fn allFacilities() { return _facilities; }
+
+    fn aliveColonist() {
+        alive = [];
+        for (i = 0; i < _colonists.len(); i++) {
+            if (_colonists[i].isAlive())
+                alive.append(_colonists[i]);
+        }
+        return alive;
     }
 
     fn describe() {
-        return "{_name} ({_kind}, danger={_danger})";
+        println("== Habitat ==");
+        for (i = 0; i < _colonists.len(); i++) {
+            println("  " + _colonists[i].info());
+        }
+        for (i = 0; i < _facilities.len(); i++) {
+            println("  " + _facilities[i].describe());
+        }
     }
 }
 
-class World {
-    _locations = [];
-    _start = 0;
+class Farm {
+    _rate = 0;
 
-    fn World() { }
-
-    fn addLocation(loc) {
-        _locations.append(loc);
-        if (_start == 0) _start = loc;
+    fn Farm(rate) {
+        _rate = rate;
     }
 
-    fn startLocation() {
-        return _start;
-    }
-
-    fn allLocations() {
-        return _locations;
+    fn produce(colEff) {
+        amt = math.floor(_rate * colEff);
+        if (amt < 1) amt = 1;
+        return amt;
     }
 }
 
+class Mine {
+    _rate = 0;
 
-class AdventureContext {
-    _party = 0;
-    _world = 0;
-    _currentLocation = 0;
-
-    fn AdventureContext(party, world, startLoc) {
-        _party = party;
-        _world = world;
-        _currentLocation = startLoc;
+    fn Mine(rate) {
+        _rate = rate;
     }
 
-    fn party() {
-        return _party;
-    }
-
-    fn world() {
-        return _world;
-    }
-
-    fn currentLocation() {
-        return _currentLocation;
-    }
-
-    fn moveTo(loc) {
-        _currentLocation = loc;
-    }
-
-    fn describeState() {
-        println();
-        println("== Adventure State ==");
-        println("Location: { _currentLocation.describe() }");
-        _party.describe();
-        println();
+    fn produce(colEff) {
+        amt = math.floor(_rate * colEff);
+        if (amt < 1) amt = 1;
+        return amt;
     }
 }
 
-)TEST";
+class PowerPlant {
+    _output = 0;
+    fn PowerPlant(out) { _output = out; }
 
-const char* testcode3 = R"TEST(
-class Adventure {
-    _ctx = 0;
+    fn generate() {
+        return _output + rand.get(-2, 2);
+    }
+}
 
-    fn Adventure(ctx) {
-        _ctx = ctx;
+class Rover {
+    _name = "";
+    _durability = 100;
+
+    fn Rover(name) {
+        _name = name;
+        _durability = 100;
     }
 
-    fn randomEncounter() {
-        loc = _ctx.currentLocation();
-        d = loc.dangerLevel();
-        if (d <= 0) return;
+    fn explore() {
+        _durability -= rand.get(1, 6);
+        if (_durability < 0) _durability = 0;
 
-        chance = d * 0.25;
         r = rand.get(0.0, 1.0);
-        if (r > chance) return;
-
-        eStats = Stats(20 + d * 5, 4 + d, 1 + d, 5);
-        e = Enemy("Goblin", "beast", eStats);
-        e.addLoot(Item("Minor Potion", "potion", 0, 5));
-        e.addLoot(Item("Rusty Dagger", "weapon", 1, 2));
-
-        enc = Encounter();
-        enc.addEnemy(e);
-
-        battle = Battle(_ctx.party(), enc);
-        battle.run();
+        if (r < 0.4)
+            return Item("Ore Chunk", "resource", 0, 5);
+        if (r < 0.6)
+            return Item("Alien Relic", "rare", 0, 30);
+        return null;
     }
 
-    fn randomTreasure() {
-        loc = _ctx.currentLocation();
-        d = loc.dangerLevel();
-        r = rand.get(0.0, 1.0);
-        if (r > 0.2 + d * 0.1) return;
+    fn isBroken() { return _durability <= 0; }
 
-        println("The party found a small chest.");
+    fn info() {
+        return "{_name} DUR={_durability}";
+    }
+}
 
-        roll = rand.get(0, 100);
-        item = null;
-        if (roll < 40) {
-            item = Item("Herb", "potion", 0, 3);
-        } else if (roll < 70) {
-            item = Item("Iron Sword", "weapon", 3, 15);
+class Colony {
+    _hab = 0;
+    _stock = 0;
+    _farm = 0;
+    _mine = 0;
+    _pp = 0;
+    _rovers = [];
+
+    fn Colony(hab, farm, mine, pp) {
+        _hab = hab;
+        _farm = farm;
+        _mine = mine;
+        _pp = pp;
+        _stock = Inventory();
+        _rovers = [];
+    }
+
+    fn addRover(r) {
+        _rovers.append(r);
+    }
+
+    fn dailyProduction() {
+        cols = _hab.aliveColonist();
+        effSum = 0.0;
+        for (i = 0; i < cols.len(); i++) {
+            effSum += cols[i].workEff();
+        }
+        if (effSum == 0) return;
+
+        food = _farm.produce(effSum);
+        ore = _mine.produce(effSum);
+        powerOut = _pp.generate();
+
+        _stock.add("food", food);
+        _stock.add("ore", ore);
+        _stock.add("power", powerOut);
+
+        println("  Food+{food}, Ore+{ore}, Power+{powerOut}");
+    }
+
+    fn dailyConsumption() {
+        cols = _hab.aliveColonist();
+        totalFood = cols.len();
+        if (!_stock.remove("food", totalFood)) {
+            for (i = 0; i < cols.len(); i++) {
+                cols[i].moraleDown(1);
+            }
         } else {
-            item = Item("Shiny Gem", "treasure", 0, 25);
-        }
-
-        if (item != null) {
-            _ctx.party().distributeLoot(item);
-        }
-    }
-
-    fn randomNpcInteraction() {
-        loc = _ctx.currentLocation();
-        r = rand.get(0.0, 1.0);
-        if (r > 0.25) return;
-
-        dialog = loc.randomDialogue();
-        if (dialog == null) return;
-
-        println("The party meets someone at {loc.name()}.");
-        dialog.play();
-
-        moodDelta = rand.get(-1, 2);
-        for (i = 0; i < _ctx.party().members().len(); i++) {
-            _ctx.party().members()[i].changeMood(moodDelta);
-        }
-    }
-
-    fn randomTravel() {
-        loc = _ctx.currentLocation();
-        next = loc.randomNeighbor();
-        if (next == null) {
-            println("The party remains at {loc.name()}.");
-            return;
-        }
-
-        println("The party travels from {loc.name()} to {next.name()}.");
-        _ctx.moveTo(next);
-    }
-
-    fn step(day, stepCount) {
-        println("== Day {day}, Step {stepCount} ==");
-        _ctx.describeState();
-
-        randomEncounter();
-        if (_ctx.party().isWiped()) return;
-
-        randomTreasure();
-        randomNpcInteraction();
-        randomTravel();
-    }
-
-    fn run(days, stepsPerDay) {
-        for (d = 1; d <= days; d++) {
-            for (s = 1; s <= stepsPerDay; s++) {
-                if (_ctx.party().isWiped()) {
-                    println("Adventure ends: party wiped out.");
-                    return;
-                }
-                println("debug) {d} {s}");
-                step(d, s);
+            for (i = 0; i < cols.len(); i++) {
+                cols[i].moraleUp(1);
             }
         }
-        println("Adventure ends: the party survived.");
+    }
+
+    fn roverExpeditions() {
+        for (i = 0; i < _rovers.len(); i++) {
+            r = _rovers[i];
+            if (r.isBroken()) continue;
+
+            loot = r.explore();
+            if (loot != null) {
+                _stock.add(loot.name(), 1);
+                println("  Rover {r.info()} found {loot.info()}");
+            }
+        }
+    }
+
+    fn dailyColonistUpdate() {
+        cols = _hab.allColonists();
+        for (i = 0; i < cols.len(); i++) {
+            cols[i].dailyUpdate();
+        }
+    }
+
+    fn describe() {
+        println("== Colony Stock ==");
+        println(_stock.describe());
+    }
+
+    fn state() {
+        _hab.describe();
+        describe();
     }
 }
 
-// =========================
-// World setup
-// =========================
+class EventSystem {
+    _worldRand = 0;
 
-fn build_sample_world() {
-    town = Location("Oak Town", "town", 0);
-    forest = Location("Greenwood", "forest", 1);
-    cave = Location("Dark Cave", "dungeon", 2);
-    ruins = Location("Ancient Ruins", "dungeon", 3);
+    fn EventSystem() { _worldRand = 0; }
 
-    town.addNeighbor(forest);
-    forest.addNeighbor(town);
-    forest.addNeighbor(cave);
-    cave.addNeighbor(forest);
-    cave.addNeighbor(ruins);
-    ruins.addNeighbor(cave);
+    fn dailyEvent(col) {
+        r = rand.get(0.0, 1.0);
 
-    d1 = Dialogue();
-    d1.addLine("Old Man", "Travelers, beware the cave ahead.");
-    d1.addLine("Old Man", "Many have entered, few have returned.");
-
-    d2 = Dialogue();
-    d2.addLine("Merchant", "Fresh potions and gear! Take a look.");
-    d2.addLine("Merchant", "You never know when you'll need them.");
-
-    d3 = Dialogue();
-    d3.addLine("Mysterious Stranger", "The ruins remember the old king.");
-    d3.addLine("Mysterious Stranger", "Do you seek power or answers?");
-
-    town.addDialogue(d1);
-    town.addDialogue(d2);
-    ruins.addDialogue(d3);
-
-    world = World();
-    world.addLocation(town);
-    world.addLocation(forest);
-    world.addLocation(cave);
-    world.addLocation(ruins);
-
-    return world;
+        if (r < 0.1) {
+            println("!! Sandstorm damages rovers");
+            for (i = 0; i < col._rovers.len(); i++) {
+                col._rovers[i]._durability -= 10;
+            }
+        } else if (r < 0.15) {
+            println("!! Minor quake affects morale");
+            cs = col._hab.allColonists();
+            for (i = 0; i < cs.len(); i++) {
+                cs[i].moraleDown(1);
+            }
+        } else if (r < 0.18) {
+            println("!! Food storage spoiled. -5 food");
+            col._stock.remove("food", 5);
+        }
+    }
 }
 
-// =========================
-// Party setup
-// =========================
+fn makeColony() {
+    h = Habitat();
+    h.addColonist(Colonist("Ava", "Botanist"));
+    h.addColonist(Colonist("Leo", "Engineer"));
+    h.addColonist(Colonist("Nia", "Miner"));
 
-fn build_sample_party() {
-    s1 = Stats(35, 7, 3, 5);
-    s2 = Stats(28, 5, 4, 6);
-    s3 = Stats(22, 4, 2, 7);
+    h.addFacility(Building("Dormitory", "living"));
+    h.addFacility(Building("SolarFarm", "power"));
+    h.addFacility(Building("AgriDome", "farm"));
 
-    n1 = Npc("Ela", "Warrior", s1, "aggressive");
-    n2 = Npc("Mio", "Cleric", s2, "balanced");
-    n3 = Npc("Rin", "Rogue", s3, "cautious");
+    farm = Farm(8);
+    mine = Mine(5);
+    pp = PowerPlant(12);
 
-    n2.inv().add(Item("Small Potion", "potion", 0, 5));
-    n2.inv().add(Item("Small Potion", "potion", 0, 5));
-    n3.inv().add(Item("Throwing Knife", "weapon", 1, 3));
+    c = Colony(h, farm, mine, pp);
+    c.addRover(Rover("R1"));
+    c.addRover(Rover("R2"));
+    c.addRover(Rover("R3"));
 
-    party = Party();
-    party.addMember(n1);
-    party.addMember(n2);
-    party.addMember(n3);
-
-    return party;
+    return c;
 }
-
 
 fn main() {
     rand.randomize_timer();
 
-    println("=== ylang Text RPG Adventure Simulation ===");
+    col = makeColony();
+    ev = EventSystem();
 
-    world = build_sample_world();
-    party = build_sample_party();
+    for (day = 1; day <= 10; day++) {
+        println("=== Day {day} ===");
 
-    ctx = AdventureContext(party, world, world.startLocation());
-    adv = Adventure(ctx);
+        col.dailyProduction();
+        col.dailyConsumption();
+        col.roverExpeditions();
+        col.dailyColonistUpdate();
+        ev.dailyEvent(col);
 
-    adv.run(5, 3);
+        col.state();
+        println("");
+    }
 
-    println("=== Final Party State ===");
-    party.describe();
-    println("Gold: {party.gold()}");
+    println("Simulation End.");
 }
+)TEST";
+
+const char* testcode2 = R"TEST(
+)TEST";
+const char* testcode3 = R"TEST(
 )TEST";
 
 int main(int argc, const char** argv)
@@ -1054,7 +443,7 @@ int main(int argc, const char** argv)
 
 	Scanner s;
 	//s.Scan(testcode);
-	s.Scan(string(testcode2) + string(testcode3));
+	s.Scan(string(testcode1) + string(testcode2) + string(testcode3));
 
 	for(auto t : s._tokens)
 	{

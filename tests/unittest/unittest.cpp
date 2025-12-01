@@ -17,6 +17,172 @@ using namespace yvm;
 #define DEBUG_OUT
 
 
+
+#if 0
+const char* lextestcode =
+R"TEST(
+
+func
+if
+
+++ -- += & % ! != hahaha	// i'm comment
+_3hjssdj 0x192
+037 890
+'sdokfosdkfoskdfokfsd' "sdofksdokfsdfofksdfk'erokdfgoixcjvojksdj;'sdflkcxvik4m12hbjh\"\\ckjr\"\n\r\\\\sodpfpsdlfpl\""
+
+else
+
+/*
+block
+comment
+*/
+
+"""
+spsdlfpsldfpl
+vcitimdmnxc
+
+for
+
+,
+.ddp fdfssdfpcc
+     spdflpsdlfpsldf
+"""
+
+for
+
+)TEST";
+
+const char* exptestcode =
+R"TEST(
+
+!!!a + b;
+c + b;
+
+)TEST";
+
+const char* iftestcode =
+R"TEST(
+
+if(1) { a = 1 } else { b = 1 }
+
+c = 1
+
+{
+  if(0) { a = 1 } else { b = 1 }
+
+  f = 10
+}
+
+)TEST";
+
+const char* fortestcode =
+R"TEST(
+
+for( ; ; ) { continue }
+
+for(i=1; i<10; i+=1) { break }
+
+)TEST";
+
+const char* fntestcode =
+R"TEST(
+
+fn test(a, b, c) {
+  d = a + b + c
+  return d
+}
+
+test(1, 2, 3)
+
+)TEST";
+
+const char* postfixtestcode =
+R"TEST(
+
+fn test(a, b, c) {
+  d = a + b + c;
+  return d;
+}
+
+p = 1 + 30 * (3 + 2) / (5 - ((test))(1, 2, 3));
+
+g[p] = 10;
+
+)TEST";
+
+const char* testcode =
+R"TEST(
+/*
+tt = 10;
+
+t = 20 + tt - 50 * ((61 - 3)) + 4;
+
+{
+  ttt = 20;
+  tt += ttt;
+}
+
+//tt = sum(1,1,1);
+*/
+fn sum(a, b, c) {
+  d = a + b + c;
+  return d;
+}
+/*
+//sum(1, 1);
+t += sum(1, 2, 3);
+tt += t * 10 / 2;
+*/
+
+a = 10;
+for(i=0; i<10; i+=1)
+{
+  a += sum(1,1,1);
+  if(a > 0)
+  {
+    break;
+  }
+  else
+  {
+    break;
+  }
+}
+
+/*
+if(a > 10)
+{
+  fn sum2(a1, b, c) {
+    d = a1 + b + c;
+    return d;
+  }
+
+  p = 1 + 30 * (3 + 2) / (5 - sum2(1, 2, 3));
+}
+else if(a < 5)
+{
+  fn sum2(a1, b, c) {
+    d = a1 + b + c;
+    return d;
+  }
+  p = 3 * 7 + sum2(4, 5, 6);
+}
+else
+{
+  if(a == 6)
+    p = 6 * 9;
+  else if(a == 7)
+    p = 7 * 9;
+  else
+  {
+    if(a == 8) p = 8 * 9; else p = 9 * 9;
+  }
+}
+*/
+)TEST";
+#endif
+
+
+
 static std::vector<Error> Build(const std::string& src, Program& retProgram)
 {
 	vector<Error> errs;
