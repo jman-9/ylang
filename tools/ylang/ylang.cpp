@@ -140,7 +140,7 @@ bool ylang::RunFile(const string& srcPath)
 
 bool ylang::StartRepl()
 {
-	cout << "ylang 0.0.3\n\n";
+	cout << "ylang 0.0.5\n\n";
 
 	SemanticAnalyzer sa;
 	BytecodeBuilder bb;
