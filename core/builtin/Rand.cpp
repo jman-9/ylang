@@ -16,7 +16,8 @@ using namespace yvm;
 
 YRet RandomizeTimer(YArgs* args)
 {
-	srand( (unsigned)time( NULL ) );
+	srand( (unsigned int)time( NULL ) );
+	RANDOM(0, 1);	//TODO i don't know why
 	return {};
 }
 

@@ -73,7 +73,7 @@ bool SemanticAnalyzer::AnalyzeExp(const TreeNode& stmt)
 		else
 		{
 			auto found = _symTbl.back().find(lhsTok.val);
-			if(found == _symTbl.back().end())
+			if(found == _symTbl.back().end() || found->second.preRegister)
 			{
 				Symbol sym;
 				sym.name = lhsTok.val;
@@ -253,10 +253,11 @@ bool SemanticAnalyzer::AnalyzeFn(const TreeNode& stmt)
 	auto& block = *stmt.childs[1];
 
 	auto found = _symTbl.back().find(name);
-	if(found != _symTbl.back().end() && found->second.kind != ESymbol::Cls)
+	//TODO ctor redundancy
+	if(found != _symTbl.back().end() && !found->second.preRegister && found->second.kind != ESymbol::Cls)
 	{
 		//todo message
-		_errors.push_back(ErrorBuilder::Default(stmt.self.line, format("'{}': already defined", stmt.self.val)));
+		_errors.push_back(ErrorBuilder::AlreadyExisting(stmt.self.line, stmt.self.val));
 		return false;
 	}
 
@@ -269,7 +270,7 @@ bool SemanticAnalyzer::AnalyzeFn(const TreeNode& stmt)
 		if(found != _symTbl.back().end())
 		{
 			//todo message
-			_errors.push_back(ErrorBuilder::Default(stmt.self.line, format("'{}': already defined name is not allowed", p->self.val)));
+			_errors.push_back(ErrorBuilder::AlreadyExisting(stmt.self.line, p->self.val));
 			return false;
 		}
 
@@ -352,10 +353,62 @@ bool SemanticAnalyzer::AnalyzeClass(const TreeNode& stmt)
 	{
 		switch(itm->self.kind)
 		{
-		case EToken::Fn: if(!AnalyzeFn(*itm)) return false; break;
-		case EToken::Assign: if(!AnalyzeExp(*itm)) return false; break;
+		case EToken::Fn:
+			{
+				const auto& fn = itm->self;
+				auto found = _symTbl.back().find(fn.val);
+				if(found == _symTbl.back().end())
+				{
+					Symbol sym;
+					sym.preRegister = true;
+					sym.name = fn.val;
+					sym.kind = ESymbol::Fn;
+					for(auto& p : itm->childs[0]->childs)
+					{
+						Param prm;
+						prm.name = p->self.val;
+						sym.params.push_back(prm);
+					}
+					_symTbl.back()[ sym.name ] = sym;
+				}
+				else if(!found->second.preRegister && found->second.kind != ESymbol::Cls)
+				{
+					_errors.push_back(ErrorBuilder::AlreadyExisting(fn.line, fn.val));
+					return false;
+				}
+			}
+			break;
+		case EToken::Assign:
+			{
+				const auto& id = itm->childs.front()->self;
+				auto found = _symTbl.back().find(id.val);
+				if(found == _symTbl.back().end())
+				{
+					Symbol sym;
+					sym.preRegister = true;
+					sym.name = id.val;
+					sym.kind = ESymbol::Var;
+					_symTbl.back()[ sym.name ] = sym;
+				}
+				else if(!found->second.preRegister)
+				{
+					_errors.push_back(ErrorBuilder::AlreadyExisting(id.line, id.val));
+					return false;
+				}
+			}
+			break;
+
 		default:
 			throw 'n';//TODO
+		}
+	}
+
+	for(auto& itm : stmt.childs)
+	{
+		switch(itm->self.kind)
+		{
+		case EToken::Fn: if(!AnalyzeFn(*itm)) return false; break;
+		case EToken::Assign: if(!AnalyzeExp(*itm)) return false; break;
 		}
 	}
 

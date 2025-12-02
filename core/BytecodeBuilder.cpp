@@ -809,7 +809,21 @@ bool BytecodeBuilder::BuildClass(Bytecode& retCtx, const TreeNode& stmt)
 
 			cls._fieldMap[ sym.name ] = cls._fields.size();
 			cls._fields.push_back(sym);
+		}
+		else if(substmt->self.val == cls.name)
+		{//ctor - noop
+		}
+		else
+		{//fn
+			cls._funcMap[ substmt->self.val ] = cls._funcs.size();
+			cls._funcs.push_back({});
+		}
+	}
 
+	for(auto& substmt : stmt.childs)
+	{
+		if(substmt->self == EToken::Assign)
+		{
 			if(!BuildExp(cls._initer, *substmt, true))
 			{//TODO cleanup
 				return false;
@@ -824,9 +838,7 @@ bool BytecodeBuilder::BuildClass(Bytecode& retCtx, const TreeNode& stmt)
 		}
 		else
 		{//fn
-			cls._funcMap[ substmt->self.val ] = cls._funcs.size();
-			cls._funcs.push_back({});
-			if(!BuildFn(cls._funcs.back(), *substmt))
+			if(!BuildFn(cls._funcs[cls._funcMap[ substmt->self.val ]], *substmt))
 			{//TODO cleanup
 				return false;
 			}

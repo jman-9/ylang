@@ -28,4 +28,6 @@ struct Symbol
 	size_t seg = 0;
 	size_t pos = 0;
 	std::vector<Param> params;
+
+	bool preRegister = false;
 };

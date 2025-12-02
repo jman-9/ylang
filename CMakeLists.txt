@@ -12,6 +12,7 @@ endif()
 
 add_subdirectory(core)
 add_subdirectory(tests/devtest)
+add_subdirectory(tests/filetest)
 add_subdirectory(tests/unittest)
 add_subdirectory(tools/ylang)
 
