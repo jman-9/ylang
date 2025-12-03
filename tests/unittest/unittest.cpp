@@ -17,7 +17,6 @@ using namespace yvm;
 #define DEBUG_OUT
 
 
-
 #if 0
 const char* lextestcode =
 R"TEST(
@@ -506,6 +505,12 @@ TEST_CASE( "Class Test", "[class]" )
 	REQUIRE( ret.code == 15 );
 
 	ret = Run( R"YT(
+		class Ctor { _test = 15; }
+		exit(Ctor().(_test));
+	)YT" );
+	REQUIRE( !ret.build );
+
+	ret = Run( R"YT(
 		class Ctor { _test = 15; fn Ctor(test) _test = 9; }
 		exit(Ctor()._test);
 	)YT" );
@@ -594,6 +599,83 @@ TEST_CASE( "Class Test", "[class]" )
 	REQUIRE( ret.code == 0 );
 }
 
+TEST_CASE( "Increment Decrement Test", "[incdec]" )
+{
+	Result ret;
+
+	ret = Run( R"YT( 0++; )YT" );
+	REQUIRE( !ret.build );
+	ret = Run( R"YT( 1--; )YT" );
+	REQUIRE( !ret.build );
+	ret = Run( R"YT( (--(((8)))) )YT" );
+	REQUIRE( !ret.build );
+	ret = Run( R"YT( 9++; )YT" );
+	REQUIRE( !ret.build );
+
+	ret = Run( R"YT( "2"++; )YT" );
+	REQUIRE( !ret.build );
+	ret = Run( R"YT( "5"--; )YT" );
+	REQUIRE( !ret.build );
+	ret = Run( R"YT( --("0") )YT" );
+	REQUIRE( !ret.build );
+	ret = Run( R"YT( "2"++; )YT" );
+	REQUIRE( !ret.build );
+
+	ret = Run( R"YT( a = 9; exit(a++); )YT" );
+	REQUIRE( ret.code == 9 );
+	ret = Run( R"YT( a = 9; exit(++a); )YT" );
+	REQUIRE( ret.code == 10 );
+	ret = Run( R"YT( a = 9; exit(a--); )YT" );
+	REQUIRE( ret.code == 9 );
+	ret = Run( R"YT( a = 9; exit(--a); )YT" );
+	REQUIRE( ret.code == 8 );
+
+	ret = Run( R"YT( a = 2; exit(a++ + a++); )YT" );
+	REQUIRE( ret.code == 5 );
+	ret = Run( R"YT( a = 2; exit(((a))-- + a++); )YT" );
+	REQUIRE( ret.code == 3 );
+	ret = Run( R"YT( a = 2; b = a++ + a++; exit(a); )YT" );
+	REQUIRE( ret.code == 4 );
+	ret = Run( R"YT( a = 2; b = a-- + a++; exit(a); )YT" );
+	REQUIRE( ret.code == 2 );
+
+	ret = Run( R"YT( a = 2; exit((a-- - ((a--)))); )YT" );
+	REQUIRE( ret.code == 1 );
+	ret = Run( R"YT( a = 2; exit(a++ - a--); )YT" );
+	REQUIRE( ret.code == -1 );
+	ret = Run( R"YT( a = 2; b = a-- - a--; exit(a); )YT" );
+	REQUIRE( ret.code == 0 );
+	ret = Run( R"YT( a = 2; b = a++ - a--; exit(a); )YT" );
+	REQUIRE( ret.code == 2 );
+
+	ret = Run( R"YT( class IncDec { a = 7; }; ic = IncDec(); exit(ic.a++); )YT" );
+	REQUIRE( ret.code == 7 );
+	ret = Run( R"YT( class IncDec { a = 7; }; ic = IncDec(); exit(++ic.a); )YT" );
+	REQUIRE( ret.code == 8 );
+	ret = Run( R"YT( class IncDec { a = 7; }; ic = IncDec(); exit(ic.a--); )YT" );
+	REQUIRE( ret.code == 7 );
+	ret = Run( R"YT( class IncDec { a = 7; }; ic = IncDec(); exit(--ic.a); )YT" );
+	REQUIRE( ret.code == 6 );
+
+	ret = Run( R"YT( class IncDec { a = [1, 2]; }; ic = IncDec(); exit((ic.a)[1]++); )YT" );
+	REQUIRE( ret.code == 2 );
+	ret = Run( R"YT( class IncDec { a = [1, 2]; }; ic = IncDec(); exit(++(ic.a[1])); )YT" );
+	REQUIRE( ret.code == 3 );
+	ret = Run( R"YT( class IncDec { a = [1, 2]; }; ic = IncDec(); exit((ic.a[1])--); )YT" );
+	REQUIRE( ret.code == 2 );
+	ret = Run( R"YT( class IncDec { a = [1, 2]; }; ic = IncDec(); exit(--ic.a[1]); )YT" );
+	REQUIRE( ret.code == 1 );
+
+	ret = Run( R"YT( class IncDec { a = { "t1":1, "t2":2 }; }; ic = IncDec(); exit(ic.a["t1"]++); )YT" );
+	REQUIRE( ret.code == 1 );
+	ret = Run( R"YT( class IncDec { a = { "t1":1, "t2":2 }; }; ic = IncDec(); exit(++ic.a["t1"]); )YT" );
+	REQUIRE( ret.code == 2 );
+	ret = Run( R"YT( class IncDec { a = { "t1":1, "t2":2 }; }; ic = IncDec(); exit(ic.a["t1"]--); )YT" );
+	REQUIRE( ret.code == 1 );
+	ret = Run( R"YT( class IncDec { a = { "t1":1, "t2":2 }; }; ic = IncDec(); exit(--ic.a["t1"]); )YT" );
+	REQUIRE( ret.code == 0 );
+}
+
 
 
 static const Catch::LeakDetector leakDetector;
@@ -610,14 +692,15 @@ int main(int argc, const char** argv)
 	Catch::ConfigData& cfg = _session.configData();
 
 	cfg.showSuccessfulTests = true;
-	cfg.testsOrTags.push_back("[primstr],");
-	cfg.testsOrTags.push_back("[bltrand],");
-	cfg.testsOrTags.push_back("[bltsys],");
-	cfg.testsOrTags.push_back("[bltfile],");
-	cfg.testsOrTags.push_back("[bltjson],");
-	cfg.testsOrTags.push_back("[exp],");
-	cfg.testsOrTags.push_back("[logop],");
+// 	cfg.testsOrTags.push_back("[primstr],");
+// 	cfg.testsOrTags.push_back("[bltrand],");
+// 	cfg.testsOrTags.push_back("[bltsys],");
+// 	cfg.testsOrTags.push_back("[bltfile],");
+// 	cfg.testsOrTags.push_back("[bltjson],");
+// 	cfg.testsOrTags.push_back("[exp],");
+// 	cfg.testsOrTags.push_back("[logop],");
 	cfg.testsOrTags.push_back("[class],");
+	cfg.testsOrTags.push_back("[incdec],");
 
 	int numFailed = _session.run();
 };

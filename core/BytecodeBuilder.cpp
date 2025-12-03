@@ -519,7 +519,7 @@ bool BytecodeBuilder::BuildExp(Bytecode& retCtx, const TreeNode& stmt, bool root
 			uint8_t srcKind;
 			uint16_t srcIdx;
 			auto& LValue = stmt.childs.front()->self;
-			switch(stmt.childs.front()->self.kind)
+			switch(LValue.kind)
 			{
 			case EToken::Id:
 				{
@@ -529,23 +529,12 @@ bool BytecodeBuilder::BuildExp(Bytecode& retCtx, const TreeNode& stmt, bool root
 					break;
 				}
 
-			case EToken::Index:
-			case EToken::LBracket:
-				{
-					auto idxInst = retCtx._code.back();
-					if(idxInst != EOpcode::Index)//TODO
-						throw 'n';
+			case EToken::LValueIndex:
+			case EToken::LValueField:
+				srcKind = inst.src1Kind;
+				srcIdx = inst.src1;
+				break;
 
-					const Op::Index& idx = *((Op::Index*)idxInst.code.data());
-					Op::LValueIndex lidx = { idx.dstKind, idx.idxKind, idx.dst, idx.idx };
-					retCtx.FillBytecode(retCtx.endOfCode(), lidx, stmt.self.line);
-
-					srcKind = inst.src1Kind;
-					srcIdx = inst.src1;
-					break;
-				}
-
-			case EToken::Dot: //TODO
 			default:
 				throw 'n';
 			}

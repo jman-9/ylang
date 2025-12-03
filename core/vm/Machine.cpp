@@ -147,7 +147,7 @@ bool Machine::Assign(const Op::Assign& as)
 			}
 			else
 			{
-				dst->CalcAndAssign(*src1, (EToken)as.op, *src2);
+				dst->CalcAndAssign(*src1, op, *src2);
 			}
 
 			//TODO generalize
@@ -430,28 +430,54 @@ bool Machine::LValueIndex(const Op::LValueIndex& lli)
 
 	if(idx->_type == Variable::INT)
 	{
-		if(dst->_type != Variable::LIST)
+		Variable* lst = nullptr;
+		if(dst->_type == Variable::LVREF)
+		{
+			if(*dst->_ref != Variable::LIST)
+			{
+				throw 'n';
+			}
+			lst = dst->_ref;
+		}
+		else if(dst->_type == Variable::LIST)
+		{
+			lst = dst;
+		}
+		else
 		{
 			throw 'n';
 		}
 
-		auto t = dst->_list->at(idx->_int);
+		auto t = lst->_list->at(idx->_int);
 		dst->Clear();
 		dst->_type = Variable::LVREF;
 		dst->_ref = t;
 	}
 	else if(idx->_type == Variable::STR)
 	{
-		if(dst->_type != Variable::DICT)
+		Variable* dict = nullptr;
+		if(dst->_type == Variable::LVREF)
+		{
+			if(*dst->_ref != Variable::DICT)
+			{
+				throw 'n';
+			}
+			dict = dst->_ref;
+		}
+		else if(dst->_type == Variable::DICT)
+		{
+			dict = dst;
+		}
+		else
 		{
 			throw 'n';
 		}
 
 		Variable* t = nullptr;
-		auto found = dst->_dict->find(idx->_str);
-		if(found == dst->_dict->end())
+		auto found = dict->_dict->find(idx->_str);
+		if(found == dict->_dict->end())
 		{
-			auto inserted = dst->_dict->insert({idx->_str, new Variable()});
+			auto inserted = dict->_dict->insert({idx->_str, new Variable()});
 			if(!inserted.second)
 			{
 				throw 'n';

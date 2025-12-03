@@ -144,6 +144,14 @@ static bool IsPrimaryPostfix(const Token& tok)
 {
 	return IsPrimaryPostfix(tok.kind);
 }
+static bool IsLValue(EToken tok)
+{
+	return tok == EToken::Id || tok == EToken::Dot || tok == EToken::Index || tok == EToken::LValueIndex || tok == EToken::LValueField;
+}
+static bool IsLValue(const Token& tok)
+{
+	return IsLValue(tok.kind);
+}
 
 static int CompPrec(EToken lhs, EToken rhs)
 {
@@ -213,25 +221,6 @@ TreeNodeSptr Parser::ParseExpLoop(EToken endToken /* = EToken::None */, EToken e
 			int prec = CompPrec(curNode, node);
 			if(prec > 0 || (prec == 0 && (!curNode->self.IsAssign() && !node->self.IsAssign())))
 			{
-				if(node->self.IsAssign())
-				{//TODO clarify LValue check
-					if(curNode->self != EToken::Id && curNode->self != EToken::Index && curNode->self != EToken::Dot)
-					{
-						_errors.push_back(ErrorBuilder::LValueError(node->self.line, node->self.val));
-						return nullptr;
-					}
-
-					if(curNode->self == EToken::Index)
-					{//TODO algorithm..
-						curNode->self.kind = EToken::LValueIndex;
-					}
-
-					if(curNode->self == EToken::Dot)
-					{//TODO algorithm..
-						curNode->self.kind = EToken::LValueField;
-					}
-				}
-
 				TreeNode* parent = curNode->parent;
 				node->PushFrontChild(curNode);
 				if(parent) parent->ReplaceBackChild(node);
@@ -244,6 +233,32 @@ TreeNodeSptr Parser::ParseExpLoop(EToken endToken /* = EToken::None */, EToken e
 				throw 'a';
 			}
 		}
+	}
+
+	queue<TreeNodeSptr> q;
+	q.push(root);
+	for( ; !q.empty(); )
+	{
+		TreeNodeSptr cur = q.front();
+		q.pop();
+
+		if(cur->self.IsAssign() || cur->self.IsIncDecOp())
+		{
+			auto& LValue = cur->childs.front();
+			if(!IsLValue(LValue->self))
+			{
+				_errors.push_back(ErrorBuilder::LValueError(LValue->self.line, LValue->self.val));
+				return nullptr;
+			}
+
+			if(LValue->self == EToken::Index)
+				LValue->self.kind = EToken::LValueIndex;
+			else if(LValue->self == EToken::Dot)
+				LValue->self.kind = EToken::LValueField;
+		}
+
+		for(auto& n : cur->childs)
+			q.push(n);
 	}
 
 	return root;
@@ -275,8 +290,8 @@ TreeNodeSptr Parser::ParseExp(bool first)
 		//TODO modify logic
 		auto& cur = GetCur();
 		auto& prev = GetPrev();
-		if(cur.IsPrefixUnary() && (prev.IsPrefixUnary() || IsOperator(prev) || first))
-		{
+		if(cur.IsPrefixUnary() && ((prev.IsPrefixUnary() && !prev.IsIncDecOp()) || IsOperator(prev) || first))
+		{//TODO clarify prefix parse condition
 			if(node = ParsePrefixExp()) break;
 		}
 
@@ -1008,11 +1023,12 @@ TreeNodeSptr Parser::Parse()
 
 		TreeNodeSptr ast = ParseStmt();
 		if(!ast)
-		{//todo leak
+		{
 			return nullptr;
 		}
 		root->PushBackChild(ast);
 	}
+	if(!_errors.empty()) return nullptr;
 	return root;
 }
 

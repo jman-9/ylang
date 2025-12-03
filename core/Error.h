@@ -19,6 +19,7 @@ enum class EErr
 	ExpectedExpression,
 	Expected,
 	AlreadyExisting,
+	NotInitialized,
 };
 
 struct Error
@@ -52,4 +53,5 @@ namespace ErrorBuilder
 	Error ExpectedExpression(uint32_t line, const std::string& s);
 	Error Expected(uint32_t line, const std::string& s);
 	Error AlreadyExisting(uint32_t line, const std::string& s);
+	Error NotInitialized(uint32_t line, const std::string& s);
 }

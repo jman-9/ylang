@@ -14,6 +14,7 @@ using namespace std;
 
 
 const char* testcode1 = R"TEST(
+a = 2; b = a++ + a++; println("{b} {a}");
 )TEST";
 const char* testcode2 = R"TEST(
 )TEST";

@@ -126,7 +126,7 @@ bool SemanticAnalyzer::AnalyzeExp(const TreeNode& stmt)
 		auto found = _symTbl.back().find(stmt.self.val);
 		if(found == _symTbl.back().end())
 		{//todo message
-			_errors.push_back(ErrorBuilder::Default(stmt.self.line, format("'{}': not initialized variable", stmt.self.val)));
+			_errors.push_back(ErrorBuilder::NotInitialized(stmt.self.line, stmt.self.val));
 			return false;
 		}
 
@@ -429,6 +429,15 @@ bool SemanticAnalyzer::CanBeLValue(const TreeNode& stmt)
 		if(curTok != EToken::Id && curTok != EToken::Dot && curTok != EToken::Index && curTok != EToken::LValueIndex && curTok != EToken::LValueField)
 		{
 			return false;
+		}
+		if(curTok == EToken::Id)
+		{
+			auto found = _symTbl.back().find(curTok.val);
+			if(found != _symTbl.back().end())
+			{
+				if(found->second.kind != ESymbol::Var && found->second.kind != ESymbol::Field)
+					return false;
+			}
 		}
 
 		if(cur->childs.empty()) break;

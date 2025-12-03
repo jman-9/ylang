@@ -98,4 +98,9 @@ Error AlreadyExisting(uint32_t line, const std::string& s)
 	return { line, EErr::AlreadyExisting, format("'{}': already existing", s) };
 }
 
+Error NotInitialized(uint32_t line, const std::string& s)
+{
+	return { line, EErr::NotInitialized, format("'{}': not initialized", s) };
+}
+
 }

@@ -146,7 +146,7 @@ void Bytecode::FillBytecode(int ln, const OpType& inst, int srcLine /* = -1 */)
 	}
 	else if constexpr (std::is_same_v<Op::LValueField, OpType>)
 	{
-		_codeStr[ln] = std::format("lvalueindex {}{}.{}{}", ValKindChar(inst.dstKind), inst.dst, ValKindChar(inst.fieldKind), inst.field);
+		_codeStr[ln] = std::format("lvaluefield {}{}.{}{}", ValKindChar(inst.dstKind), inst.dst, ValKindChar(inst.fieldKind), inst.field);
 	}
 	else
 	{
