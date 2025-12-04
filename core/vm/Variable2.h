@@ -17,6 +17,12 @@ struct ClassObject2
 	std::vector<Variable2> _fields;
 	const Class* _cls;
 };
+struct ModuleObject
+{
+	ymod::Module _mod;
+	void* _o;
+};
+
 
 struct Variable2
 {
@@ -105,8 +111,8 @@ struct Variable2
 	std::unordered_map<std::string, Variable2>& dict();
 	const ClassObject2& clsObj() const;
 	ClassObject2& clsObj();
-	const ymod::Module& modObj() const;
-	ymod::Module& modObj();
+	const ModuleObject& modObj() const;
+	ModuleObject& modObj();
 
 
 	struct Object
@@ -114,7 +120,7 @@ struct Variable2
 		std::vector<Variable2> _list;
 		std::unordered_map<std::string, Variable2> _dict;
 		ClassObject2 _clso;
-		ymod::Module _modo;
+		ModuleObject _modo;
 
 	private:
 		friend struct Variable2;

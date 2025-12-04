@@ -145,33 +145,35 @@ void Variable2::SetClass(const Class& cls, bool makeInstance)
 void Variable2::SetModule(const ModuleDesc& mod, bool makeInstance)
 {
 	ResetNewRef();
-	_u._o->_modo.modDesc = &mod;
+	_u._o->_modo._mod.modDesc = &mod;
 	_u._o->_type = MODULE;
 	_type = MODULE;
 
 	if(mod.initer)
 	{
-		modObj() = mod.initer();
+		modObj()._mod = mod.initer();
 	}
 
 	if(!makeInstance)	//TODO
 		return;
 
+	_u._o->_type = MODULEOBJ;
+	_type = MODULEOBJ;
 	/*TODO qaz
 	YRet yr = mod.newer(nullptr);
 	if(yr.single.tp != YEArg::Object)
 	{
 		throw 'n';
-	}
-
-	if(mod.initer)
-	{
-		modObj() = mod.initer();
 	}*/
 }
 
 void Variable2::SetVar(Variable2& var)
 {
+	if(this == &var)
+	{//guard code against self-assignment
+		return;
+	}
+
 	switch(var._type)
 	{
 	case NONE: Clear(); break;
@@ -186,6 +188,7 @@ void Variable2::SetVar(Variable2& var)
 	case DICT:
 	case CLASS:
 	case MODULE:
+	case MODULEOBJ:
 	case CLASSOBJ: SetObj(var._u._o); break;
 	}
 }
@@ -689,7 +692,7 @@ const ModuleDesc& Variable2::mod() const
 {
 	if(_type != MODULE) throw 'n'; //TODO
 	//qazreturn *_u._mod;
-	return *modObj().modDesc;
+	return *modObj()._mod.modDesc;
 }
 vector<Variable2>& Variable2::list()
 {
@@ -711,16 +714,16 @@ ClassObject2& Variable2::clsObj()
 	if(_type != CLASS) throw 'n'; //TODO
 	return _u._o->_clso;
 }
-const ymod::Module& Variable2::modObj() const
+const ModuleObject& Variable2::modObj() const
 {
 	//qaz
-	if(_type != MODULE) throw 'n'; //TODO
+	if(_type != MODULE && _type != MODULEOBJ) throw 'n'; //TODO
 	return _u._o->_modo;
 }
-ymod::Module& Variable2::modObj()
+ModuleObject& Variable2::modObj()
 {
 	//qaz
-	if(_type != MODULE) throw 'n'; //TODO
+	if(_type != MODULE && _type != MODULEOBJ) throw 'n'; //TODO
 	return _u._o->_modo;
 }
 

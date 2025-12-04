@@ -1,5 +1,5 @@
 #include "Rand.h"
-#include "vm/Variable.h"
+#include "vm/Variable2.h"
 #include <time.h>
 
 
@@ -23,21 +23,23 @@ YRet RandomizeTimer(YArgs* args)
 
 YRet Seed(YArgs* args)
 {
-	auto seed = (Variable*)args->args[0].o;
+	auto seed = (Variable2*)args->args[0].o;
 
-	srand( seed->_int );
+	srand( seed->int_() );
 	return {};
 }
 
 
 YRet Get(YArgs* args)
 {
-	auto min = (Variable*)args->args[0].o;
-	auto max = (Variable*)args->args[1].o;
+	auto min = (Variable2*)args->args[0].o;
+	auto max = (Variable2*)args->args[1].o;
 
 	YRet yr;
 	yr.single.tp = YEArg::YVar;
-	yr.single.o = Variable::NewInt( RANDOM(min->_int, max->_int) );
+	auto rv = (Variable2*)args->retBuff.o;
+	rv->SetInt( RANDOM(min->int_(), max->int_()) );
+	yr.single.o = rv;
 	return yr;
 }
 

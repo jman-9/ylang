@@ -32,8 +32,8 @@ Machine::Machine()
 
 	_literals2.resize(3);
 	_literals2[0]._type = Variable2::_NULL_;
-	_literals2[0]._type = Variable2::_TRUE_;
-	_literals2[0]._type = Variable2::_FALSE_;
+	_literals2[1]._type = Variable2::_TRUE_;
+	_literals2[2]._type = Variable2::_FALSE_;
 
 	ybuiltin::Garage::RegisterAll(_modMgr);
 }
@@ -194,20 +194,20 @@ bool Machine::Assign(const Op::Assign& as)
 			//TODO generalize
 			if(*dst == Variable2::ATTR)
 			{
-				if(dst->attr().owner == Variable2::MODULE)
+				if(dst->attr().owner == Variable2::MODULE || dst->attr().owner == Variable2::MODULEOBJ)
 				{
-					auto found = dst->attr().owner.modObj().memberVars.find(dst->attr().name);
-					if(found != dst->attr().owner.modObj().memberVars.end())
+					auto found = dst->attr().owner.modObj()._mod.memberVars.find(dst->attr().name);
+					if(found != dst->attr().owner.modObj()._mod.memberVars.end())
 					{
 						dst->SetValueFromContract(found->second);
 					}
 				}
-				else if(dst->_u._attr->owner == Variable2::CLASS)
+				else if(dst->attr().owner == Variable2::CLASS)
 				{
-					auto found = dst->_u._attr->owner._u._o->_clso._cls->_fieldMap.find(dst->_u._attr->name);
-					if(found != dst->_u._attr->owner._u._o->_clso._cls->_fieldMap.end())
+					auto found = dst->attr().owner.clsObj()._cls->_fieldMap.find(dst->_u._attr->name);
+					if(found != dst->attr().owner.clsObj()._cls->_fieldMap.end())
 					{
-						dst->SetVar(dst->_u._attr->owner._u._o->_clso._fields[found->second]);
+						dst->SetVar(dst->attr().owner.clsObj()._fields[found->second]);
 					}
 				}
 			}
@@ -343,7 +343,8 @@ bool Machine::Jz(const Op::Jz& jz)
 		(*test == Variable2::FLOAT && test->float_()) ||
 		(*test == Variable2::STR && !test->str().empty()) ||
 		(*test == Variable2::CLASS && !test->clsObj()._cls->name.empty()) ||
-		(*test == Variable2::MODULE && test->modObj().modDesc) ||
+		(*test == Variable2::MODULE && !test->mod().IsNull()) ||
+		(*test == Variable2::MODULEOBJ && test->modObj()._mod.modDesc) ||
 		//TODO(*test == Variable2::OBJECT && test->_obj) || || TODO qaz
 		//(*test == Variable2::REF && test->ref()) || TODO qaz
 		(*test == Variable2::ATTR && !test->attr().name.empty()) ||
@@ -616,7 +617,7 @@ bool Machine::Invoke(const Op::Invoke& ivk)
 		{//TODO
 			throw 'n';
 		}
-		modDesc = owner.modObj().modDesc;
+		modDesc = owner.modObj()._mod.modDesc;
 	}
 
 	auto found = modDesc->memberTbl.find(dst->attr().name);
@@ -632,7 +633,7 @@ bool Machine::Invoke(const Op::Invoke& ivk)
 
 	YArgs ya;
 	int off = 0;
-	if(found->second.needSelf)
+	if(found->second.needSelf || owner == Variable2::MODULEOBJ)
 	{
 		if(owner == Variable2::MODULE)
 		{//TODO
@@ -677,8 +678,9 @@ bool Machine::Invoke(const Op::Invoke& ivk)
 		}
 	}
 
+	auto ret = ResolveVar2(ERefKind::Reg, ivk.dst);
 	ya.retBuff.tp = YEArg::YVar;
-	ya.retBuff.o = ResolveVar2(ERefKind::Reg, ivk.dst);
+	ya.retBuff.o = ret;
 
 	auto yr = found->second.func(&ya);
 	if(yr.code)
@@ -691,9 +693,11 @@ bool Machine::Invoke(const Op::Invoke& ivk)
 		{
 			if(yr.single.tp == YEArg::Object)
 			{//TODO qaz
-				//YObj* yo = (YObj*)yr.single.o;
-				//ymod::Module mod { &_modMgr.GetModuleDesc(yo->name.str) };
-				//ret = Variable::NewObject(mod, yo->obj);
+				YObj* yo = (YObj*)yr.single.o;
+				ret->SetModule( _modMgr.GetModuleDesc(yo->name.str), true);
+				ret->_type = Variable2::MODULEOBJ;
+				ret->modObj()._o = yo->obj;
+				delete yo;
 			}
 			else if(yr.single.tp == YEArg::YVar)
 			{//TODO no-op
@@ -745,11 +749,12 @@ bool Machine::Jnz(const Op::Jnz& jnz)
 		(*test == Variable2::STR && test->str().empty()) ||
 		//(*test == Variable2::OBJECT && !test->_obj) || //TODOqaz
 		(*test == Variable2::CLASS && test->clsObj()._cls->name.empty()) ||
-		(*test == Variable2::MODULE && !test->modObj().modDesc) ||
+		(*test == Variable2::MODULE && test->mod().IsNull()) ||
 		//(*test == Variable2::REF && !test->ref()) || TODOqaz
 		(*test == Variable2::ATTR && test->attr().name.empty()) ||
 		(*test == Variable2::LIST && !test->_u._o) ||	//TODOqaz
 		(*test == Variable2::DICT && !test->_u._o) ||	//TODOqaz
+		(*test == Variable2::MODULEOBJ && !test->modObj()._mod.modDesc) ||
 		(*test == Variable2::_FALSE_) ||
 		(*test == Variable2::_NULL_) ||
 		(*test == Variable2::NONE))

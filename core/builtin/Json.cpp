@@ -1,5 +1,5 @@
 #include "Json.h"
-#include "vm/Variable.h"
+#include "vm/Variable2.h"
 #include "ext/nlohmann/json.hpp"
 #include <queue>
 #include <iostream>
@@ -17,13 +17,30 @@ using namespace std;
 
 YRet Parse(YArgs* args)
 {
-	Variable* jsonStr = (Variable*)args->args[0].o;
-	auto j = json::parse(jsonStr->_str);
+	auto AppendNode = [](Variable2& v, const string* k = nullptr) -> Variable2* {
+		if(v == Variable2::LIST)
+		{
+			v.list().push_back({});
+			return &v.list().back();
+		}
+		else if(v == Variable2::DICT)
+		{
+			auto inserted = v.dict().insert({ *k, {}});
+			return &inserted.first->second;
+		}
+		else
+		{//TODO
+			throw 'n';
+		}
+	};
+
+	Variable2* jsonStr = (Variable2*)args->args[0].o;
+	auto j = json::parse(jsonStr->str());
 
 
-	Variable* vjson = new Variable;
-	Variable* vtrav;
-	queue<Variable*> vq;
+	Variable2* vjson = (Variable2*)args->retBuff.o;
+	Variable2* vtrav;
+	queue<Variable2*> vq;
 
 	queue<json*> jq;
 	json* jtrav;
@@ -54,19 +71,7 @@ YRet Parse(YArgs* args)
 
 			if(v.is_array() || v.is_object())
 			{
-				Variable* node = new Variable;
-				if(*vtrav == Variable::LIST)
-				{
-					vtrav->_list->push_back(node);
-				}
-				else if(*vtrav == Variable::DICT)
-				{
-					(*vtrav->_dict)[ k ] = node;
-				}
-				else
-				{//TODO
-					throw 'n';
-				}
+				Variable2* node = AppendNode(*vtrav, &k);
 
 			#ifdef DEBUG_OUT
 				cout << " ";
@@ -77,28 +82,18 @@ YRet Parse(YArgs* args)
 			}
 			else
 			{
-				Variable* newV = new Variable;
+				Variable2* newV = AppendNode(*vtrav, &k);
 				if(v.is_number_integer())
 					newV->SetInt(v);
 				else if(v.is_number_float())
 					newV->SetFloat(v);
 				else if(v.is_boolean())
-					newV->SetInt(v);
+				{//TODO ugly...
+					newV->Clear();
+					newV->_type = v == true ? Variable2::_TRUE_ : Variable2::_FALSE_;
+				}
 				else
 					newV->SetStr(v);
-
-				if(*vtrav == Variable::LIST)
-				{
-					vtrav->_list->push_back(newV);
-				}
-				else if(*vtrav == Variable::DICT)
-				{
-					(*vtrav->_dict)[ k ] = newV;
-				}
-				else
-				{//TODO
-					throw 'n';
-				}
 
 			#ifdef DEBUG_OUT
 				cout << " " << v << endl;
@@ -115,14 +110,14 @@ YRet Parse(YArgs* args)
 
 YRet Dump(YArgs* args)
 {
-	Variable* vobj = (Variable*)args->args[0].o;
+	Variable2* vobj = (Variable2*)args->args[0].o;
 
-	Variable* vindent = nullptr;
+	int indent = -1;
 	if(args->numArgs > 1)
-		vindent = (Variable*)args->args[1].o;
+		indent = ((Variable2*)args->args[1].o)->int_();
 
-	Variable* vtrav;
-	queue<Variable*> vq;
+	Variable2* vtrav;
+	queue<Variable2*> vq;
 
 	json jjson;
 	queue<json*> jq;
@@ -137,27 +132,27 @@ YRet Dump(YArgs* args)
 		jq.pop();
 		vq.pop();
 
-		if(*vtrav == Variable::LIST)
+		if(*vtrav == Variable2::LIST)
 		{
 			int i = 0;
 
-			for(auto& v : *vtrav->_list)
+			for(auto& v : vtrav->list())
 			{
 			#ifdef DEBUG_OUT
 				cout << i++ << " ";
 			#endif
 
 				jtrav->push_back(json());
-				vq.push(v);
+				vq.push(&v);
 			}
 			for(auto& j : *jtrav)
 			{
 				jq.push(&j);
 			}
 		}
-		else if(*vtrav == Variable::DICT)
+		else if(*vtrav == Variable2::DICT)
 		{
-			for(auto& [k, v] : *vtrav->_dict)
+			for(auto& [k, v] : vtrav->dict())
 			{
 			#ifdef DEBUG_OUT
 				cout << k << " ";
@@ -165,17 +160,17 @@ YRet Dump(YArgs* args)
 
 				(*jtrav)[k] = json();
 				jq.push(&(*jtrav)[k]);
-				vq.push(v);
+				vq.push(&v);
 			}
 		}
 		else
 		{
-			if(*vtrav == Variable::INT)
-				*jtrav = vtrav->_int;
-			else if(*vtrav == Variable::FLOAT)
-				*jtrav = vtrav->_float;
-			//else if(v.is_boolean())//TODO
-				//newV->SetInt(v);
+			if(*vtrav == Variable2::INT)
+				*jtrav = vtrav->int_();
+			else if(*vtrav == Variable2::FLOAT)
+				*jtrav = vtrav->float_();
+			else if(*vtrav == Variable2::_TRUE_ || *vtrav == Variable2::_FALSE_)
+				*jtrav = *vtrav == Variable2::_TRUE_ ? true : false;
 			else
 				*jtrav = vtrav->ToStr();
 
@@ -187,7 +182,9 @@ YRet Dump(YArgs* args)
 
 	YRet yr;
 	yr.single.tp = YEArg::YVar;
-	yr.single.o = Variable::NewStr(jjson.dump(vindent ? vindent->_int : -1));
+	Variable2* vdump =  (Variable2*)args->retBuff.o;
+	vdump->SetStr(jjson.dump(indent));
+	yr.single.o = vdump;
 	return yr;
 }
 

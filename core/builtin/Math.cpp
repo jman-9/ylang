@@ -1,5 +1,5 @@
 #include "Math.h"
-#include "vm/Variable.h"
+#include "vm/Variable2.h"
 #include <math.h>
 
 
@@ -7,65 +7,25 @@ namespace ybuiltin::Math
 {
 using namespace yvm;
 
-YRet Sin(YArgs* args)
+YRet Container(YArgs* args, double(*func)(double))
 {
-	auto a1 = (Variable*)args->args[0].o;
-	double x = *a1 == Variable::INT ? (double)a1->_int : a1->_float;
-	double v = sin(x);
+	auto a1 = (Variable2*)args->args[0].o;
+	double x = *a1 == Variable2::INT ? (double)a1->int_() : a1->float_();
+	double v = func(x);
 
 	YRet yr;
-	yr.single.o = Variable::NewFloat(v);
+	auto rv = (Variable2*)args->retBuff.o;
+	rv->SetFloat(v);
+	yr.single.o = rv;
 	yr.single.tp = YEArg::YVar;
 	return yr;
 }
 
-YRet Cos(YArgs* args)
-{
-	auto a1 = (Variable*)args->args[0].o;
-	double x = *a1 == Variable::INT ? (double)a1->_int : a1->_float;
-	double v = cos(x);
-
-	YRet yr;
-	yr.single.o = Variable::NewFloat(v);
-	yr.single.tp = YEArg::YVar;
-	return yr;
-}
-
-YRet Tan(YArgs* args)
-{
-	auto a1 = (Variable*)args->args[0].o;
-	double x = *a1 == Variable::INT ? (double)a1->_int : a1->_float;
-	double v = tan(x);
-
-	YRet yr;
-	yr.single.o = Variable::NewFloat(v);
-	yr.single.tp = YEArg::YVar;
-	return yr;
-}
-
-YRet Sqrt(YArgs* args)
-{
-	auto a1 = (Variable*)args->args[0].o;
-	double x = *a1 == Variable::INT ? (double)a1->_int : a1->_float;
-	double v = sqrt(x);
-
-	YRet yr;
-	yr.single.o = Variable::NewFloat(v);
-	yr.single.tp = YEArg::YVar;
-	return yr;
-}
-
-YRet Floor(YArgs* args)
-{
-	auto a1 = (Variable*)args->args[0].o;
-	double x = *a1 == Variable::INT ? (double)a1->_int : a1->_float;
-	double v = floor(x);
-
-	YRet yr;
-	yr.single.o = Variable::NewFloat(v);
-	yr.single.tp = YEArg::YVar;
-	return yr;
-}
+YRet Sin(YArgs* args)	{ return Container(args, sin); }
+YRet Cos(YArgs* args)	{ return Container(args, cos); }
+YRet Tan(YArgs* args)	{ return Container(args, tan); }
+YRet Sqrt(YArgs* args)	{ return Container(args, sqrt); }
+YRet Floor(YArgs* args)	{ return Container(args, floor); }
 
 const ymod::ModuleDesc& GetModuleDesc()
 {
