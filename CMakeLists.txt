@@ -7,6 +7,8 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 if (MSVC)
     add_compile_options(/utf-8)
+    #add_compile_options("$<$<CONFIG:RELEASE>:/Zi>")
+    #add_link_options("$<$<CONFIG:RELEASE>:/DEBUG>")
     set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 endif()
 

@@ -1,5 +1,5 @@
 #include "Math.h"
-#include "vm/Variable2.h"
+#include "vm/Variable.h"
 #include <math.h>
 
 
@@ -9,12 +9,12 @@ using namespace yvm;
 
 YRet Container(YArgs* args, double(*func)(double))
 {
-	auto a1 = (Variable2*)args->args[0].o;
-	double x = *a1 == Variable2::INT ? (double)a1->int_() : a1->float_();
+	auto a1 = (Variable*)args->args[0].o;
+	double x = *a1 == Variable::INT ? (double)a1->int_() : a1->float_();
 	double v = func(x);
 
 	YRet yr;
-	auto rv = (Variable2*)args->retBuff.o;
+	auto rv = (Variable*)args->retBuff.o;
 	rv->SetFloat(v);
 	yr.single.o = rv;
 	yr.single.tp = YEArg::YVar;

@@ -31,9 +31,9 @@ Machine::Machine()
 	//_literals.push_back({ ._type = Variable::_FALSE_ });
 
 	_literals2.resize(3);
-	_literals2[0]._type = Variable2::_NULL_;
-	_literals2[1]._type = Variable2::_TRUE_;
-	_literals2[2]._type = Variable2::_FALSE_;
+	_literals2[0]._type = Variable::_NULL_;
+	_literals2[1]._type = Variable::_TRUE_;
+	_literals2[2]._type = Variable::_FALSE_;
 
 	ybuiltin::Garage::RegisterAll(_modMgr);
 }
@@ -73,7 +73,7 @@ Variable* Machine::ResolveVar(ERefKind k, int idx)
 	default: return nullptr;
 	}
 }*/
-Variable2* Machine::ResolveVar2(ERefKind k, int idx)
+Variable* Machine::ResolveVar2(ERefKind k, int idx)
 {
 	switch(k)
 	{
@@ -175,9 +175,9 @@ bool Machine::Assign(const Op::Assign& as)
 
 	if((ERefKind)as.dstKind != ERefKind::None)
 	{
-		Variable2* src1 = ResolveVar2((ERefKind)as.src1Kind, as.src1);
-		Variable2* src2 = ResolveVar2((ERefKind)as.src2Kind, as.src2);
-		Variable2* dst = ResolveVar2((ERefKind)as.dstKind, as.dst);
+		Variable* src1 = ResolveVar2((ERefKind)as.src1Kind, as.src1);
+		Variable* src2 = ResolveVar2((ERefKind)as.src2Kind, as.src2);
+		Variable* dst = ResolveVar2((ERefKind)as.dstKind, as.dst);
 		if(src1 && src2)
 		{
 			auto op = (EToken)as.op;
@@ -192,9 +192,9 @@ bool Machine::Assign(const Op::Assign& as)
 			}
 
 			//TODO generalize
-			if(*dst == Variable2::ATTR)
+			if(*dst == Variable::ATTR)
 			{
-				if(dst->attr().owner == Variable2::MODULE || dst->attr().owner == Variable2::MODULEOBJ)
+				if(dst->attr().owner == Variable::MODULE || dst->attr().owner == Variable::MODULEOBJ)
 				{
 					auto found = dst->attr().owner.modObj()._mod.memberVars.find(dst->attr().name);
 					if(found != dst->attr().owner.modObj()._mod.memberVars.end())
@@ -202,7 +202,7 @@ bool Machine::Assign(const Op::Assign& as)
 						dst->SetValueFromContract(found->second);
 					}
 				}
-				else if(dst->attr().owner == Variable2::CLASSOBJ)
+				else if(dst->attr().owner == Variable::CLASSOBJ)
 				{
 					auto found = dst->attr().owner.clsObj()._cls->_fieldMap.find(dst->_u._attr->name);
 					if(found != dst->attr().owner.clsObj()._cls->_fieldMap.end())
@@ -214,7 +214,7 @@ bool Machine::Assign(const Op::Assign& as)
 		}
 		else if(src1)
 		{
-			if(*src1 == Variable2::LVREF)
+			if(*src1 == Variable::LVREF)
 			{//TODO
 				auto lv = src1->_u._ref;
 				dst->Assign(EToken::Assign, *lv);
@@ -253,14 +253,14 @@ bool Machine::Assign(const Op::Assign& as)
 				throw 'n';
 			}
 
-			Variable2* src2 = ResolveVar2((ERefKind)as.src2Kind, as.src2);
-			Variable2* src1 = ResolveVar2((ERefKind)as.src1Kind, as.src1);
+			Variable* src2 = ResolveVar2((ERefKind)as.src2Kind, as.src2);
+			Variable* src1 = ResolveVar2((ERefKind)as.src1Kind, as.src1);
 			src1->Assign((EToken)as.op, *src2);
 		}
 		else if(Token::IsIncDecOp((EToken)as.op))
 		{
-			Variable2* src2 = ResolveVar2((ERefKind)as.src2Kind, as.src2);
-			Variable2* src1 = ResolveVar2((ERefKind)as.src1Kind, as.src1);
+			Variable* src2 = ResolveVar2((ERefKind)as.src2Kind, as.src2);
+			Variable* src1 = ResolveVar2((ERefKind)as.src1Kind, as.src1);
 			if(src1)
 			{
 				src1->CalcIncDec((EToken)as.op);
@@ -337,21 +337,21 @@ bool Machine::Ret()
 
 bool Machine::Jz(const Op::Jz& jz)
 {
-	Variable2* test = ResolveVar2((ERefKind)jz.testKind, jz.test);
+	Variable* test = ResolveVar2((ERefKind)jz.testKind, jz.test);
 
-	if(	(*test == Variable2::INT && test->int_()) ||
-		(*test == Variable2::FLOAT && test->float_()) ||
-		(*test == Variable2::STR && !test->str().empty()) ||
-		(*test == Variable2::CLASS && !test->cls().name.empty()) ||
-		(*test == Variable2::MODULE && !test->mod().IsNull()) ||
+	if(	(*test == Variable::INT && test->int_()) ||
+		(*test == Variable::FLOAT && test->float_()) ||
+		(*test == Variable::STR && !test->str().empty()) ||
+		(*test == Variable::CLASS && !test->cls().name.empty()) ||
+		(*test == Variable::MODULE && !test->mod().IsNull()) ||
 		//TODO(*test == Variable2::OBJECT && test->_obj) || || TODO qaz
 		//(*test == Variable2::REF && test->ref()) || TODO qaz
-		(*test == Variable2::ATTR && !test->attr().name.empty()) ||
-		(*test == Variable2::LIST && test->_u._o) || // || TODO qaz
-		(*test == Variable2::DICT && test->_u._o) || // || TODO qaz
-		(*test == Variable2::CLASSOBJ && test->clsObj()._cls) ||
-		(*test == Variable2::MODULEOBJ && test->modObj()._mod.modDesc) ||
-		(*test == Variable2::_TRUE_))
+		(*test == Variable::ATTR && !test->attr().name.empty()) ||
+		(*test == Variable::LIST && test->_u._o) || // || TODO qaz
+		(*test == Variable::DICT && test->_u._o) || // || TODO qaz
+		(*test == Variable::CLASSOBJ && test->clsObj()._cls) ||
+		(*test == Variable::MODULEOBJ && test->modObj()._mod.modDesc) ||
+		(*test == Variable::_TRUE_))
 	{
 		return true;
 	}
@@ -362,10 +362,10 @@ bool Machine::Jz(const Op::Jz& jz)
 
 bool Machine::ListSet(const Op::ListSet& ls)
 {
-	Variable2* dst = ResolveVar2((ERefKind)ls.dstKind, ls.dst);
+	Variable* dst = ResolveVar2((ERefKind)ls.dstKind, ls.dst);
 
-	Variable2* t = nullptr;
-	if(*dst != Variable2::LVREF)
+	Variable* t = nullptr;
+	if(*dst != Variable::LVREF)
 	{
 		t = dst;
 	}
@@ -383,9 +383,9 @@ bool Machine::ListSet(const Op::ListSet& ls)
 
 bool Machine::ListAdd(const Op::ListAdd& la)
 {
-	Variable2* src = ResolveVar2((ERefKind)la.srcKind, la.src);
-	Variable2* dst = ResolveVar2((ERefKind)la.dstKind, la.dst);
-	if(*dst != Variable2::LIST)
+	Variable* src = ResolveVar2((ERefKind)la.srcKind, la.src);
+	Variable* dst = ResolveVar2((ERefKind)la.dstKind, la.dst);
+	if(*dst != Variable::LIST)
 	{
 		throw 'n';
 	}
@@ -396,10 +396,10 @@ bool Machine::ListAdd(const Op::ListAdd& la)
 
 bool Machine::DictSet(const Op::DictSet& ds)
 {
-	Variable2* dst = ResolveVar2((ERefKind)ds.dstKind, ds.dst);
+	Variable* dst = ResolveVar2((ERefKind)ds.dstKind, ds.dst);
 
-	Variable2* t = nullptr;
-	if(*dst != Variable2::LVREF)
+	Variable* t = nullptr;
+	if(*dst != Variable::LVREF)
 	{
 		t = dst;
 	}
@@ -417,14 +417,14 @@ bool Machine::DictSet(const Op::DictSet& ds)
 
 bool Machine::DictAdd(const Op::DictAdd& da)
 {
-	Variable2* val = ResolveVar2((ERefKind)da.valKind, da.val);
-	Variable2* key = ResolveVar2((ERefKind)da.keyKind, da.key);
-	Variable2* dst = ResolveVar2((ERefKind)da.dstKind, da.dst);
-	if(*dst != Variable2::DICT)
+	Variable* val = ResolveVar2((ERefKind)da.valKind, da.val);
+	Variable* key = ResolveVar2((ERefKind)da.keyKind, da.key);
+	Variable* dst = ResolveVar2((ERefKind)da.dstKind, da.dst);
+	if(*dst != Variable::DICT)
 	{
 		throw 'n';
 	}
-	if(*key != Variable2::STR)
+	if(*key != Variable::STR)
 	{
 		throw 'n';
 	}
@@ -436,12 +436,12 @@ bool Machine::DictAdd(const Op::DictAdd& da)
 
 bool Machine::Index(const Op::Index& li)
 {
-	Variable2* idx = ResolveVar2((ERefKind)li.idxKind, li.idx);
-	Variable2* dst = ResolveVar2((ERefKind)li.dstKind, li.dst);
+	Variable* idx = ResolveVar2((ERefKind)li.idxKind, li.idx);
+	Variable* dst = ResolveVar2((ERefKind)li.dstKind, li.dst);
 
-	if(*idx == Variable2::INT)
+	if(*idx == Variable::INT)
 	{
-		if(*dst != Variable2::LIST)
+		if(*dst != Variable::LIST)
 		{
 			throw 'n';
 		}
@@ -449,9 +449,9 @@ bool Machine::Index(const Op::Index& li)
 		//qaz*dst = *dst->_list->at(idx->_int);
 		dst->SetVar(dst->list()[idx->int_()]);
 	}
-	else if(*idx == Variable2::STR)
+	else if(*idx == Variable::STR)
 	{
-		if(*dst != Variable2::DICT)
+		if(*dst != Variable::DICT)
 		{
 			throw 'n';
 		}
@@ -475,21 +475,21 @@ bool Machine::Index(const Op::Index& li)
 
 bool Machine::LValueIndex(const Op::LValueIndex& lli)
 {
-	Variable2* idx = ResolveVar2((ERefKind)lli.idxKind, lli.idx);
-	Variable2* dst = ResolveVar2((ERefKind)lli.dstKind, lli.dst);
+	Variable* idx = ResolveVar2((ERefKind)lli.idxKind, lli.idx);
+	Variable* dst = ResolveVar2((ERefKind)lli.dstKind, lli.dst);
 
-	if(*idx == Variable2::INT)
+	if(*idx == Variable::INT)
 	{
-		Variable2* lst = nullptr;
-		if(*dst == Variable2::LVREF)
+		Variable* lst = nullptr;
+		if(*dst == Variable::LVREF)
 		{
-			if(dst->ref() != Variable2::LIST)
+			if(dst->ref() != Variable::LIST)
 			{
 				throw 'n';
 			}
 			lst = &dst->ref();
 		}
-		else if(*dst == Variable2::LIST)
+		else if(*dst == Variable::LIST)
 		{
 			lst = dst;
 		}
@@ -501,18 +501,18 @@ bool Machine::LValueIndex(const Op::LValueIndex& lli)
 		auto& t = lst->list()[idx->int_()];
 		dst->SetVarLVRef(t);
 	}
-	else if(*idx == Variable2::STR)
+	else if(*idx == Variable::STR)
 	{
-		Variable2* dict = nullptr;
-		if(*dst == Variable2::LVREF)
+		Variable* dict = nullptr;
+		if(*dst == Variable::LVREF)
 		{
-			if(dst->ref() != Variable2::DICT)
+			if(dst->ref() != Variable::DICT)
 			{
 				throw 'n';
 			}
 			dict = &dst->ref();
 		}
-		else if(*dst == Variable2::DICT)
+		else if(*dst == Variable::DICT)
 		{
 			dict = dst;
 		}
@@ -521,11 +521,11 @@ bool Machine::LValueIndex(const Op::LValueIndex& lli)
 			throw 'n';
 		}
 
-		Variable2* t = nullptr;
+		Variable* t = nullptr;
 		auto found = dict->dict().find(idx->str());
 		if(found == dict->dict().end())
 		{
-			auto inserted = dict->dict().insert({idx->str(), Variable2()});
+			auto inserted = dict->dict().insert({idx->str(), Variable()});
 			if(!inserted.second)
 			{
 				throw 'n';
@@ -578,13 +578,13 @@ bool Machine::Invoke(const Op::Invoke& ivk)
 		throw 'n';
 	}
 
-	Variable2* dst = ResolveVar2((ERefKind)ivk.dstKind, ivk.dst);
-	if(*dst == Variable2::STR)
+	Variable* dst = ResolveVar2((ERefKind)ivk.dstKind, ivk.dst);
+	if(*dst == Variable::STR)
 	{//TODO dynamic resolution
 		//TBD
 		throw 'n';
 	}
-	if(*dst != Variable2::ATTR)
+	if(*dst != Variable::ATTR)
 	{
 		throw 'n';
 	}
@@ -592,7 +592,7 @@ bool Machine::Invoke(const Op::Invoke& ivk)
 	_roff = ivk.dst + 1;
 
 	auto& owner = dst->attr().owner;
-	if(owner == Variable2::CLASSOBJ)
+	if(owner == Variable::CLASSOBJ)
 	{
 		auto cls = owner.clsObj()._cls;
 		auto found = cls->_funcMap.find(dst->attr().name);
@@ -610,7 +610,7 @@ bool Machine::Invoke(const Op::Invoke& ivk)
 		vt->SetVar(*vs);
 		return true;
 	}
-	else if(owner == Variable2::CLASS)
+	else if(owner == Variable::CLASS)
 	{//TODO
 		int a = 1;
 		throw 'n';
@@ -619,7 +619,7 @@ bool Machine::Invoke(const Op::Invoke& ivk)
 	const ymod::ModuleDesc* modDesc = primitive::GetModuleDesc(owner._type);
 	if(!modDesc)
 	{
-		if(owner != Variable2::MODULE && owner != Variable2::MODULEOBJ)
+		if(owner != Variable::MODULE && owner != Variable::MODULEOBJ)
 		{//TODO
 			throw 'n';
 		}
@@ -639,9 +639,9 @@ bool Machine::Invoke(const Op::Invoke& ivk)
 
 	YArgs ya;
 	int off = 0;
-	if(found->second.needSelf || owner == Variable2::MODULEOBJ)
+	if(found->second.needSelf || owner == Variable::MODULEOBJ)
 	{
-		if(owner == Variable2::MODULE)
+		if(owner == Variable::MODULE)
 		{//TODO
 			throw 'n';
 		}
@@ -701,7 +701,7 @@ bool Machine::Invoke(const Op::Invoke& ivk)
 			{//TODO qaz
 				YObj* yo = (YObj*)yr.single.o;
 				ret->SetModule( _modMgr.GetModuleDesc(yo->name.str), true);
-				ret->_type = Variable2::MODULEOBJ;
+				ret->_type = Variable::MODULEOBJ;
 				ret->modObj()._o = yo->obj;
 				delete yo;
 			}
@@ -728,9 +728,9 @@ bool Machine::Invoke(const Op::Invoke& ivk)
 
 bool Machine::Inc(const Op::Inc& inc)
 {
-	Variable2* name = ResolveVar2(ERefKind::Const, inc.inc);
+	Variable* name = ResolveVar2(ERefKind::Const, inc.inc);
 
-	if(!name || *name != Variable2::STR)
+	if(!name || *name != Variable::STR)
 	{
 		throw 'n';
 	}
@@ -748,23 +748,23 @@ bool Machine::Inc(const Op::Inc& inc)
 
 bool Machine::Jnz(const Op::Jnz& jnz)
 {
-	Variable2* test = ResolveVar2((ERefKind)jnz.testKind, jnz.test);
+	Variable* test = ResolveVar2((ERefKind)jnz.testKind, jnz.test);
 
-	if(	(*test == Variable2::INT && !test->int_()) ||
-		(*test == Variable2::FLOAT && !test->float_()) ||
-		(*test == Variable2::STR && test->str().empty()) ||
+	if(	(*test == Variable::INT && !test->int_()) ||
+		(*test == Variable::FLOAT && !test->float_()) ||
+		(*test == Variable::STR && test->str().empty()) ||
 		//(*test == Variable2::OBJECT && !test->_obj) || //TODOqaz
-		(*test == Variable2::CLASS && test->cls().name.empty()) ||
-		(*test == Variable2::MODULE && test->mod().IsNull()) ||
+		(*test == Variable::CLASS && test->cls().name.empty()) ||
+		(*test == Variable::MODULE && test->mod().IsNull()) ||
 		//(*test == Variable2::REF && !test->ref()) || TODOqaz
-		(*test == Variable2::ATTR && test->attr().name.empty()) ||
-		(*test == Variable2::LIST && !test->_u._o) ||	//TODOqaz
-		(*test == Variable2::DICT && !test->_u._o) ||	//TODOqaz
-		(*test == Variable2::CLASSOBJ && test->clsObj()._cls->name.empty()) ||
-		(*test == Variable2::MODULEOBJ && !test->modObj()._mod.modDesc) ||
-		(*test == Variable2::_FALSE_) ||
-		(*test == Variable2::_NULL_) ||
-		(*test == Variable2::NONE))
+		(*test == Variable::ATTR && test->attr().name.empty()) ||
+		(*test == Variable::LIST && !test->_u._o) ||	//TODOqaz
+		(*test == Variable::DICT && !test->_u._o) ||	//TODOqaz
+		(*test == Variable::CLASSOBJ && test->clsObj()._cls->name.empty()) ||
+		(*test == Variable::MODULEOBJ && !test->modObj()._mod.modDesc) ||
+		(*test == Variable::_FALSE_) ||
+		(*test == Variable::_NULL_) ||
+		(*test == Variable::NONE))
 	{
 		return true;
 	}
@@ -816,8 +816,8 @@ bool Machine::NewMod(const Op::NewMod& nm)
 
 bool Machine::NewCls(const Op::NewCls& nc)
 {
-	Variable2* dst = ResolveVar2((ERefKind)nc.dstKind, nc.dst);
-	if(*dst != Variable2::STR)
+	Variable* dst = ResolveVar2((ERefKind)nc.dstKind, nc.dst);
+	if(*dst != Variable::STR)
 	{//TODO
 		throw 'n';
 	}
@@ -828,7 +828,7 @@ bool Machine::NewCls(const Op::NewCls& nc)
 		throw 'n';
 	}
 
-	Variable2 v;
+	Variable v;
 	//TODO qaz
 	v.SetClass(found->second, true);
 
@@ -859,14 +859,14 @@ bool Machine::NewCls(const Op::NewCls& nc)
 
 bool Machine::LValueField(const Op::LValueField& lvf)
 {
-	Variable2* fld = ResolveVar2((ERefKind)lvf.fieldKind, lvf.field);
-	Variable2* dst = ResolveVar2((ERefKind)lvf.dstKind, lvf.dst);
+	Variable* fld = ResolveVar2((ERefKind)lvf.fieldKind, lvf.field);
+	Variable* dst = ResolveVar2((ERefKind)lvf.dstKind, lvf.dst);
 
-	if(*fld != Variable2::STR)
+	if(*fld != Variable::STR)
 	{//TODO
 		throw 'n';
 	}
-	if(*dst != Variable2::CLASSOBJ)
+	if(*dst != Variable::CLASSOBJ)
 	{//TODO
 		throw 'n';
 	}

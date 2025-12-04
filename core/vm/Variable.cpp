@@ -1,4 +1,4 @@
-#include "Variable2.h"
+#include "Variable.h"
 
 
 namespace yvm
@@ -9,21 +9,22 @@ using namespace ymod;
 #define EPSILON (1e-9)
 
 
-Variable2::Variable2()
+Variable::Variable()
 {
 	_type = NONE;
 	_u._s = nullptr;
 }
-Variable2::Variable2(const Variable2& v)
+Variable::Variable(const Variable& v)
 {
-	SetVar(*(Variable2*)&v);
+	_type = NONE;
+	SetVar(*(Variable*)&v);
 }
-Variable2::~Variable2()
+Variable::~Variable()
 {
 	Clear();
 }
 
-void Variable2::Clear()
+void Variable::Clear()
 {
 	switch(_type)
 	{
@@ -49,25 +50,25 @@ void Variable2::Clear()
 	_type = NONE;
 }
 
-void Variable2::SetInt(int64_t i)
+void Variable::SetInt(int64_t i)
 {
 	Clear();
 	_u._i = i;
 	_type = INT;
 }
-void Variable2::SetFloat(double f)
+void Variable::SetFloat(double f)
 {
 	Clear();
 	_u._f = f;
 	_type = FLOAT;
 }
-void Variable2::SetStr(string s)
+void Variable::SetStr(string s)
 {
 	Clear();
 	_u._s = new string(s);
 	_type = STR;
 }
-void Variable2::SetObj(Object* obj)
+void Variable::SetObj(Object* obj)
 {
 	auto t = obj;
 	obj->AddRef();
@@ -80,44 +81,44 @@ void Variable2::SetObj(Object* obj)
 	t->ReleaseRef();
 }
 
-void Variable2::SetValueFromContract(YArg o)
+void Variable::SetValueFromContract(YArg o)
 {
 	switch(o.tp)
 	{
 	case YEArg::Int64: return SetInt(o.ToInt64());
 	case YEArg::Double: return SetFloat(o.ToDouble());
 	case YEArg::Str: return SetStr(o.ToStr());
-	case YEArg::YVar: SetVar(*(Variable2*)o.o); break;
+	case YEArg::YVar: SetVar(*(Variable*)o.o); break;
 	default://TODO
 		throw 'n';
 	}
 }
 
-void Variable2::SetVarRef(Variable2& var)
+void Variable::SetVarRef(Variable& var)
 {
 	Clear();
 	_u._ref = &var;
 	_type = REF;
 
 }
-void Variable2::SetVarLVRef(Variable2& var)
+void Variable::SetVarLVRef(Variable& var)
 {
 	Clear();
 	_u._ref = &var;
 	_type = LVREF;
 }
-void Variable2::SetAttr(Variable2& owner, string name)
+void Variable::SetAttr(Variable& owner, string name)
 {
-	auto t = new Attribute2{owner, name};
+	auto t = new Attribute{owner, name};
 	Clear();
 	_u._attr = t;
 	_type = ATTR;
 }
-void Variable2::SetAttr(Attribute2& attr)
+void Variable::SetAttr(Attribute& attr)
 {
 	SetAttr(attr.owner, attr.name);
 }
-void Variable2::SetList(const std::vector<Variable2>& list /*= std::vector<Variable2>()*/)
+void Variable::SetList(const std::vector<Variable>& list /*= std::vector<Variable2>()*/)
 {
 	ResetNewObj();
 	for(auto& e : list)
@@ -125,14 +126,14 @@ void Variable2::SetList(const std::vector<Variable2>& list /*= std::vector<Varia
 	_u._o->_type = LIST;
 	_type = LIST;
 }
-void Variable2::SetDict(const std::unordered_map<std::string, Variable2>& dict /*= std::unordered_map<std::string, Variable2>()*/)
+void Variable::SetDict(const std::unordered_map<std::string, Variable>& dict /*= std::unordered_map<std::string, Variable2>()*/)
 {	ResetNewObj();
 	for(auto& e : dict)
 		_u._o->_dict.insert(e);
 	_u._o->_type = DICT;
 	_type = DICT;
 }
-void Variable2::SetClass(const Class& cls, bool makeInstance)
+void Variable::SetClass(const Class& cls, bool makeInstance)
 {
 	if(makeInstance)
 	{
@@ -151,7 +152,7 @@ void Variable2::SetClass(const Class& cls, bool makeInstance)
 		_type = CLASS;
 	}
 }
-void Variable2::SetModule(const ModuleDesc& mod, bool makeInstance)
+void Variable::SetModule(const ModuleDesc& mod, bool makeInstance)
 {
 	ResetNewObj();
 
@@ -177,7 +178,7 @@ void Variable2::SetModule(const ModuleDesc& mod, bool makeInstance)
 	}*/
 }
 
-void Variable2::SetVar(Variable2& var)
+void Variable::SetVar(Variable& var)
 {
 	if(this == &var)
 	{//guard code against self-assignment
@@ -187,6 +188,7 @@ void Variable2::SetVar(Variable2& var)
 	switch(var._type)
 	{
 	case NONE: Clear(); break;
+
 	case INT: SetInt(var._u._i); break;
 	case FLOAT: SetFloat(var._u._f); break;
 	case STR: SetStr(*var._u._s); break;
@@ -201,10 +203,14 @@ void Variable2::SetVar(Variable2& var)
 	case CLASSOBJ:
 	case MODULE:
 	case MODULEOBJ: SetObj(var._u._o); break;
+
+	case _NULL_:
+	case _TRUE_:
+	case _FALSE_: Clear(); _type = var._type; break;
 	}
 }
 
-bool Variable2::Assign(EToken op, Variable2& rval)
+bool Variable::Assign(EToken op, Variable& rval)
 {
 	if(!Token::IsAssign(op))
 	{
@@ -307,7 +313,7 @@ bool Variable2::Assign(EToken op, Variable2& rval)
 	return true;
 }
 
-bool Variable2::CalcAndAssign(Variable2& lhs, EToken calcOp, Variable2& rhs)
+bool Variable::CalcAndAssign(Variable& lhs, EToken calcOp, Variable& rhs)
 {
 	//TODO +, - confusion if(Token::IsPrefixUnary(calcOp))
 
@@ -470,7 +476,7 @@ bool Variable2::CalcAndAssign(Variable2& lhs, EToken calcOp, Variable2& rhs)
 	return true;
 }
 
-bool Variable2::CalcUnaryAndAssign(EToken unaryOp, Variable2& rhs)
+bool Variable::CalcUnaryAndAssign(EToken unaryOp, Variable& rhs)
 {
 	if(_type == LVREF)
 	{
@@ -514,15 +520,15 @@ bool Variable2::CalcUnaryAndAssign(EToken unaryOp, Variable2& rhs)
 		}
 		return true;
 
-	case _NULL_:
-		switch(unaryOp)
-		{
-		case EToken::Not: SetInt(1); break;
-		default:
-			throw 'n';
-		}
-		return true;
-
+	case REF:
+	case LVREF:
+	case ATTR:
+	case CLASS:
+	case MODULE:
+	case LIST:
+	case DICT:
+	case CLASSOBJ:
+	case MODULEOBJ:
 	case _TRUE_:
 		switch(unaryOp)
 		{
@@ -532,7 +538,9 @@ bool Variable2::CalcUnaryAndAssign(EToken unaryOp, Variable2& rhs)
 		}
 		return true;
 
-
+	case NONE:
+	case OBJ:
+	case _NULL_:
 	case _FALSE_:
 		switch(unaryOp)
 		{
@@ -547,7 +555,7 @@ bool Variable2::CalcUnaryAndAssign(EToken unaryOp, Variable2& rhs)
 	return false;
 }
 
-bool Variable2::CalcIncDec(EToken op)
+bool Variable::CalcIncDec(EToken op)
 {
 	if(_type == LVREF)
 	{
@@ -585,7 +593,7 @@ bool Variable2::CalcIncDec(EToken op)
 }
 
 
-string Variable2::ToStr() const
+string Variable::ToStr() const
 {
 	switch(_type)
 	{
@@ -659,59 +667,59 @@ string Variable2::ToStr() const
 }
 
 
-bool Variable2::operator==(Type cmp) const { return _type == cmp; }
-bool Variable2::operator!=(Type cmp) const { return _type != cmp; }
+bool Variable::operator==(Type cmp) const { return _type == cmp; }
+bool Variable::operator!=(Type cmp) const { return _type != cmp; }
 
-const Variable2& Variable2::operator=(const Variable2& rhs)
+const Variable& Variable::operator=(const Variable& rhs)
 {
-	SetVar(*(Variable2*)&rhs);
+	SetVar(*(Variable*)&rhs);
 	return *this;
 }
 
-void Variable2::ResetNewObj()
+void Variable::ResetNewObj()
 {
 	Clear();
 	_u._o = new Object;
 	_u._o->_type = OBJ;
 	_type = OBJ;
 }
-int64_t Variable2::int_() const
+int64_t Variable::int_() const
 {
 	if(_type != INT) throw 'n'; //TODO
 	return _u._i;
 }
-double Variable2::float_() const
+double Variable::float_() const
 {
 	if(_type != FLOAT) throw 'n'; //TODO
 	return _u._f;
 }
-const std::string& Variable2::str() const
+const std::string& Variable::str() const
 {
 	if(_type != STR) throw 'n'; //TODO
 	return *_u._s;
 }
-const Variable2& Variable2::ref() const
+const Variable& Variable::ref() const
 {
 	if(_type != REF || _type != LVREF) throw 'n'; //TODO
 	return *_u._ref;
 }
-Variable2& Variable2::ref()
+Variable& Variable::ref()
 {
 	if(_type != REF || _type != LVREF) throw 'n'; //TODO
 	return *_u._ref;
 }
-const Attribute2& Variable2::attr() const
+const Attribute& Variable::attr() const
 {
 	if(_type != ATTR) throw 'n'; //TODO
 	return *_u._attr;
 }
-Attribute2& Variable2::attr()
+Attribute& Variable::attr()
 {
 	if(_type != ATTR) throw 'n'; //TODO
 	return *_u._attr;
 }
 
-const Class& Variable2::cls() const
+const Class& Variable::cls() const
 {
 	if(_type == CLASS)
 		return *_u._cls;
@@ -721,71 +729,71 @@ const Class& Variable2::cls() const
 		throw 'n'; //TODO
 }
 
-const ModuleDesc& Variable2::mod() const
+const ModuleDesc& Variable::mod() const
 {
 	if(_type != MODULE) throw 'n'; //TODO
 	//qazreturn *_u._mod;
 	return *modObj()._mod.modDesc;
 }
 
-const std::vector<Variable2>& Variable2::list() const
+const std::vector<Variable>& Variable::list() const
 {
 	if(_type != LIST) throw 'n'; //TODO
 	return _u._o->_list;
 }
-vector<Variable2>& Variable2::list()
+vector<Variable>& Variable::list()
 {
 	if(_type != LIST) throw 'n'; //TODO
 	return _u._o->_list;
 }
-const std::unordered_map<std::string, Variable2>& Variable2::dict() const
+const std::unordered_map<std::string, Variable>& Variable::dict() const
 {
 	if(_type != DICT) throw 'n'; //TODO
 	return _u._o->_dict;
 }
-unordered_map<string, Variable2>& Variable2::dict()
+unordered_map<string, Variable>& Variable::dict()
 {
 	if(_type != DICT) throw 'n'; //TODO
 	return _u._o->_dict;
 }
-const ClassObject2& Variable2::clsObj() const
+const ClassObject& Variable::clsObj() const
 {
 	if(_type != CLASSOBJ) throw 'n'; //TODO
 	return _u._o->_clso;
 }
-ClassObject2& Variable2::clsObj()
+ClassObject& Variable::clsObj()
 {
 	if(_type != CLASSOBJ) throw 'n'; //TODO
 	return _u._o->_clso;
 }
-const ModuleObject& Variable2::modObj() const
+const ModuleObject& Variable::modObj() const
 {
 	//qaz
 	if(_type != MODULE && _type != MODULEOBJ) throw 'n'; //TODO
 	return _u._o->_modo;
 }
-ModuleObject& Variable2::modObj()
+ModuleObject& Variable::modObj()
 {
 	//qaz
 	if(_type != MODULE && _type != MODULEOBJ) throw 'n'; //TODO
 	return _u._o->_modo;
 }
 
-Variable2::Object::Object()
+Variable::Object::Object()
 {
 	_refCnt = 1;
 }
 
-Variable2::Object::~Object()
+Variable::Object::~Object()
 {//TODO
 }
 
-void Variable2::Object::AddRef()
+void Variable::Object::AddRef()
 {
 	_refCnt++;
 }
 
-void Variable2::Object::ReleaseRef()
+void Variable::Object::ReleaseRef()
 {
 	_refCnt--;
 	if(_refCnt == 0)

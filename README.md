@@ -234,7 +234,7 @@ Alice: 75 HP
 * [x] main() entrypoint
 * [ ] String formatting
 * [x] Class
-* [ ] Memory management
+* [x] Memory management
 * [x] Module & import system
 * [ ] Optimized VM dispatch
 * [x] Automated tests

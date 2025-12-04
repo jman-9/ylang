@@ -9,12 +9,12 @@
 
 namespace yvm
 {
-struct Attribute2;
-struct Variable2;
+struct Attribute;
+struct Variable;
 
-struct ClassObject2
+struct ClassObject
 {
-	std::vector<Variable2> _fields;
+	std::vector<Variable> _fields;
 	const Class* _cls;
 };
 struct ModuleObject
@@ -24,7 +24,7 @@ struct ModuleObject
 };
 
 
-struct Variable2
+struct Variable
 {
 	enum Type
 	{
@@ -59,75 +59,75 @@ struct Variable2
 		double _f;
 		std::string* _s;
 		Object* _o;
-		Variable2* _ref;
-		Attribute2* _attr;
+		Variable* _ref;
+		Attribute* _attr;
 		const Class* _cls;
 		//ymod::ModuleDesc* _mod; //TODO to separate module and moduleobj
 	} _u;
 
 
-	Variable2();
-    Variable2(const Variable2& v);
-	~Variable2();
+	Variable();
+    Variable(const Variable& v);
+	~Variable();
 
 	void Clear();
 
 	void SetInt(int64_t i);
 	void SetFloat(double f);
 	void SetStr(std::string s);
-	void SetVarRef(Variable2& ref);
-	void SetVarLVRef(Variable2& lvref);
-	void SetAttr(Variable2& owner, std::string name);
-	void SetAttr(Attribute2& attr);
-	void SetList(const std::vector<Variable2>& list = std::vector<Variable2>());
-	void SetDict(const std::unordered_map<std::string, Variable2>& dict = std::unordered_map<std::string, Variable2>());
+	void SetVarRef(Variable& ref);
+	void SetVarLVRef(Variable& lvref);
+	void SetAttr(Variable& owner, std::string name);
+	void SetAttr(Attribute& attr);
+	void SetList(const std::vector<Variable>& list = std::vector<Variable>());
+	void SetDict(const std::unordered_map<std::string, Variable>& dict = std::unordered_map<std::string, Variable>());
 	void SetClass(const Class& cls, bool makeInstance);
 	void SetModule(const ymod::ModuleDesc& mod, bool makeInstance);
-	void SetVar(Variable2& var);
+	void SetVar(Variable& var);
 
 	void SetValueFromContract(YArg o);
 
-	bool Assign(EToken op, Variable2& rval);
-	bool CalcAndAssign(Variable2& lhs, EToken calcOp, Variable2& rhs);
-	bool CalcUnaryAndAssign(EToken unaryOp, Variable2& rhs);
+	bool Assign(EToken op, Variable& rval);
+	bool CalcAndAssign(Variable& lhs, EToken calcOp, Variable& rhs);
+	bool CalcUnaryAndAssign(EToken unaryOp, Variable& rhs);
 	bool CalcIncDec(EToken op);
 
 	std::string ToStr() const;
 
 	bool operator==(Type cmp) const;
 	bool operator!=(Type cmp) const;
-	const Variable2& operator=(const Variable2& rhs);
+	const Variable& operator=(const Variable& rhs);
 
 	void ResetNewObj();
 
 	int64_t int_() const;
 	double float_() const;
 	const std::string& str() const;
-	Variable2& ref();
-	const Variable2& ref() const;
-	const Attribute2& attr() const;
-	Attribute2& attr();
+	Variable& ref();
+	const Variable& ref() const;
+	const Attribute& attr() const;
+	Attribute& attr();
 	const Class& cls() const;
 	const ymod::ModuleDesc& mod() const;
-	const std::vector<Variable2>& list() const;
-	std::vector<Variable2>& list();
-	const std::unordered_map<std::string, Variable2>& dict() const;
-	std::unordered_map<std::string, Variable2>& dict();
-	const ClassObject2& clsObj() const;
-	ClassObject2& clsObj();
+	const std::vector<Variable>& list() const;
+	std::vector<Variable>& list();
+	const std::unordered_map<std::string, Variable>& dict() const;
+	std::unordered_map<std::string, Variable>& dict();
+	const ClassObject& clsObj() const;
+	ClassObject& clsObj();
 	const ModuleObject& modObj() const;
 	ModuleObject& modObj();
 
 
 	struct Object
 	{
-		std::vector<Variable2> _list;
-		std::unordered_map<std::string, Variable2> _dict;
-		ClassObject2 _clso;
+		std::vector<Variable> _list;
+		std::unordered_map<std::string, Variable> _dict;
+		ClassObject _clso;
 		ModuleObject _modo;
 
 	private:
-		friend struct Variable2;
+		friend struct Variable;
 		Object();
 		~Object();
 
@@ -135,7 +135,7 @@ struct Variable2
 		void ReleaseRef();
 
 		int _refCnt;
-		Variable2::Type _type;
+		Variable::Type _type;
 	};
 
 private:
@@ -143,9 +143,9 @@ private:
 };
 
 
-struct Attribute2
+struct Attribute
 {
-	Variable2 owner;
+	Variable owner;
 	std::string name;
 };
 

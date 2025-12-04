@@ -1,6 +1,6 @@
 #pragma once
 #include "Dict.h"
-#include "vm/Variable2.h"
+#include "vm/Variable.h"
 
 
 namespace yvm::primitive::Dict
@@ -12,11 +12,11 @@ using namespace std;
 
 inline YRet Len(YArgs* args)
 {
-	auto self = (Variable2*)args->args[0].o;
+	auto self = (Variable*)args->args[0].o;
 
 	YRet yr;
 	yr.single.tp = YEArg::YVar;
-	auto v = (Variable2*)args->retBuff.o;
+	auto v = (Variable*)args->retBuff.o;
 	v->SetInt((int64_t)self->dict().size());
 	yr.single.o = v;
 	return {};
@@ -30,20 +30,20 @@ inline YRet Contains(YArgs* args)
 	auto self = (Variable*)args->args[0].o;
 	auto k = (Variable*)args->args[1].o;
 
-	auto found = self->_dict->find(k->_str);
+	auto found = self->dict().find(k->str());
 	YRet yr;
 	yr.single.tp = YEArg::YVar;
-	auto v = (Variable2*)args->retBuff.o;
-	v->SetInt(found != self->_dict->end());
+	auto v = (Variable*)args->retBuff.o;
+	v->SetInt(found != self->dict().end());
 	yr.single.o = v;
 	return yr;
 }
 
 inline YRet Keys(YArgs* args)
 {
-	auto self = (Variable2*)args->args[0].o;
+	auto self = (Variable*)args->args[0].o;
 
-	auto ret = (Variable2*)args->retBuff.o;
+	auto ret = (Variable*)args->retBuff.o;
 	ret->SetList();
 	for(auto& [k, _] : self->dict())
 	{
@@ -59,9 +59,9 @@ inline YRet Keys(YArgs* args)
 
 inline YRet Values(YArgs* args)
 {
-	auto self = (Variable2*)args->args[0].o;
+	auto self = (Variable*)args->args[0].o;
 
-	auto ret = (Variable2*)args->retBuff.o;
+	auto ret = (Variable*)args->retBuff.o;
 	ret->SetList();
 	for(auto& [_, v] : self->dict())
 	{
@@ -76,9 +76,9 @@ inline YRet Values(YArgs* args)
 
 inline YRet Items(YArgs* args)
 {
-	auto self = (Variable2*)args->args[0].o;
+	auto self = (Variable*)args->args[0].o;
 
-	auto ret = (Variable2*)args->retBuff.o;
+	auto ret = (Variable*)args->retBuff.o;
 	ret->SetList();
 	for(auto& [k, v] : self->dict())
 	{
@@ -101,11 +101,11 @@ inline YRet Pop(YArgs* args)
 	if(args->numArgs < 2)
 		throw 'n';//TODO
 
-	auto self = (Variable2*)args->args[0].o;
-	auto k = (Variable2*)args->args[1].o;
+	auto self = (Variable*)args->args[0].o;
+	auto k = (Variable*)args->args[1].o;
 
 	auto found = self->dict().find(k->str());
-	auto ret = (Variable2*)args->retBuff.o;
+	auto ret = (Variable*)args->retBuff.o;
 	if(found != self->dict().end())
 	{
 		ret->SetVar(found->second);

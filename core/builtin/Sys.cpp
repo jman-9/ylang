@@ -1,6 +1,6 @@
 #include "Sys.h"
 #include "Args.h"
-#include "vm/Variable2.h"
+#include "vm/Variable.h"
 
 
 namespace ybuiltin::Sys
@@ -27,11 +27,11 @@ const ModuleDesc& GetModuleDesc()
 Module Init()
 {
 	Module o(&GetModuleDesc());
-	Variable2* v = new Variable2;
+	Variable* v = new Variable;
 	v->SetStr("ylang 0.0.5");
 	o.memberVars["version"] = YArg{v, YEArg::YVar};
 
-	auto argv = new Variable2;
+	auto argv = new Variable;
 	argv->SetList();
 	for(size_t i=1; i<g_Args.size(); i++)
 	{
@@ -40,7 +40,7 @@ Module Init()
 	}
 	o.memberVars["argv"] = YArg{argv, YEArg::YVar};
 
-	v = new Variable2;
+	v = new Variable;
 	v->SetStr(g_Args[0]);
 	o.memberVars["executable"] = YArg{v, YEArg::YVar};
 	return o;

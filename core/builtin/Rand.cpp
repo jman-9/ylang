@@ -1,10 +1,12 @@
 #include "Rand.h"
-#include "vm/Variable2.h"
+#include "vm/Variable.h"
 #include <time.h>
 
 
 #ifdef _WIN32
 	#define RANDOM(__min__, __max__) ((int)(((double)((rand()<<15) | (rand()&0) | rand())) / ((RAND_MAX<<15 | RAND_MAX) + 1) * (((__max__) + 1) - (__min__))) + (__min__))
+
+	#define RANDOMD(__min__, __max__) ((((double)((rand()<<15) | (rand()&0) | rand())) / ((RAND_MAX<<15 | RAND_MAX) + 1) * ((((double)__max__)) - (double)(__min__))) + (double)(__min__))
 #else
 	#define RANDOM(__min__, __max__) ((int64_t)rand() * ((__max__) + 1 - (__min__)) / ((int64_t)RAND_MAX + 1) + (__min__))
 #endif
@@ -23,7 +25,7 @@ YRet RandomizeTimer(YArgs* args)
 
 YRet Seed(YArgs* args)
 {
-	auto seed = (Variable2*)args->args[0].o;
+	auto seed = (Variable*)args->args[0].o;
 
 	srand( seed->int_() );
 	return {};
@@ -32,14 +34,23 @@ YRet Seed(YArgs* args)
 
 YRet Get(YArgs* args)
 {
-	auto min = (Variable2*)args->args[0].o;
-	auto max = (Variable2*)args->args[1].o;
+	auto vmin = *(Variable*)args->args[0].o;
+	auto vmax = *(Variable*)args->args[1].o;
+
+	auto rv = (Variable*)args->retBuff.o;
+	if(vmin == Variable::INT && vmax == Variable::INT)
+	{
+		rv->SetInt( RANDOM(vmin.int_(), vmax.int_()) );
+	}
+	else
+	{
+		double min = vmin == Variable::INT ? (double)vmin.int_() : vmin.float_();
+		double max = vmax == Variable::INT ? (double)vmax.int_() : vmax.float_();
+		rv->SetFloat( RANDOMD(min, max) );
+	}
 
 	YRet yr;
-	yr.single.tp = YEArg::YVar;
-	auto rv = (Variable2*)args->retBuff.o;
-	rv->SetInt( RANDOM(min->int_(), max->int_()) );
-	yr.single.o = rv;
+	yr.single.SetYVar(rv);
 	return yr;
 }
 

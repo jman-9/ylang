@@ -1,5 +1,5 @@
 #include "Json.h"
-#include "vm/Variable2.h"
+#include "vm/Variable.h"
 #include "ext/nlohmann/json.hpp"
 #include <queue>
 #include <iostream>
@@ -17,13 +17,13 @@ using namespace std;
 
 YRet Parse(YArgs* args)
 {
-	auto AppendNode = [](Variable2& v, const string* k = nullptr) -> Variable2* {
-		if(v == Variable2::LIST)
+	auto AppendNode = [](Variable& v, const string* k = nullptr) -> Variable* {
+		if(v == Variable::LIST)
 		{
 			v.list().push_back({});
 			return &v.list().back();
 		}
-		else if(v == Variable2::DICT)
+		else if(v == Variable::DICT)
 		{
 			auto inserted = v.dict().insert({ *k, {}});
 			return &inserted.first->second;
@@ -34,13 +34,13 @@ YRet Parse(YArgs* args)
 		}
 	};
 
-	Variable2* jsonStr = (Variable2*)args->args[0].o;
+	Variable* jsonStr = (Variable*)args->args[0].o;
 	auto j = json::parse(jsonStr->str());
 
 
-	Variable2* vjson = (Variable2*)args->retBuff.o;
-	Variable2* vtrav;
-	queue<Variable2*> vq;
+	Variable* vjson = (Variable*)args->retBuff.o;
+	Variable* vtrav;
+	queue<Variable*> vq;
 
 	queue<json*> jq;
 	json* jtrav;
@@ -71,7 +71,7 @@ YRet Parse(YArgs* args)
 
 			if(v.is_array() || v.is_object())
 			{
-				Variable2* node = AppendNode(*vtrav, &k);
+				Variable* node = AppendNode(*vtrav, &k);
 
 			#ifdef DEBUG_OUT
 				cout << " ";
@@ -82,7 +82,7 @@ YRet Parse(YArgs* args)
 			}
 			else
 			{
-				Variable2* newV = AppendNode(*vtrav, &k);
+				Variable* newV = AppendNode(*vtrav, &k);
 				if(v.is_number_integer())
 					newV->SetInt(v);
 				else if(v.is_number_float())
@@ -90,7 +90,7 @@ YRet Parse(YArgs* args)
 				else if(v.is_boolean())
 				{//TODO ugly...
 					newV->Clear();
-					newV->_type = v == true ? Variable2::_TRUE_ : Variable2::_FALSE_;
+					newV->_type = v == true ? Variable::_TRUE_ : Variable::_FALSE_;
 				}
 				else
 					newV->SetStr(v);
@@ -110,14 +110,14 @@ YRet Parse(YArgs* args)
 
 YRet Dump(YArgs* args)
 {
-	Variable2* vobj = (Variable2*)args->args[0].o;
+	Variable* vobj = (Variable*)args->args[0].o;
 
 	int indent = -1;
 	if(args->numArgs > 1)
-		indent = ((Variable2*)args->args[1].o)->int_();
+		indent = ((Variable*)args->args[1].o)->int_();
 
-	Variable2* vtrav;
-	queue<Variable2*> vq;
+	Variable* vtrav;
+	queue<Variable*> vq;
 
 	json jjson;
 	queue<json*> jq;
@@ -132,7 +132,7 @@ YRet Dump(YArgs* args)
 		jq.pop();
 		vq.pop();
 
-		if(*vtrav == Variable2::LIST)
+		if(*vtrav == Variable::LIST)
 		{
 			int i = 0;
 
@@ -150,7 +150,7 @@ YRet Dump(YArgs* args)
 				jq.push(&j);
 			}
 		}
-		else if(*vtrav == Variable2::DICT)
+		else if(*vtrav == Variable::DICT)
 		{
 			for(auto& [k, v] : vtrav->dict())
 			{
@@ -165,12 +165,12 @@ YRet Dump(YArgs* args)
 		}
 		else
 		{
-			if(*vtrav == Variable2::INT)
+			if(*vtrav == Variable::INT)
 				*jtrav = vtrav->int_();
-			else if(*vtrav == Variable2::FLOAT)
+			else if(*vtrav == Variable::FLOAT)
 				*jtrav = vtrav->float_();
-			else if(*vtrav == Variable2::_TRUE_ || *vtrav == Variable2::_FALSE_)
-				*jtrav = *vtrav == Variable2::_TRUE_ ? true : false;
+			else if(*vtrav == Variable::_TRUE_ || *vtrav == Variable::_FALSE_)
+				*jtrav = *vtrav == Variable::_TRUE_ ? true : false;
 			else
 				*jtrav = vtrav->ToStr();
 
@@ -182,7 +182,7 @@ YRet Dump(YArgs* args)
 
 	YRet yr;
 	yr.single.tp = YEArg::YVar;
-	Variable2* vdump =  (Variable2*)args->retBuff.o;
+	Variable* vdump =  (Variable*)args->retBuff.o;
 	vdump->SetStr(jjson.dump(indent));
 	yr.single.o = vdump;
 	return yr;

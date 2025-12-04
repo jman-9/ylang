@@ -38,26 +38,30 @@ int main()
         }
     }
 
-    Variable name { ._type = yvm::Variable::STR, ._str = "Lucia" };
-    Variable age { ._type = yvm::Variable::INT, ._int = 1 };
-    Variable scores { ._type = yvm::Variable::LIST, };
+    //todo qaz
+    //Variable name { ._type = yvm::Variable::STR, ._str = "Lucia" };
+    //Variable age { ._type = yvm::Variable::INT, ._int = 1 };
+    //Variable scores { ._type = yvm::Variable::LIST, };
 
-    scores._list = new vector<Variable*>();
-    scores._list->push_back(new Variable { ._type = Variable::FLOAT, ._float = 75.0 });
-    scores._list->push_back(new Variable { ._type = Variable::FLOAT, ._float = 45.0 });
-    scores._list->push_back(new Variable { ._type = Variable::FLOAT, ._float = 65.0 });
+    //scores._list = new vector<Variable*>();
+    //Todo qaz
+    //scores._list->push_back(new Variable { ._type = Variable::FLOAT, ._float = 75.0 });
+    //scores._list->push_back(new Variable { ._type = Variable::FLOAT, ._float = 45.0 });
+    //scores._list->push_back(new Variable { ._type = Variable::FLOAT, ._float = 65.0 });
 
     YArgs args;
     args.Reset(3);
-    args.args[0] = name.ToContract();
-    args.args[1] = age.ToContract();
-    args.args[2] = scores.ToContract();
+    //todo qaz
+    //args.args[0] = name.ToContract();
+    //args.args[1] = age.ToContract();
+    //args.args[2] = scores.ToContract();
 
     auto d = fnMap[fnList[2]](&args);
     double avg = d.single.ToDouble();
 
-    Variable vavg;
-    vavg.SetFloat(avg);
+    //TODO qaz
+    //Variable vavg;
+    //vavg.SetFloat(avg);
 
-	cout << vavg.ToStr() << '\n';
+	//cout << vavg.ToStr() << '\n';
 };

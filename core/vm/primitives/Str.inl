@@ -1,6 +1,6 @@
 #pragma once
 #include "Str.h"
-#include "vm/Variable2.h"
+#include "vm/Variable.h"
 #include <string>
 
 
@@ -12,9 +12,9 @@ using namespace std;
 
 inline YRet Empty(YArgs* args)
 {
-	auto self = (Variable2*)args->args[0].o;
+	auto self = (Variable*)args->args[0].o;
 	YRet yr;
-	auto rv = (Variable2*)args->retBuff.o;
+	auto rv = (Variable*)args->retBuff.o;
 	rv->SetInt((int64_t)self->str().empty());
 	yr.single.tp = YEArg::YVar;
 	yr.single.o = rv;
@@ -23,9 +23,9 @@ inline YRet Empty(YArgs* args)
 
 inline YRet Len(YArgs* args)
 {
-	auto self = (Variable2*)args->args[0].o;
+	auto self = (Variable*)args->args[0].o;
 	YRet yr;
-	auto rv = (Variable2*)args->retBuff.o;
+	auto rv = (Variable*)args->retBuff.o;
 	rv->SetInt((int64_t)self->str().size());
 	yr.single.tp = YEArg::YVar;
 	yr.single.o = rv;
@@ -34,7 +34,7 @@ inline YRet Len(YArgs* args)
 
 inline YRet Find(YArgs* args)
 {
-	auto self = (Variable2*)args->args[0].o;
+	auto self = (Variable*)args->args[0].o;
 	if(args->numArgs == 1)
 		throw 'n';//TODO
 
@@ -42,30 +42,30 @@ inline YRet Find(YArgs* args)
 	yr.single.tp = YEArg::YVar;
 	if(args->numArgs == 2)
 	{
-		auto s = (Variable2*)args->args[1].o;
+		auto s = (Variable*)args->args[1].o;
 
 		size_t pos = self->str().find(s->str());
 
-		auto rv = (Variable2*)args->retBuff.o;
+		auto rv = (Variable*)args->retBuff.o;
 		rv->SetInt(pos == string::npos ? -1 : pos);
 		yr.single.o = rv;
 	}
 	else
 	{
-		auto i = (Variable2*)args->args[1].o;
-		auto s =(Variable2*)args->args[2].o;
-		if(*s != Variable2::STR)
+		auto i = (Variable*)args->args[1].o;
+		auto s =(Variable*)args->args[2].o;
+		if(*s != Variable::STR)
 		{
 			throw 'n';
 		}
-		if(*i != Variable2::INT)
+		if(*i != Variable::INT)
 		{
 			throw 'n';
 		}
 
 		size_t pos = self->str().find(s->str(), i->int_());
 
-		auto rv = (Variable2*)args->retBuff.o;
+		auto rv = (Variable*)args->retBuff.o;
 		rv->SetInt(pos == string::npos ? -1 : pos);
 		yr.single.o = rv;
 	}
@@ -75,7 +75,7 @@ inline YRet Find(YArgs* args)
 
 inline YRet Substr(YArgs* args)
 {
-	auto self = (Variable2*)args->args[0].o;
+	auto self = (Variable*)args->args[0].o;
 	if(args->numArgs == 1)
 		throw 'n';//TODO
 
@@ -83,30 +83,30 @@ inline YRet Substr(YArgs* args)
 	yr.single.tp = YEArg::YVar;
 	if(args->numArgs == 2)
 	{
-		auto s = (Variable2*)args->args[1].o;
-		if(*s != Variable2::INT)
+		auto s = (Variable*)args->args[1].o;
+		if(*s != Variable::INT)
 		{
 			throw 'n';
 		}
 
-		auto rv = (Variable2*)args->retBuff.o;
+		auto rv = (Variable*)args->retBuff.o;
 		rv->SetStr(self->str().substr(s->int_()));
 		yr.single.o = rv;
 	}
 	else
 	{
-		auto s = (Variable2*)args->args[1].o;
-		auto l =(Variable2*)args->args[2].o;
-		if(*s != Variable2::INT)
+		auto s = (Variable*)args->args[1].o;
+		auto l =(Variable*)args->args[2].o;
+		if(*s != Variable::INT)
 		{
 			throw 'n';
 		}
-		if(*l != Variable2::INT)
+		if(*l != Variable::INT)
 		{
 			throw 'n';
 		}
 
-		auto rv = (Variable2*)args->retBuff.o;
+		auto rv = (Variable*)args->retBuff.o;
 		rv->SetStr(self->str().substr(s->int_(), l->int_()));
 		yr.single.o = rv;
 	}
@@ -116,17 +116,17 @@ inline YRet Substr(YArgs* args)
 
 inline YRet Replace(YArgs* args)
 {
-	auto self = (Variable2*)args->args[0].o;
+	auto self = (Variable*)args->args[0].o;
 	if(args->numArgs < 3)
 		throw 'n';//TODO
 
-	auto o = (Variable2*)args->args[1].o;
-	auto n =(Variable2*)args->args[2].o;
-	if(*o != Variable2::STR)
+	auto o = (Variable*)args->args[1].o;
+	auto n =(Variable*)args->args[2].o;
+	if(*o != Variable::STR)
 	{
 		throw 'n';
 	}
-	if(*n != Variable2::STR)
+	if(*n != Variable::STR)
 	{
 		throw 'n';
 	}
@@ -143,7 +143,7 @@ inline YRet Replace(YArgs* args)
 
 	YRet yr;
 	yr.single.tp = YEArg::YVar;
-	auto rv = (Variable2*)args->retBuff.o;
+	auto rv = (Variable*)args->retBuff.o;
 	rv->SetStr(r);
 	yr.single.o = rv;
 	return yr;
@@ -151,10 +151,10 @@ inline YRet Replace(YArgs* args)
 
 inline YRet Split(YArgs* args)
 {
-	auto self = (Variable2*)args->args[0].o;
+	auto self = (Variable*)args->args[0].o;
 
 	YRet yr;
-	Variable2 ret;
+	Variable ret;
 	if(args->numArgs == 1)
 	{
 		const string& src = self->str();
@@ -172,8 +172,8 @@ inline YRet Split(YArgs* args)
 	}
 	else
 	{
-		auto d = (Variable2*)args->args[1].o;
-		if(*d != Variable2::STR)
+		auto d = (Variable*)args->args[1].o;
+		if(*d != Variable::STR)
 		{
 			throw 'n';
 		}
@@ -201,7 +201,7 @@ inline YRet Split(YArgs* args)
 	}
 
 	yr.single.tp = YEArg::YVar;
-	auto rv = (Variable2*)args->retBuff.o;
+	auto rv = (Variable*)args->retBuff.o;
 	rv->SetVar(ret);
 	yr.single.o = rv;
 	return yr;
@@ -212,7 +212,7 @@ constexpr string_view kAsciiSpaces = " \t\n\r\f\v";
 
 inline YRet Trim(YArgs* args)
 {
-	auto self = (Variable2*)args->args[0].o;
+	auto self = (Variable*)args->args[0].o;
 
 	const string& r = self->str();
 	size_t start = r.find_first_not_of(kAsciiSpaces);
@@ -220,35 +220,35 @@ inline YRet Trim(YArgs* args)
 
 	YRet yr;
 	yr.single.tp = YEArg::YVar;
-	auto rv = (Variable2*)args->retBuff.o;
+	auto rv = (Variable*)args->retBuff.o;
 	rv->SetStr(start == string_view::npos ? "" : r.substr(start, end - start + 1));
 	yr.single.o = rv;
 	return yr;
 }
 inline YRet LTrim(YArgs* args)
 {
-	auto self = (Variable2*)args->args[0].o;
+	auto self = (Variable*)args->args[0].o;
 
 	const string& r = self->str();
 	size_t start = r.find_first_not_of(kAsciiSpaces);
 
 	YRet yr;
 	yr.single.tp = YEArg::YVar;
-	auto rv = (Variable2*)args->retBuff.o;
+	auto rv = (Variable*)args->retBuff.o;
 	rv->SetStr(start == string_view::npos ? "" : r.substr(start));
 	yr.single.o = rv;
 	return yr;
 }
 inline YRet RTrim(YArgs* args)
 {
-	auto self = (Variable2*)args->args[0].o;
+	auto self = (Variable*)args->args[0].o;
 
 	const string& r = self->str();
 	size_t end = r.find_last_not_of(kAsciiSpaces);
 
 	YRet yr;
 	yr.single.tp = YEArg::YVar;
-	auto rv = (Variable2*)args->retBuff.o;
+	auto rv = (Variable*)args->retBuff.o;
 	rv->SetStr(end == string_view::npos ? "" : r.substr(0, end + 1));
 	yr.single.o = rv;
 	return yr;
@@ -256,11 +256,11 @@ inline YRet RTrim(YArgs* args)
 
 inline YRet Join(YArgs* args)
 {
-	auto self = (Variable2*)args->args[0].o;
+	auto self = (Variable*)args->args[0].o;
 	if(args->numArgs < 2)
 		throw 'n';//TODO
 
-	auto list = (Variable2*)args->args[1].o;
+	auto list = (Variable*)args->args[1].o;
 
 	string j;
 	if(!list->list().empty())
@@ -275,7 +275,7 @@ inline YRet Join(YArgs* args)
 	YRet yr;
 	yr.single.tp = YEArg::YVar;
 
-	auto vj = (Variable2*)args->retBuff.o;
+	auto vj = (Variable*)args->retBuff.o;
 	vj->SetStr(j);
 	yr.single.o = vj;
 	return yr;

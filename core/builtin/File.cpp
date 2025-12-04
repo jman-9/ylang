@@ -1,5 +1,5 @@
 #include "File.h"
-#include "vm/Variable2.h"
+#include "vm/Variable.h"
 #include <stdio.h>
 
 
@@ -11,15 +11,15 @@ using namespace ymod;
 
 YRet Open(YArgs* args)
 {
-	Variable2* me = nullptr;
+	Variable* me = nullptr;
 	int argStart = 0;
 	if(args->numArgs > 2)
 	{
-		me = (Variable2*)args->args[0].o;
+		me = (Variable*)args->args[0].o;
 		argStart = 1;
 	}
 
-	FILE* fp = fopen(((Variable2*)args->args[argStart].o)->str().c_str(), ((Variable2*)args->args[argStart+1].o)->str().c_str());
+	FILE* fp = fopen(((Variable*)args->args[argStart].o)->str().c_str(), ((Variable*)args->args[argStart+1].o)->str().c_str());
 	if(fp == nullptr)
 		return { errno, };
 
@@ -42,7 +42,7 @@ YRet Open(YArgs* args)
 
 YRet Close(YArgs* args)
 {
-	Variable2* me = (Variable2*)args->args[0].o;
+	Variable* me = (Variable*)args->args[0].o;
 	FILE* fp = (FILE*)me->modObj()._o;
 	int ec = fclose(fp) ? errno : 0;
 	if(!ec) me->modObj()._o = nullptr;
@@ -51,15 +51,15 @@ YRet Close(YArgs* args)
 
 YRet Read(YArgs* args)
 {
-	Variable2* me = (Variable2*)args->args[0].o;
-	Variable2* sz = (Variable2*)args->args[1].o;
+	Variable* me = (Variable*)args->args[0].o;
+	Variable* sz = (Variable*)args->args[1].o;
 
 	std::string s;
 	s.resize(sz->int_() + 1);
 	size_t rsz = fread(s.data(), 1, sz->int_(), (FILE*)me->modObj()._o);
 	s.resize(rsz);
 	YRet yr;
-	auto rv = (Variable2*)args->retBuff.o;
+	auto rv = (Variable*)args->retBuff.o;
 	rv->SetStr(s);
 	yr.single.SetYVar(rv);
 	return yr;
@@ -67,11 +67,11 @@ YRet Read(YArgs* args)
 
 YRet Write(YArgs* args)
 {
-	Variable2* me = (Variable2*)args->args[0].o;
-	Variable2* s = (Variable2*)args->args[1].o;
+	Variable* me = (Variable*)args->args[0].o;
+	Variable* s = (Variable*)args->args[1].o;
 
 	size_t wsz = 0;
-	if(*s == Variable2::STR)
+	if(*s == Variable::STR)
 	{
 		wsz = fwrite(s->str().c_str(), 1, s->str().size(), (FILE*)me->modObj()._o);
 	}
