@@ -87,6 +87,8 @@ struct YArgs
 	int numArgs = 0;
 	YArg* args = nullptr;
 
+	YArg retBuff;
+
 	void Reset(int num);
 };
 

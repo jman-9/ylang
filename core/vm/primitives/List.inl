@@ -1,6 +1,6 @@
 #pragma once
 #include "List.h"
-#include "vm/Variable.h"
+#include "vm/Variable2.h"
 
 
 namespace yvm::primitive::List
@@ -12,29 +12,31 @@ using namespace std;
 
 inline YRet Len(YArgs* args)
 {
-	auto self = (Variable*)args->args[0].o;
+	auto self = (Variable2*)args->args[0].o;
 
 	YRet yr;
 	yr.single.tp = YEArg::YVar;
-	yr.single.o = Variable::NewInt((int64_t)self->_list->size());
+	auto v = (Variable2*)args->retBuff.o;
+	v->SetInt((int64_t)self->list().size());
+	yr.single.o = v;
 	return yr;
 }
 
 inline YRet Resize(YArgs* args)
 {
-	auto self = (Variable*)args->args[0].o;
-	auto n = (Variable*)args->args[1].o;
+	auto self = (Variable2*)args->args[0].o;
+	auto n = (Variable2*)args->args[1].o;
 
-	self->_list->resize(n->_int);
+	self->list().resize(n->int_());
 	return {};
 }
 
 inline YRet Append(YArgs* args)
 {
-	auto self = (Variable*)args->args[0].o;
-	auto a = (Variable*)args->args[1].o;
+	auto self = (Variable2*)args->args[0].o;
+	auto a = (Variable2*)args->args[1].o;
 
-	self->_list->push_back(a->Clone());
+	self->list().push_back(*a);
 	return {};
 }
 
@@ -43,11 +45,11 @@ inline YRet Insert(YArgs* args)
 	if(args->numArgs < 3)
 		throw 'n';//TODO
 
-	auto self = (Variable*)args->args[0].o;
-	auto i = (Variable*)args->args[1].o;
-	auto v =(Variable*)args->args[2].o;
+	auto self = (Variable2*)args->args[0].o;
+	auto i = (Variable2*)args->args[1].o;
+	auto v =(Variable2*)args->args[2].o;
 
-	self->_list->insert(self->_list->begin() + i->_int, v->Clone());
+	self->list().insert(self->list().begin() + i->int_(), *v);
 	return {};
 }
 
@@ -56,34 +58,40 @@ inline YRet Pop(YArgs* args)
 	if(args->numArgs < 2)
 		throw 'n';//TODO
 
-	auto self = (Variable*)args->args[0].o;
-	auto i = (Variable*)args->args[1].o;
+	auto self = (Variable2*)args->args[0].o;
+	auto i = (Variable2*)args->args[1].o;
 
 
 	YRet yr;
 	yr.single.tp = YEArg::YVar;
-	yr.single.o = self->_list->at(i->_int);
-	self->_list->erase(self->_list->begin() + i->_int);
+	auto v = (Variable2*)args->retBuff.o;
+	v->SetVar(self->list()[i->int_()]);
+	yr.single.o = v;
+	self->list().erase(self->list().begin() + i->int_());
 	return yr;
 }
 
 inline YRet PopFront(YArgs* args)
 {
-	auto self = (Variable*)args->args[0].o;
+	auto self = (Variable2*)args->args[0].o;
 	YRet yr;
 	yr.single.tp = YEArg::YVar;
-	yr.single.o = self->_list->front();
-	self->_list->erase(self->_list->begin());
+	auto v = (Variable2*)args->retBuff.o;
+	v->SetVar(self->list().front());
+	yr.single.o = v;
+	self->list().erase(self->list().begin());
 	return yr;
 }
 
 inline YRet PopBack(YArgs* args)
 {
-	auto self = (Variable*)args->args[0].o;
+	auto self = (Variable2*)args->args[0].o;
 	YRet yr;
 	yr.single.tp = YEArg::YVar;
-	yr.single.o = self->_list->back();
-	self->_list->pop_back();
+	auto v = (Variable2*)args->retBuff.o;
+	v->SetVar(self->list().back());
+	yr.single.o = v;
+	self->list().pop_back();
 	return yr;
 }
 

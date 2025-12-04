@@ -14,7 +14,41 @@ using namespace std;
 
 
 const char* testcode1 = R"TEST(
-a = 2; b = a++ + a++; println("{b} {a}");
+//a = 2; b = a++ + a++; println("{b} {a}");
+
+//include sys;
+//println(sys.version);
+/*
+a = {};
+a["hhuu"] = 10;
+println(a);
+println(a.len());
+println(a.keys());
+println(a.values());
+println(a.items());
+*/
+
+class Test
+{
+	a = 1;
+	c = "haha";
+	l = [];
+	d = {};
+};
+
+t = Test();
+t.a = "huhu";
+t.c = 19;
+t.l.append(1092);
+t.l.append("haha");
+t.d["humm"] = 15;;
+t.d["humm"] = "check";
+println(t);
+println(t.a);
+println(t.c);
+println(t.l);
+println(t.d);
+
 )TEST";
 const char* testcode2 = R"TEST(
 )TEST";

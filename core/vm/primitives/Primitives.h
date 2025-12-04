@@ -6,7 +6,7 @@
 namespace yvm::primitive
 {
 
-const ymod::ModuleDesc* GetModuleDesc(Variable::Type primType);
+const ymod::ModuleDesc* GetModuleDesc(Variable2::Type primType);
 
 }
 

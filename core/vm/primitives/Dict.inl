@@ -1,6 +1,6 @@
 #pragma once
 #include "Dict.h"
-#include "vm/Variable.h"
+#include "vm/Variable2.h"
 
 
 namespace yvm::primitive::Dict
@@ -12,11 +12,13 @@ using namespace std;
 
 inline YRet Len(YArgs* args)
 {
-	auto self = (Variable*)args->args[0].o;
+	auto self = (Variable2*)args->args[0].o;
 
 	YRet yr;
 	yr.single.tp = YEArg::YVar;
-	yr.single.o = Variable::NewInt((int64_t)self->_dict->size());
+	auto v = (Variable2*)args->retBuff.o;
+	v->SetInt((int64_t)self->dict().size());
+	yr.single.o = v;
 	return {};
 }
 
@@ -31,18 +33,22 @@ inline YRet Contains(YArgs* args)
 	auto found = self->_dict->find(k->_str);
 	YRet yr;
 	yr.single.tp = YEArg::YVar;
-	yr.single.o = Variable::NewInt( found != self->_dict->end() );
+	auto v = (Variable2*)args->retBuff.o;
+	v->SetInt(found != self->_dict->end());
+	yr.single.o = v;
 	return yr;
 }
 
 inline YRet Keys(YArgs* args)
 {
-	auto self = (Variable*)args->args[0].o;
+	auto self = (Variable2*)args->args[0].o;
 
-	auto ret = Variable::NewList();
-	for(auto& [k, _] : *self->_dict)
+	auto ret = (Variable2*)args->retBuff.o;
+	ret->SetList();
+	for(auto& [k, _] : self->dict())
 	{
-		ret->_list->push_back(Variable::NewStr(k));
+		ret->list().push_back({});
+		ret->list().back().SetStr(k);
 	}
 
 	YRet yr;
@@ -53,12 +59,13 @@ inline YRet Keys(YArgs* args)
 
 inline YRet Values(YArgs* args)
 {
-	auto self = (Variable*)args->args[0].o;
+	auto self = (Variable2*)args->args[0].o;
 
-	auto ret = Variable::NewList();
-	for(auto& [_, v] : *self->_dict)
+	auto ret = (Variable2*)args->retBuff.o;
+	ret->SetList();
+	for(auto& [_, v] : self->dict())
 	{
-		ret->_list->push_back(v);
+		ret->list().push_back(v);
 	}
 
 	YRet yr;
@@ -69,17 +76,18 @@ inline YRet Values(YArgs* args)
 
 inline YRet Items(YArgs* args)
 {
-	auto self = (Variable*)args->args[0].o;
+	auto self = (Variable2*)args->args[0].o;
 
-	auto ret = Variable::NewList();
-	for(auto& [k, v] : *self->_dict)
+	auto ret = (Variable2*)args->retBuff.o;
+	ret->SetList();
+	for(auto& [k, v] : self->dict())
 	{
-		Variable* pair = Variable::NewList();
-		Variable* kv = Variable::NewStr(k);
-		pair->_list->push_back(kv);
-		pair->_list->push_back(v);
-
-		ret->_list->push_back(pair);
+		ret->list().push_back({});
+		auto& pair = ret->list().back();
+		pair.SetList();
+		pair.list().push_back({});
+		pair.list().back().SetStr(k);
+		pair.list().push_back(v);
 	}
 
 	YRet yr;
@@ -93,15 +101,15 @@ inline YRet Pop(YArgs* args)
 	if(args->numArgs < 2)
 		throw 'n';//TODO
 
-	auto self = (Variable*)args->args[0].o;
-	auto k = (Variable*)args->args[1].o;
+	auto self = (Variable2*)args->args[0].o;
+	auto k = (Variable2*)args->args[1].o;
 
-	auto found = self->_dict->find(k->_str);
-	Variable* ret = nullptr;
-	if(found != self->_dict->end())
+	auto found = self->dict().find(k->str());
+	auto ret = (Variable2*)args->retBuff.o;
+	if(found != self->dict().end())
 	{
-		ret = found->second;
-		self->_dict->erase(found);
+		ret->SetVar(found->second);
+		self->dict().erase(found);
 	}
 
 	YRet yr;
