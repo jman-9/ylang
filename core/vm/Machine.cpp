@@ -202,14 +202,14 @@ bool Machine::Assign(const Op::Assign& as)
 						dst->SetValueFromContract(found->second);
 					}
 				}
-				else if(dst->attr().owner == Variable2::CLASS)
+				else if(dst->attr().owner == Variable2::CLASSOBJ)
 				{
 					auto found = dst->attr().owner.clsObj()._cls->_fieldMap.find(dst->_u._attr->name);
 					if(found != dst->attr().owner.clsObj()._cls->_fieldMap.end())
 					{
 						dst->SetVar(dst->attr().owner.clsObj()._fields[found->second]);
 					}
-				}
+				}//TODO static class field
 			}
 		}
 		else if(src1)
@@ -342,14 +342,15 @@ bool Machine::Jz(const Op::Jz& jz)
 	if(	(*test == Variable2::INT && test->int_()) ||
 		(*test == Variable2::FLOAT && test->float_()) ||
 		(*test == Variable2::STR && !test->str().empty()) ||
-		(*test == Variable2::CLASS && !test->clsObj()._cls->name.empty()) ||
+		(*test == Variable2::CLASS && !test->cls().name.empty()) ||
 		(*test == Variable2::MODULE && !test->mod().IsNull()) ||
-		(*test == Variable2::MODULEOBJ && test->modObj()._mod.modDesc) ||
 		//TODO(*test == Variable2::OBJECT && test->_obj) || || TODO qaz
 		//(*test == Variable2::REF && test->ref()) || TODO qaz
 		(*test == Variable2::ATTR && !test->attr().name.empty()) ||
 		(*test == Variable2::LIST && test->_u._o) || // || TODO qaz
 		(*test == Variable2::DICT && test->_u._o) || // || TODO qaz
+		(*test == Variable2::CLASSOBJ && test->clsObj()._cls) ||
+		(*test == Variable2::MODULEOBJ && test->modObj()._mod.modDesc) ||
 		(*test == Variable2::_TRUE_))
 	{
 		return true;
@@ -591,7 +592,7 @@ bool Machine::Invoke(const Op::Invoke& ivk)
 	_roff = ivk.dst + 1;
 
 	auto& owner = dst->attr().owner;
-	if(owner == Variable2::CLASS)
+	if(owner == Variable2::CLASSOBJ)
 	{
 		auto cls = owner.clsObj()._cls;
 		auto found = cls->_funcMap.find(dst->attr().name);
@@ -608,6 +609,11 @@ bool Machine::Invoke(const Op::Invoke& ivk)
 		auto vt = ResolveVar2(ERefKind::Reg, ivk.dst);
 		vt->SetVar(*vs);
 		return true;
+	}
+	else if(owner == Variable2::CLASS)
+	{//TODO
+		int a = 1;
+		throw 'n';
 	}
 
 	const ymod::ModuleDesc* modDesc = primitive::GetModuleDesc(owner._type);
@@ -748,12 +754,13 @@ bool Machine::Jnz(const Op::Jnz& jnz)
 		(*test == Variable2::FLOAT && !test->float_()) ||
 		(*test == Variable2::STR && test->str().empty()) ||
 		//(*test == Variable2::OBJECT && !test->_obj) || //TODOqaz
-		(*test == Variable2::CLASS && test->clsObj()._cls->name.empty()) ||
+		(*test == Variable2::CLASS && test->cls().name.empty()) ||
 		(*test == Variable2::MODULE && test->mod().IsNull()) ||
 		//(*test == Variable2::REF && !test->ref()) || TODOqaz
 		(*test == Variable2::ATTR && test->attr().name.empty()) ||
 		(*test == Variable2::LIST && !test->_u._o) ||	//TODOqaz
 		(*test == Variable2::DICT && !test->_u._o) ||	//TODOqaz
+		(*test == Variable2::CLASSOBJ && test->clsObj()._cls->name.empty()) ||
 		(*test == Variable2::MODULEOBJ && !test->modObj()._mod.modDesc) ||
 		(*test == Variable2::_FALSE_) ||
 		(*test == Variable2::_NULL_) ||
@@ -859,7 +866,7 @@ bool Machine::LValueField(const Op::LValueField& lvf)
 	{//TODO
 		throw 'n';
 	}
-	if(*dst != Variable2::CLASS)
+	if(*dst != Variable2::CLASSOBJ)
 	{//TODO
 		throw 'n';
 	}

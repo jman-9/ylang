@@ -39,6 +39,7 @@ struct Variable2
 		CLASS,
 		MODULE,
 
+		OBJ,
 		LIST,
 		DICT,
 		CLASSOBJ,
@@ -60,8 +61,8 @@ struct Variable2
 		Object* _o;
 		Variable2* _ref;
 		Attribute2* _attr;
-		//Class* _cls;	 // TODO to run static method
-		ymod::ModuleDesc* _mod;
+		const Class* _cls;
+		//ymod::ModuleDesc* _mod; //TODO to separate module and moduleobj
 	} _u;
 
 
@@ -97,7 +98,7 @@ struct Variable2
 	bool operator!=(Type cmp) const;
 	const Variable2& operator=(const Variable2& rhs);
 
-	void ResetNewRef();
+	void ResetNewObj();
 
 	int64_t int_() const;
 	double float_() const;
@@ -106,8 +107,11 @@ struct Variable2
 	const Variable2& ref() const;
 	const Attribute2& attr() const;
 	Attribute2& attr();
+	const Class& cls() const;
 	const ymod::ModuleDesc& mod() const;
+	const std::vector<Variable2>& list() const;
 	std::vector<Variable2>& list();
+	const std::unordered_map<std::string, Variable2>& dict() const;
 	std::unordered_map<std::string, Variable2>& dict();
 	const ClassObject2& clsObj() const;
 	ClassObject2& clsObj();

@@ -35,6 +35,7 @@ void Variable2::Clear()
 		if(_u._attr) { delete _u._attr; _u._attr = nullptr; }
 		break;
 
+	case OBJ:
 	case LIST:
 	case DICT:
 	case CLASS:
@@ -118,14 +119,14 @@ void Variable2::SetAttr(Attribute2& attr)
 }
 void Variable2::SetList(const std::vector<Variable2>& list /*= std::vector<Variable2>()*/)
 {
-	ResetNewRef();
+	ResetNewObj();
 	for(auto& e : list)
 		_u._o->_list.push_back(e);
 	_u._o->_type = LIST;
 	_type = LIST;
 }
 void Variable2::SetDict(const std::unordered_map<std::string, Variable2>& dict /*= std::unordered_map<std::string, Variable2>()*/)
-{	ResetNewRef();
+{	ResetNewObj();
 	for(auto& e : dict)
 		_u._o->_dict.insert(e);
 	_u._o->_type = DICT;
@@ -133,18 +134,27 @@ void Variable2::SetDict(const std::unordered_map<std::string, Variable2>& dict /
 }
 void Variable2::SetClass(const Class& cls, bool makeInstance)
 {
-	ResetNewRef();
-	_u._o->_clso._cls = &cls;
-	if(!makeInstance)	//TODO
-		return;
-	_u._o->_type = CLASS;
-	_type = CLASS;
+	if(makeInstance)
+	{
+		ResetNewObj();
 
-	clsObj()._fields.resize(clsObj()._cls->_fields.size());
+		_u._o->_clso._cls = &cls;
+		_u._o->_type = CLASSOBJ;
+		_type = CLASSOBJ;
+
+		clsObj()._fields.resize(clsObj()._cls->_fields.size());
+	}
+	else
+	{
+		Clear();
+		_u._cls = &cls;
+		_type = CLASS;
+	}
 }
 void Variable2::SetModule(const ModuleDesc& mod, bool makeInstance)
 {
-	ResetNewRef();
+	ResetNewObj();
+
 	_u._o->_modo._mod.modDesc = &mod;
 	_u._o->_type = MODULE;
 	_type = MODULE;
@@ -183,13 +193,14 @@ void Variable2::SetVar(Variable2& var)
 	case REF: SetVarRef(var); break;
 	case LVREF: SetVarLVRef(var); break;
 	case ATTR: SetAttr(var._u._attr->owner, var._u._attr->name); break;
+	case CLASS: SetClass(*var._u._cls, false); break;
 
+	case OBJ:
 	case LIST:
 	case DICT:
-	case CLASS:
+	case CLASSOBJ:
 	case MODULE:
-	case MODULEOBJ:
-	case CLASSOBJ: SetObj(var._u._o); break;
+	case MODULEOBJ: SetObj(var._u._o); break;
 	}
 }
 
@@ -581,17 +592,29 @@ string Variable2::ToStr() const
 	case NONE: return "none";
 
 	case INT:
-		return to_string(_u._i);
+		return to_string(int_());
 	case FLOAT:
-		return to_string(_u._f);
+		return to_string(float_());
 	case STR:
-		return *_u._s;
+		return str();
+	case REF:
+	case LVREF:
+		return "ref: " + ref().ToStr();
+	case ATTR:
+		return "attr: " + attr().name;
+	case CLASS:
+		return "class: " + cls().name;
+	case MODULE:
+		return "module: " + mod().name;
+
+	case OBJ:
+		return "obj: (uninitialized)";
 	case LIST:
 		{
 			string r = "[";
-			if(!_u._o->_list.empty())
+			if(!list().empty())
 			{
-				for(auto& v: _u._o->_list)
+				for(auto& v: list())
 				{
 					string t = v.ToStr();
 					if(v == STR) t = "'" + t + "'";
@@ -606,9 +629,9 @@ string Variable2::ToStr() const
 	case DICT:
 		{
 			string r = "{";
-			if(!_u._o->_dict.empty())
+			if(!dict().empty())
 			{
-				for(auto& [k, v]: _u._o->_dict)
+				for(auto& [k, v]: dict())
 				{
 					string t = v.ToStr();
 					if(v == STR) t = "'" + t + "'";
@@ -620,13 +643,11 @@ string Variable2::ToStr() const
 			r += "}";
 			return r;
 		}
-	case LVREF:
-	case REF:
-		return "ref: " + _u._ref->ToStr();
-	case ATTR:
-		return "attr(wip): " + _u._attr->name;
-	case CLASS:
-		return "cls(wip): " + _u._o->_clso._cls->name;
+	case CLASSOBJ:
+		return "classobj: " + clsObj()._cls->name;
+	case MODULEOBJ:
+		return "moduleobj: " + modObj()._mod.modDesc->name;
+
 	case _NULL_:
 		return "null";
 	case _TRUE_:
@@ -647,11 +668,12 @@ const Variable2& Variable2::operator=(const Variable2& rhs)
 	return *this;
 }
 
-void Variable2::ResetNewRef()
+void Variable2::ResetNewObj()
 {
 	Clear();
 	_u._o = new Object;
-	_type = REF;
+	_u._o->_type = OBJ;
+	_type = OBJ;
 }
 int64_t Variable2::int_() const
 {
@@ -688,16 +710,38 @@ Attribute2& Variable2::attr()
 	if(_type != ATTR) throw 'n'; //TODO
 	return *_u._attr;
 }
+
+const Class& Variable2::cls() const
+{
+	if(_type == CLASS)
+		return *_u._cls;
+	else if(_type == CLASSOBJ)
+		return *_u._o->_clso._cls;
+	else
+		throw 'n'; //TODO
+}
+
 const ModuleDesc& Variable2::mod() const
 {
 	if(_type != MODULE) throw 'n'; //TODO
 	//qazreturn *_u._mod;
 	return *modObj()._mod.modDesc;
 }
+
+const std::vector<Variable2>& Variable2::list() const
+{
+	if(_type != LIST) throw 'n'; //TODO
+	return _u._o->_list;
+}
 vector<Variable2>& Variable2::list()
 {
 	if(_type != LIST) throw 'n'; //TODO
 	return _u._o->_list;
+}
+const std::unordered_map<std::string, Variable2>& Variable2::dict() const
+{
+	if(_type != DICT) throw 'n'; //TODO
+	return _u._o->_dict;
 }
 unordered_map<string, Variable2>& Variable2::dict()
 {
@@ -706,12 +750,12 @@ unordered_map<string, Variable2>& Variable2::dict()
 }
 const ClassObject2& Variable2::clsObj() const
 {
-	if(_type != CLASS) throw 'n'; //TODO
+	if(_type != CLASSOBJ) throw 'n'; //TODO
 	return _u._o->_clso;
 }
 ClassObject2& Variable2::clsObj()
 {
-	if(_type != CLASS) throw 'n'; //TODO
+	if(_type != CLASSOBJ) throw 'n'; //TODO
 	return _u._o->_clso;
 }
 const ModuleObject& Variable2::modObj() const
@@ -734,7 +778,6 @@ Variable2::Object::Object()
 
 Variable2::Object::~Object()
 {//TODO
-	ReleaseRef();
 }
 
 void Variable2::Object::AddRef()
