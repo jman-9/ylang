@@ -20,25 +20,18 @@ Machine::Machine()
 	_spStack.push(0);
 	_rpStack.push(0);
 	_cspStack.push(0);
-	//_regs.resize(1000);
-	//_stack.resize(5000);
+	_regs.resize(1000);
+	_stack.resize(5000);
 
-	_regs2.resize(1000);
-	_stack2.resize(5000);
-
-	//_literals.push_back({ ._type = Variable::_NULL_ });
-	//_literals.push_back({ ._type = Variable::_TRUE_ });
-	//_literals.push_back({ ._type = Variable::_FALSE_ });
-
-	_literals2.resize(3);
-	_literals2[0]._type = Variable::_NULL_;
-	_literals2[1]._type = Variable::_TRUE_;
-	_literals2[2]._type = Variable::_FALSE_;
+	//TODO remove hardcoding
+	_literals.resize(3);
+	_literals[0]._type = Variable::_NULL_;
+	_literals[1]._type = Variable::_TRUE_;
+	_literals[2]._type = Variable::_FALSE_;
 
 	ybuiltin::Garage::RegisterAll(_modMgr);
 }
 
-/*qaz
 Variable* Machine::ResolveVar(ERefKind k, int idx)
 {
 	switch(k)
@@ -67,41 +60,7 @@ Variable* Machine::ResolveVar(ERefKind k, int idx)
 		{
 			if(_clsStack.empty()) throw 'n';
 
-			return _clsStack.top()->_clso._fields[idx];
-		}
-
-	default: return nullptr;
-	}
-}*/
-Variable* Machine::ResolveVar2(ERefKind k, int idx)
-{
-	switch(k)
-	{
-	case ERefKind::Literal:
-		{
-			return &_literals2[idx];
-		}
-
-	case ERefKind::Const: return &_consts2[idx];
-
-	case ERefKind::Reg:
-		{
-			_roff = idx;
-			return &_regs2[_rpStack.top() + idx];
-		}
-	case ERefKind::GlobalVar: return &_stack2[idx];
-	case ERefKind::LocalVar:
-		{
-			if(_sp < _cspStack.top() + idx + 1)
-				_sp = _cspStack.top() + idx + 1;
-			return &_stack2[idx + _cspStack.top()];
-		}
-
-	case ERefKind::FieldVar:
-		{
-			if(_clsStack2.empty()) throw 'n';
-
-			return &_clsStack2.top()->_u._o->_clso._fields[idx];
+			return &_clsStack.top()->clsObj()._fields[idx];
 		}
 
 	default: return nullptr;
@@ -175,9 +134,9 @@ bool Machine::Assign(const Op::Assign& as)
 
 	if((ERefKind)as.dstKind != ERefKind::None)
 	{
-		Variable* src1 = ResolveVar2((ERefKind)as.src1Kind, as.src1);
-		Variable* src2 = ResolveVar2((ERefKind)as.src2Kind, as.src2);
-		Variable* dst = ResolveVar2((ERefKind)as.dstKind, as.dst);
+		Variable* src1 = ResolveVar((ERefKind)as.src1Kind, as.src1);
+		Variable* src2 = ResolveVar((ERefKind)as.src2Kind, as.src2);
+		Variable* dst = ResolveVar((ERefKind)as.dstKind, as.dst);
 		if(src1 && src2)
 		{
 			auto op = (EToken)as.op;
@@ -253,14 +212,14 @@ bool Machine::Assign(const Op::Assign& as)
 				throw 'n';
 			}
 
-			Variable* src2 = ResolveVar2((ERefKind)as.src2Kind, as.src2);
-			Variable* src1 = ResolveVar2((ERefKind)as.src1Kind, as.src1);
+			Variable* src2 = ResolveVar((ERefKind)as.src2Kind, as.src2);
+			Variable* src1 = ResolveVar((ERefKind)as.src1Kind, as.src1);
 			src1->Assign((EToken)as.op, *src2);
 		}
 		else if(Token::IsIncDecOp((EToken)as.op))
 		{
-			Variable* src2 = ResolveVar2((ERefKind)as.src2Kind, as.src2);
-			Variable* src1 = ResolveVar2((ERefKind)as.src1Kind, as.src1);
+			Variable* src2 = ResolveVar((ERefKind)as.src2Kind, as.src2);
+			Variable* src1 = ResolveVar((ERefKind)as.src1Kind, as.src1);
 			if(src1)
 			{
 				src1->CalcIncDec((EToken)as.op);
@@ -337,18 +296,17 @@ bool Machine::Ret()
 
 bool Machine::Jz(const Op::Jz& jz)
 {
-	Variable* test = ResolveVar2((ERefKind)jz.testKind, jz.test);
+	Variable* test = ResolveVar((ERefKind)jz.testKind, jz.test);
 
 	if(	(*test == Variable::INT && test->int_()) ||
 		(*test == Variable::FLOAT && test->float_()) ||
 		(*test == Variable::STR && !test->str().empty()) ||
 		(*test == Variable::CLASS && !test->cls().name.empty()) ||
 		(*test == Variable::MODULE && !test->mod().IsNull()) ||
-		//TODO(*test == Variable2::OBJECT && test->_obj) || || TODO qaz
 		//(*test == Variable2::REF && test->ref()) || TODO qaz
 		(*test == Variable::ATTR && !test->attr().name.empty()) ||
-		(*test == Variable::LIST && test->_u._o) || // || TODO qaz
-		(*test == Variable::DICT && test->_u._o) || // || TODO qaz
+		(*test == Variable::LIST && !test->list().empty()) ||
+		(*test == Variable::DICT && !test->dict().empty()) ||
 		(*test == Variable::CLASSOBJ && test->clsObj()._cls) ||
 		(*test == Variable::MODULEOBJ && test->modObj()._mod.modDesc) ||
 		(*test == Variable::_TRUE_))
@@ -362,7 +320,7 @@ bool Machine::Jz(const Op::Jz& jz)
 
 bool Machine::ListSet(const Op::ListSet& ls)
 {
-	Variable* dst = ResolveVar2((ERefKind)ls.dstKind, ls.dst);
+	Variable* dst = ResolveVar((ERefKind)ls.dstKind, ls.dst);
 
 	Variable* t = nullptr;
 	if(*dst != Variable::LVREF)
@@ -375,28 +333,24 @@ bool Machine::ListSet(const Op::ListSet& ls)
 		dst->Clear();
 	}
 	t->SetList();
-	//t->Clear();
-	//TODO qazt->_list = new std::vector<Variable *>;
-	//t->_type = Variable::LIST;
 	return true;
 }
 
 bool Machine::ListAdd(const Op::ListAdd& la)
 {
-	Variable* src = ResolveVar2((ERefKind)la.srcKind, la.src);
-	Variable* dst = ResolveVar2((ERefKind)la.dstKind, la.dst);
+	Variable* src = ResolveVar((ERefKind)la.srcKind, la.src);
+	Variable* dst = ResolveVar((ERefKind)la.dstKind, la.dst);
 	if(*dst != Variable::LIST)
 	{
 		throw 'n';
 	}
-	//TODOqazdst->_list->push_back(src->Clone());
 	dst->list().push_back(*src);
 	return true;
 }
 
 bool Machine::DictSet(const Op::DictSet& ds)
 {
-	Variable* dst = ResolveVar2((ERefKind)ds.dstKind, ds.dst);
+	Variable* dst = ResolveVar((ERefKind)ds.dstKind, ds.dst);
 
 	Variable* t = nullptr;
 	if(*dst != Variable::LVREF)
@@ -409,17 +363,14 @@ bool Machine::DictSet(const Op::DictSet& ds)
 		dst->Clear();
 	}
 	t->SetDict();
-	//qazt->Clear();
-	//t->_dict = new std::unordered_map<std::string, Variable *>;
-	//t->_type = Variable::DICT;
 	return true;
 }
 
 bool Machine::DictAdd(const Op::DictAdd& da)
 {
-	Variable* val = ResolveVar2((ERefKind)da.valKind, da.val);
-	Variable* key = ResolveVar2((ERefKind)da.keyKind, da.key);
-	Variable* dst = ResolveVar2((ERefKind)da.dstKind, da.dst);
+	Variable* val = ResolveVar((ERefKind)da.valKind, da.val);
+	Variable* key = ResolveVar((ERefKind)da.keyKind, da.key);
+	Variable* dst = ResolveVar((ERefKind)da.dstKind, da.dst);
 	if(*dst != Variable::DICT)
 	{
 		throw 'n';
@@ -430,14 +381,13 @@ bool Machine::DictAdd(const Op::DictAdd& da)
 	}
 
 	dst->dict()[*key->_u._s].SetVar(*val);
-	//qaz(*dst->_dict)[key->_str] = val->Clone();
 	return true;
 }
 
 bool Machine::Index(const Op::Index& li)
 {
-	Variable* idx = ResolveVar2((ERefKind)li.idxKind, li.idx);
-	Variable* dst = ResolveVar2((ERefKind)li.dstKind, li.dst);
+	Variable* idx = ResolveVar((ERefKind)li.idxKind, li.idx);
+	Variable* dst = ResolveVar((ERefKind)li.dstKind, li.dst);
 
 	if(*idx == Variable::INT)
 	{
@@ -446,7 +396,6 @@ bool Machine::Index(const Op::Index& li)
 			throw 'n';
 		}
 
-		//qaz*dst = *dst->_list->at(idx->_int);
 		dst->SetVar(dst->list()[idx->int_()]);
 	}
 	else if(*idx == Variable::STR)
@@ -456,8 +405,6 @@ bool Machine::Index(const Op::Index& li)
 			throw 'n';
 		}
 
-		//qazauto found = dst->_dict->find(idx->_str);
-		//if(found == dst->_dict->end())
 		auto found = dst->dict().find(idx->str());
 		if(found == dst->dict().end())
 		{
@@ -475,8 +422,8 @@ bool Machine::Index(const Op::Index& li)
 
 bool Machine::LValueIndex(const Op::LValueIndex& lli)
 {
-	Variable* idx = ResolveVar2((ERefKind)lli.idxKind, lli.idx);
-	Variable* dst = ResolveVar2((ERefKind)lli.dstKind, lli.dst);
+	Variable* idx = ResolveVar((ERefKind)lli.idxKind, lli.idx);
+	Variable* dst = ResolveVar((ERefKind)lli.dstKind, lli.dst);
 
 	if(*idx == Variable::INT)
 	{
@@ -549,13 +496,8 @@ bool Machine::LValueIndex(const Op::LValueIndex& lli)
 bool Machine::Invoke(const Op::Invoke& ivk)
 {
 	if((ERefKind)ivk.dstKind == ERefKind::MemberFunc)
-	{/*qaz
+	{
 		if(_clsStack.empty())
-		{//TODO
-			throw 'n';
-		}*/
-
-		if(_clsStack2.empty())
 		{//TODO
 			throw 'n';
 		}
@@ -565,10 +507,7 @@ bool Machine::Invoke(const Op::Invoke& ivk)
 			_roff -= (int)ivk.numArgs - 1;
 		}
 
-		//auto& cls = _clsStack.top()->_clso._cls;
-		//Exec(cls._funcs[ivk.dst], 1);
-
-		auto cls = _clsStack2.top()->clsObj()._cls;
+		auto cls = _clsStack.top()->clsObj()._cls;
 		Exec(cls->_funcs[ivk.dst], 1);
 		return true;
 	}
@@ -578,7 +517,7 @@ bool Machine::Invoke(const Op::Invoke& ivk)
 		throw 'n';
 	}
 
-	Variable* dst = ResolveVar2((ERefKind)ivk.dstKind, ivk.dst);
+	Variable* dst = ResolveVar((ERefKind)ivk.dstKind, ivk.dst);
 	if(*dst == Variable::STR)
 	{//TODO dynamic resolution
 		//TBD
@@ -601,12 +540,12 @@ bool Machine::Invoke(const Op::Invoke& ivk)
 			throw 'n';
 		}
 
-		_clsStack2.push(&owner);
+		_clsStack.push(&owner);
 		Exec(cls->_funcs[found->second], 1);
-		_clsStack2.pop();
+		_clsStack.pop();
 
-		auto vs = ResolveVar2(ERefKind::Reg, ivk.dst + 1);
-		auto vt = ResolveVar2(ERefKind::Reg, ivk.dst);
+		auto vs = ResolveVar(ERefKind::Reg, ivk.dst + 1);
+		auto vt = ResolveVar(ERefKind::Reg, ivk.dst);
 		vt->SetVar(*vs);
 		return true;
 	}
@@ -670,7 +609,7 @@ bool Machine::Invoke(const Op::Invoke& ivk)
 	{
 		for(int i=0; i<ivk.numArgs; i++)
 		{//TODOqaz int value check
-			auto arg = ResolveVar2(ERefKind::Reg, argsRoff+i);
+			auto arg = ResolveVar(ERefKind::Reg, argsRoff+i);
 			YArg yo { (void*)arg, YEArg::YVar };
 			ya.args[i+off] = yo;
 		}
@@ -679,12 +618,11 @@ bool Machine::Invoke(const Op::Invoke& ivk)
 	{
 		for(int i=0; i<ivk.numArgs; i++)
 		{//TODO int value check
-			auto arg = ResolveVar2(ERefKind::Reg, argsRoff+i);
-			//qazya.args[i+off] = arg->ToContract();
+			auto arg = ResolveVar(ERefKind::Reg, argsRoff+i);
 		}
 	}
 
-	auto ret = ResolveVar2(ERefKind::Reg, ivk.dst);
+	auto ret = ResolveVar(ERefKind::Reg, ivk.dst);
 	ya.retBuff.tp = YEArg::YVar;
 	ya.retBuff.o = ret;
 
@@ -723,12 +661,14 @@ bool Machine::Invoke(const Op::Invoke& ivk)
 	else
 	{//TODO
 	}
+
+	ya.Reset(0);
 	return true;
 }
 
 bool Machine::Inc(const Op::Inc& inc)
 {
-	Variable* name = ResolveVar2(ERefKind::Const, inc.inc);
+	Variable* name = ResolveVar(ERefKind::Const, inc.inc);
 
 	if(!name || *name != Variable::STR)
 	{
@@ -741,27 +681,27 @@ bool Machine::Inc(const Op::Inc& inc)
 		throw 'n';
 	}
 
-	auto v = ResolveVar2(ERefKind::LocalVar, _sp);
+	auto v = ResolveVar(ERefKind::LocalVar, _sp);
 	v->SetModule(modDesc, false);
 	return true;
 }
 
 bool Machine::Jnz(const Op::Jnz& jnz)
 {
-	Variable* test = ResolveVar2((ERefKind)jnz.testKind, jnz.test);
+	Variable* test = ResolveVar((ERefKind)jnz.testKind, jnz.test);
 
 	if(	(*test == Variable::INT && !test->int_()) ||
 		(*test == Variable::FLOAT && !test->float_()) ||
 		(*test == Variable::STR && test->str().empty()) ||
-		//(*test == Variable2::OBJECT && !test->_obj) || //TODOqaz
 		(*test == Variable::CLASS && test->cls().name.empty()) ||
 		(*test == Variable::MODULE && test->mod().IsNull()) ||
 		//(*test == Variable2::REF && !test->ref()) || TODOqaz
 		(*test == Variable::ATTR && test->attr().name.empty()) ||
-		(*test == Variable::LIST && !test->_u._o) ||	//TODOqaz
-		(*test == Variable::DICT && !test->_u._o) ||	//TODOqaz
+		(*test == Variable::LIST && test->list().empty()) ||
+		(*test == Variable::DICT && test->dict().empty()) ||
 		(*test == Variable::CLASSOBJ && test->clsObj()._cls->name.empty()) ||
 		(*test == Variable::MODULEOBJ && !test->modObj()._mod.modDesc) ||
+		(*test == Variable::OBJ) ||
 		(*test == Variable::_FALSE_) ||
 		(*test == Variable::_NULL_) ||
 		(*test == Variable::NONE))
@@ -816,7 +756,7 @@ bool Machine::NewMod(const Op::NewMod& nm)
 
 bool Machine::NewCls(const Op::NewCls& nc)
 {
-	Variable* dst = ResolveVar2((ERefKind)nc.dstKind, nc.dst);
+	Variable* dst = ResolveVar((ERefKind)nc.dstKind, nc.dst);
 	if(*dst != Variable::STR)
 	{//TODO
 		throw 'n';
@@ -829,10 +769,9 @@ bool Machine::NewCls(const Op::NewCls& nc)
 	}
 
 	Variable v;
-	//TODO qaz
 	v.SetClass(found->second, true);
 
-	_clsStack2.push(&v);
+	_clsStack.push(&v);
 
 	int roffbk = _roff;
 	_roff++;
@@ -849,18 +788,17 @@ bool Machine::NewCls(const Op::NewCls& nc)
 		Exec(v.clsObj()._cls->_ctor, 1);
 	}
 
-	//_clsStack.pop();
-	_clsStack2.pop();
+	_clsStack.pop();
 
-	dst = ResolveVar2(ERefKind::Reg, _roff);
+	dst = ResolveVar(ERefKind::Reg, _roff);
 	dst->SetVar(v);
 	return true;
 }
 
 bool Machine::LValueField(const Op::LValueField& lvf)
 {
-	Variable* fld = ResolveVar2((ERefKind)lvf.fieldKind, lvf.field);
-	Variable* dst = ResolveVar2((ERefKind)lvf.dstKind, lvf.dst);
+	Variable* fld = ResolveVar((ERefKind)lvf.fieldKind, lvf.field);
+	Variable* dst = ResolveVar((ERefKind)lvf.dstKind, lvf.dst);
 
 	if(*fld != Variable::STR)
 	{//TODO
@@ -896,7 +834,7 @@ bool Machine::CallBuiltinFunc(const Op::Call& cal)
 		}
 		else
 		{
-			auto v = ResolveVar2(ERefKind::Reg, _roff);
+			auto v = ResolveVar(ERefKind::Reg, _roff);
 			cout << v->ToStr();
 		}
 		break;
@@ -908,7 +846,7 @@ bool Machine::CallBuiltinFunc(const Op::Call& cal)
 		}
 		else
 		{
-			auto v = ResolveVar2(ERefKind::Reg, _roff);
+			auto v = ResolveVar(ERefKind::Reg, _roff);
 			cout << v->ToStr() << "\n";
 		}
 		break;
@@ -920,7 +858,7 @@ bool Machine::CallBuiltinFunc(const Op::Call& cal)
 		}
 		else
 		{
-			auto v = ResolveVar2(ERefKind::Reg, _roff);
+			auto v = ResolveVar(ERefKind::Reg, _roff);
 			_retCode = (int)v->int_();
 		}
 		break;
@@ -937,27 +875,14 @@ int Machine::Run(const Program& program, int start /* = 0 */)
 	_prg = &program;
 	_retCode = INT_MAX;
 
-	/*qaz_consts.clear();
-
+	_consts.clear();
 	for(auto& c : _prg->_consts)
 	{
 		switch(c._type)
 		{
-		case Constant::INT:		_consts.push_back({ ._type = Variable::INT, ._int = c._int }); break;
-		case Constant::FLOAT:	_consts.push_back({ ._type = Variable::FLOAT, ._float = c._float }); break;
-		case Constant::STR:		_consts.push_back({ ._type = Variable::STR, ._str = c._str }); break;
-		default: //TODO
-			throw 'n';
-		}
-	}*/
-	_consts2.clear();
-	for(auto& c : _prg->_consts)
-	{
-		switch(c._type)
-		{
-		case Constant::INT:		_consts2.push_back({}); _consts2.back().SetInt(c._int); break;
-		case Constant::FLOAT:	_consts2.push_back({}); _consts2.back().SetFloat(c._float); break;
-		case Constant::STR:		_consts2.push_back({}); _consts2.back().SetStr(c._str); break;
+		case Constant::INT:		_consts.push_back({}); _consts.back().SetInt(c._int); break;
+		case Constant::FLOAT:	_consts.push_back({}); _consts.back().SetFloat(c._float); break;
+		case Constant::STR:		_consts.push_back({}); _consts.back().SetStr(c._str); break;
 		default: //TODO
 			throw 'n';
 		}

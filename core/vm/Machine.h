@@ -17,8 +17,7 @@ public:
 	int Run(const Program& program, int start = 0);
 
 protected:
-	//Variable* ResolveVar(ERefKind k, int idx);
-	Variable* ResolveVar2(ERefKind k, int idx);
+	Variable* ResolveVar(ERefKind k, int idx);
 
 	inline void PushState();
 	inline void PopState();
@@ -26,21 +25,16 @@ protected:
 
 	const Program* _prg;
 
-	//std::vector<Variable> _literals;
-	//std::vector<Variable> _consts;
-	//std::vector<Variable> _regs;
-	//std::vector<Variable> _stack;
-	std::vector<Variable> _literals2;
-	std::vector<Variable> _consts2;
-	std::vector<Variable> _regs2;
-	std::vector<Variable> _stack2;
+	std::vector<Variable> _literals;
+	std::vector<Variable> _consts;
+	std::vector<Variable> _regs;
+	std::vector<Variable> _stack;
 	std::stack<uint16_t> _spStack;
 	std::stack<uint16_t> _cspStack;
 	std::stack<uint16_t> _rpStack;
 	std::stack<uint16_t> _roffStack;
 	std::stack<uint32_t> _retStack;
-	//std::stack<const Variable*> _clsStack;
-	std::stack<Variable*> _clsStack2;
+	std::stack<Variable*> _clsStack;
 	int _sp;
 	int _roff;
 	int _pc;
