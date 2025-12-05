@@ -298,21 +298,8 @@ bool Machine::Jz(const Op::Jz& jz)
 {
 	Variable* test = ResolveVar((ERefKind)jz.testKind, jz.test);
 
-	if(	(*test == Variable::INT && test->int_()) ||
-		(*test == Variable::FLOAT && test->float_()) ||
-		(*test == Variable::STR && !test->str().empty()) ||
-		(*test == Variable::CLASS && !test->cls().name.empty()) ||
-		(*test == Variable::MODULE && !test->mod().IsNull()) ||
-		//(*test == Variable2::REF && test->ref()) || TODO qaz
-		(*test == Variable::ATTR && !test->attr().name.empty()) ||
-		(*test == Variable::LIST && !test->list().empty()) ||
-		(*test == Variable::DICT && !test->dict().empty()) ||
-		(*test == Variable::CLASSOBJ && test->clsObj()._cls) ||
-		(*test == Variable::MODULEOBJ && test->modObj()._mod.modDesc) ||
-		(*test == Variable::_TRUE_))
-	{
+	if(!test->IsNullOrFalse())
 		return true;
-	}
 
 	_pc = jz.pos - 1;
 	return true;
@@ -689,25 +676,8 @@ bool Machine::Inc(const Op::Inc& inc)
 bool Machine::Jnz(const Op::Jnz& jnz)
 {
 	Variable* test = ResolveVar((ERefKind)jnz.testKind, jnz.test);
-
-	if(	(*test == Variable::INT && !test->int_()) ||
-		(*test == Variable::FLOAT && !test->float_()) ||
-		(*test == Variable::STR && test->str().empty()) ||
-		(*test == Variable::CLASS && test->cls().name.empty()) ||
-		(*test == Variable::MODULE && test->mod().IsNull()) ||
-		//(*test == Variable2::REF && !test->ref()) || TODOqaz
-		(*test == Variable::ATTR && test->attr().name.empty()) ||
-		(*test == Variable::LIST && test->list().empty()) ||
-		(*test == Variable::DICT && test->dict().empty()) ||
-		(*test == Variable::CLASSOBJ && test->clsObj()._cls->name.empty()) ||
-		(*test == Variable::MODULEOBJ && !test->modObj()._mod.modDesc) ||
-		(*test == Variable::OBJ) ||
-		(*test == Variable::_FALSE_) ||
-		(*test == Variable::_NULL_) ||
-		(*test == Variable::NONE))
-	{
+	if(test->IsNullOrFalse())
 		return true;
-	}
 
 	_pc = jnz.pos - 1;
 	return true;

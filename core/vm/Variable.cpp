@@ -14,16 +14,21 @@ Variable::Variable()
 	_type = NONE;
 	_u._s = nullptr;
 }
-Variable::Variable(const Variable& v)
-{
-	_type = NONE;
-	SetVar(*(Variable*)&v);
-}
 Variable::~Variable()
 {
 	Clear();
 }
 
+Variable::Variable(const Variable& v)
+	: Variable()
+{
+	SetVar(*(Variable*)&v);
+}
+const Variable& Variable::operator=(const Variable& rhs)
+{
+	SetVar(*(Variable*)&rhs);
+	return *this;
+}
 void Variable::Clear()
 {
 	switch(_type)
@@ -49,6 +54,7 @@ void Variable::Clear()
 
 	_type = NONE;
 }
+
 
 void Variable::SetInt(int64_t i)
 {
@@ -653,14 +659,33 @@ string Variable::ToStr() const
 }
 
 
+bool Variable::IsNullOrFalse() const
+{
+	switch(_type)
+	{
+	case NONE:
+	case OBJ:
+	case _NULL_:
+	case _FALSE_:
+		return true;
+
+	case INT:		return !int_();
+	case FLOAT:		return !float_();
+	case STR:		return str().empty();
+	case REF:
+	case LVREF:		return ref().IsNullOrFalse();
+	case ATTR:		return attr().name.empty();
+	case CLASS:		return !_u._cls || cls().name.empty();
+	case MODULE:	return mod().IsNull(); //TODO qaz !_u._mod ||
+	case LIST:		return list().empty();
+	case DICT:		return dict().empty();
+	case CLASSOBJ:	return !clsObj()._cls;
+	case MODULEOBJ:	return !modObj()._mod.modDesc;
+	}
+	return false;
+}
 bool Variable::operator==(Type cmp) const { return _type == cmp; }
 bool Variable::operator!=(Type cmp) const { return _type != cmp; }
-
-const Variable& Variable::operator=(const Variable& rhs)
-{
-	SetVar(*(Variable*)&rhs);
-	return *this;
-}
 
 void Variable::ResetNewObj()
 {

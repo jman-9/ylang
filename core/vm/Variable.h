@@ -67,9 +67,10 @@ struct Variable
 
 
 	Variable();
-    Variable(const Variable& v);
 	~Variable();
 
+	Variable(const Variable& v);
+	const Variable& operator=(const Variable& rhs);
 	void Clear();
 
 	void SetInt(int64_t i);
@@ -92,9 +93,9 @@ struct Variable
 
 	std::string ToStr() const;
 
+	bool IsNullOrFalse() const;
 	bool operator==(Type cmp) const;
 	bool operator!=(Type cmp) const;
-	const Variable& operator=(const Variable& rhs);
 
 	void ResetNewObj();
 
