@@ -45,7 +45,7 @@ enum class YEArg : uint32_t
 
 
 struct YArg
-{
+{//TODO memory leak
 	void* o = nullptr;
 	YEArg tp = YEArg::None;
 

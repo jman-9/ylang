@@ -80,20 +80,6 @@ void Variable::SetObj(Object* obj)
 
 	t->ReleaseRef();
 }
-
-void Variable::SetValueFromContract(YArg o)
-{
-	switch(o.tp)
-	{
-	case YEArg::Int64: return SetInt(o.ToInt64());
-	case YEArg::Double: return SetFloat(o.ToDouble());
-	case YEArg::Str: return SetStr(o.ToStr());
-	case YEArg::YVar: SetVar(*(Variable*)o.o); break;
-	default://TODO
-		throw 'n';
-	}
-}
-
 void Variable::SetVarRef(Variable& var)
 {
 	Clear();
@@ -118,7 +104,7 @@ void Variable::SetAttr(Attribute& attr)
 {
 	SetAttr(attr.owner, attr.name);
 }
-void Variable::SetList(const std::vector<Variable>& list /*= std::vector<Variable2>()*/)
+void Variable::SetList(const std::vector<Variable>& list /*= std::vector<Variable>()*/)
 {
 	ResetNewObj();
 	for(auto& e : list)
@@ -126,7 +112,7 @@ void Variable::SetList(const std::vector<Variable>& list /*= std::vector<Variabl
 	_u._o->_type = LIST;
 	_type = LIST;
 }
-void Variable::SetDict(const std::unordered_map<std::string, Variable>& dict /*= std::unordered_map<std::string, Variable2>()*/)
+void Variable::SetDict(const std::unordered_map<std::string, Variable>& dict /*= std::unordered_map<std::string, Variable>()*/)
 {	ResetNewObj();
 	for(auto& e : dict)
 		_u._o->_dict.insert(e);
@@ -683,6 +669,7 @@ void Variable::ResetNewObj()
 	_u._o->_type = OBJ;
 	_type = OBJ;
 }
+
 int64_t Variable::int_() const
 {
 	if(_type != INT) throw 'n'; //TODO
@@ -779,6 +766,68 @@ ModuleObject& Variable::modObj()
 	return _u._o->_modo;
 }
 
+void Variable::SetValueFromContract(YArg o)
+{
+	switch(o.tp)
+	{
+	case YEArg::Int64: return SetInt(o.ToInt64());
+	case YEArg::Double: return SetFloat(o.ToDouble());
+	case YEArg::Str: return SetStr(o.ToStr());
+	case YEArg::YVar: SetVar(*(Variable*)o.o); break;
+	default://TODO qaz
+		throw 'n';
+	}
+}
+YArg Variable::ToContract() const
+{
+	auto ToYStr = [](const string& s) -> YStr*
+	{
+		YStr* ys = new YStr;
+		ys->str = new char[s.size()];
+		memcpy(ys->str, s.data(), s.size());
+		ys->len = (int)s.size();
+		return ys;
+	};
+	auto ToList = [](const vector<Variable>& list) -> YList*
+	{
+		YList* yl = new YList;
+		yl->sz = (int)list.size();
+		yl->list = new YArg[yl->sz];
+		for(int i=0; i<yl->sz; i++)
+		{
+			yl->list[i] = list[i].ToContract();
+		}
+		return yl;
+	};
+	auto ToDict = [ToYStr](const unordered_map<string, Variable>& dict) -> YDict*
+	{
+		YDict* yd = new YDict;
+		yd->sz = (int)dict.size();
+		yd->keys = new YArg[yd->sz];
+		yd->vals = new YArg[yd->sz];
+		auto it = dict.begin();
+		for(int i=0; i<yd->sz; i++, it++)
+		{
+			yd->keys[i] = { (void*)ToYStr(it->first), YEArg::Str };
+			yd->vals[i] = it->second.ToContract();
+		}
+		return yd;
+	};
+
+	switch(_type)
+	{
+	case INT: return { (void*)(intptr_t)int_(), YEArg::Int64 };
+	case FLOAT: return { (void*)(*(intptr_t*)&_u._f), YEArg::Double };
+	case STR: return { (void*)ToYStr(str()), YEArg::Str };
+	case LIST: return { (void*)ToList(list()), YEArg::List };
+	case DICT: return { (void*)ToDict(dict()), YEArg::Dict };
+	case MODULEOBJ: return { modObj()._o, YEArg::Object };
+	default: throw 'n';
+	}
+	return YArg();
+}
+
+
 Variable::Object::Object()
 {
 	_refCnt = 1;
@@ -795,8 +844,8 @@ void Variable::Object::AddRef()
 
 void Variable::Object::ReleaseRef()
 {
-	_refCnt--;
-	if(_refCnt == 0)
+	int r = --_refCnt;
+	if(r == 0)
 	{
 		delete this;
 	}

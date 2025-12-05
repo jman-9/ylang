@@ -85,8 +85,6 @@ struct Variable
 	void SetModule(const ymod::ModuleDesc& mod, bool makeInstance);
 	void SetVar(Variable& var);
 
-	void SetValueFromContract(YArg o);
-
 	bool Assign(EToken op, Variable& rval);
 	bool CalcAndAssign(Variable& lhs, EToken calcOp, Variable& rhs);
 	bool CalcUnaryAndAssign(EToken unaryOp, Variable& rhs);
@@ -118,16 +116,18 @@ struct Variable
 	const ModuleObject& modObj() const;
 	ModuleObject& modObj();
 
+	void SetValueFromContract(YArg o);
+	YArg ToContract() const;
 
-	struct Object
+	class Object
 	{
+		friend struct Variable;
+
 		std::vector<Variable> _list;
 		std::unordered_map<std::string, Variable> _dict;
 		ClassObject _clso;
 		ModuleObject _modo;
 
-	private:
-		friend struct Variable;
 		Object();
 		~Object();
 

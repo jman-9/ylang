@@ -70,6 +70,7 @@ inline void YStr::SetStr(const std::string& s)
 	memcpy(str, s.c_str(), s.size()+1);
 }
 
+
 inline void YArgs::Reset(int num)
 {
 	if(args)
