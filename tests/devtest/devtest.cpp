@@ -1,10 +1,10 @@
-#include "core/Scanner.h"
-#include "core/StringInterpolator.h"
-#include "core/Parser.h"
-#include "core/SemanticAnalyzer.h"
-#include "core/BytecodeBuilder.h"
-#include "core/vm/Machine.h"
-#include "core/Args.h"
+#include "compiler/Scanner.h"
+#include "compiler/StringInterpolator.h"
+#include "compiler/Parser.h"
+#include "compiler/SemanticAnalyzer.h"
+#include "compiler/BytecodeBuilder.h"
+#include "vm/Machine.h"
+#include "util/Args.h"
 #include <iostream>
 #include <format>
 using namespace std;
@@ -12,43 +12,18 @@ using namespace std;
 #define TOKEN_DEBUG_OUT
 #define BYTECODE_DEBUG_OUT
 
-
 const char* testcode1 = R"TEST(
-//a = 2; b = a++ + a++; println("{b} {a}");
+a = [0];
+for(i=0; i<1000000; i++) {
+	a.append(10);
+	//a.pop_front();
+}
 
-//include sys;
-//println(sys.version);
-/*
-a = {};
-a["hhuu"] = 10;
-println(a);
-println(a.len());
-println(a.keys());
-println(a.values());
-println(a.items());
-*/
-
-class Test
-{
-	a = 1;
-	c = "haha";
-	l = [];
-	d = {};
-};
-
-t = Test();
-t.a = "huhu";
-t.c = 19;
-t.l.append(1092);
-t.l.append("haha");
-t.d["humm"] = 15;;
-t.d["humm"] = "check";
-println(t);
-println(t.a);
-println(t.c);
-println(t.l);
-println(t.d);
-
+println("{a.len()} pop start");
+for(i=0; i<1000000; i++) {
+	a.pop_back();
+}
+println("{a.len()} pop end");
 )TEST";
 const char* testcode2 = R"TEST(
 )TEST";
@@ -60,7 +35,6 @@ int main(int argc, const char** argv)
 	yrun::ArgsCollector::Collect(argc, argv);
 
 	Scanner s;
-	//s.Scan(testcode);
 	s.Scan(string(testcode1) + string(testcode2) + string(testcode3));
 
 #ifdef TOKEN_DEBUG_OUT

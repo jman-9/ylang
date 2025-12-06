@@ -1,12 +1,17 @@
 add_library(ycore STATIC
-	Scanner.cpp
-	Scanner.h
-  "Token.h" "Token.cpp" "Error.h" "Error.cpp" "Parser.h" "Parser.cpp" "SemanticAnalyzer.h" "SemanticAnalyzer.cpp" "TreeNode.h" "BytecodeBuilder.h" "BytecodeBuilder.cpp" "Symbol.h" "vm/Machine.cpp" "vm/yvm.h"  "InstructionSet.h" "Instruction.h" "vm/Machine.h"  "Instruction.inl" "StringInterpolator.h" "StringInterpolator.cpp"   "contract/ycontract.h" "contract/ycontract.inl" "module/ModuleManager.h" "module/ModuleManager.cpp"  "module/Module.h" "module/Module.cpp" "builtin/BuiltinGarage.h" "builtin/BuiltinGarage.cpp" "vm/primitives/Str.h" "vm/primitives/List.h" "vm/primitives/Dict.h" "vm/primitives/Primitives.h" "vm/primitives/Primitives.inl" "builtin/Math.h" "builtin/Math.cpp" "builtin/InstTest.h"  "builtin/InstTest.cpp" "builtin/Rand.h" "builtin/Rand.cpp" "builtin/Sys.h"  "builtin/Sys.cpp" "Args.h"  "Args.cpp" "builtin/File.cpp" "builtin/File.h" "builtin/Json.cpp" "builtin/Json.h" "Bytecode.h" "Program.h" "Program.cpp" "vm/Variable.h" "vm/Variable.cpp")
+  "contract/Token.h" "contract/Token.cpp" "contract/Symbol.h" "contract/InstructionSet.h" "contract/Instruction.h" "contract/Instruction.inl" "contract/Bytecode.h" "contract/Program.h" "contract/ycontract.h" "contract/ycontract.inl"
+  "compiler/TreeNode.h" "compiler/Error.h" "compiler/Error.cpp" "compiler/Scanner.h" "compiler/Scanner.cpp" "compiler/StringInterpolator.h" "compiler/StringInterpolator.cpp" "compiler/Parser.h" "compiler/Parser.cpp" "compiler/SemanticAnalyzer.h" "compiler/SemanticAnalyzer.cpp"  "compiler/BytecodeBuilder.h" "compiler/BytecodeBuilder.cpp" "compiler/Compiler.h" "compiler/Compiler.cpp"
+  "vm/Machine.cpp" "vm/yvm.h"  "vm/Machine.h" "vm/primitives/Str.h" "vm/Variable.h" "vm/Variable.cpp" "vm/primitives/List.h" "vm/primitives/Dict.h" "vm/primitives/Primitives.h" "vm/primitives/Primitives.inl"
+  "module/Module.h" "module/Module.cpp" "module/ModuleManager.h" "module/ModuleManager.cpp"
+  "builtin/BuiltinGarage.h" "builtin/BuiltinGarage.cpp"  "builtin/Math.h" "builtin/Math.cpp" "builtin/InstTest.h"  "builtin/InstTest.cpp" "builtin/Rand.h" "builtin/Rand.cpp" "builtin/Sys.h"  "builtin/Sys.cpp""builtin/File.cpp" "builtin/File.h" "builtin/Json.cpp" "builtin/Json.h"
+  "util/Args.h" "util/Args.cpp" )
 
 target_include_directories(ycore
 	PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include
 	PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/contract
+	PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/compiler
 	PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/vm
+	PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/util
 	PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}
 	PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}
 )

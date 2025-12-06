@@ -1,5 +1,5 @@
 #pragma once
-#include "../Program.h"
+#include "contract/Program.h"
 #include "module/ModuleManager.h"
 #include "Variable.h"
 #include <vector>

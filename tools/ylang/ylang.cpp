@@ -1,10 +1,10 @@
 #include "ylang.h"
-#include "core/Scanner.h"
-#include "core/StringInterpolator.h"
-#include "core/Parser.h"
-#include "core/SemanticAnalyzer.h"
-#include "core/BytecodeBuilder.h"
-#include "core/vm/Machine.h"
+#include "compiler/Scanner.h"
+#include "compiler/StringInterpolator.h"
+#include "compiler/Parser.h"
+#include "compiler/SemanticAnalyzer.h"
+#include "compiler/BytecodeBuilder.h"
+#include "vm/Machine.h"
 #include <iostream>
 #include <format>
 #include <filesystem>

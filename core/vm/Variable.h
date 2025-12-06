@@ -1,5 +1,5 @@
 #pragma once
-#include "../Program.h"
+#include "contract/Program.h"
 #include "module/Module.h"
 #include <stdint.h>
 #include <string>

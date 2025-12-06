@@ -25,11 +25,11 @@ class Item {
     _power = 0;
     _value = 0;
 
-    fn Item(name, kind, power, value) {
-        _name = name;
-        _kind = kind;
-        _power = power;
-        _value = value;
+    fn Item(name_, kind_, power_, value_) {
+        _name = name_;
+        _kind = kind_;
+        _power = power_;
+        _value = value_;
     }
 
     fn name() {
@@ -133,12 +133,12 @@ class Stats {
     _def = 0;
     _spd = 0;
 
-    fn Stats(hp, atk, def, spd) {
-        _hp = hp;
-        _maxHp = hp;
-        _atk = atk;
-        _def = def;
-        _spd = spd;
+    fn Stats(hp_, atk_, def_, spd_) {
+        _hp = hp_;
+        _maxHp = hp_;
+        _atk = atk_;
+        _def = def_;
+        _spd = spd_;
     }
 
     fn isAlive() {
@@ -188,11 +188,11 @@ class Npc {
     _aiKind = "";
     _mood = 0;
 
-    fn Npc(name, role, stats, aiKind) {
-        _name = name;
-        _role = role;
-        _stats = stats;
-        _aiKind = aiKind;
+    fn Npc(name_, role_, stats_, aiKind_) {
+        _name = name_;
+        _role = role_;
+        _stats = stats_;
+        _aiKind = aiKind_;
         _inventory = Inventory();
         _mood = 0;
     }
@@ -262,10 +262,10 @@ class Enemy {
     _stats = 0;
     _lootTable = [];
 
-    fn Enemy(name, kind, stats) {
-        _name = name;
-        _kind = kind;
-        _stats = stats;
+    fn Enemy(name_, kind_, stats_) {
+        _name = name_;
+        _kind = kind_;
+        _stats = stats_;
         _lootTable = [];
     }
 
@@ -576,8 +576,8 @@ class Location {
     _neighbors = [];
     _npcDialogues = [];
 
-    fn Location(name, kind, danger) {
-        _name = name;
+    fn Location(name_, kind, danger) {
+        _name = name_;
         _kind = kind;
         _danger = danger;
         _neighbors = [];
@@ -625,7 +625,7 @@ class World {
 
     fn addLocation(loc) {
         _locations.append(loc);
-        if (_start == 0) _start = loc;
+        if (!_start) _start = loc;
     }
 
     fn startLocation() {
@@ -643,9 +643,9 @@ class AdventureContext {
     _world = 0;
     _currentLocation = 0;
 
-    fn AdventureContext(party, world, startLoc) {
-        _party = party;
-        _world = world;
+    fn AdventureContext(party_, world_, startLoc) {
+        _party = party_;
+        _world = world_;
         _currentLocation = startLoc;
     }
 
