@@ -4,103 +4,22 @@
 #include "compiler/Parser.h"
 #include "compiler/SemanticAnalyzer.h"
 #include "compiler/BytecodeBuilder.h"
+#include "compiler/Compiler.h"
 #include "vm/Machine.h"
 #include <iostream>
 #include <format>
 #include <filesystem>
 #include <fstream>
-
 using namespace std;
 
 
-#if _DEBUG || DEBUG
-#define DEBUG_OUT
-#endif
-
-
-static std::vector<Error> Build(const std::string& src, Program& retProgram)
-{
-	vector<Error> errs;
-
-	do {	//todo memory leak
-		Scanner s;
-		s.Scan(src);
-		if(!s._errors.empty())
-		{
-			errs.insert(errs.end(), s._errors.begin(), s._errors.end());
-			break;
-		}
-
-		StringInterpolator si;
-		vector<Token> processed;
-		for(auto& t : s._tokens)
-		{
-			if(t != EToken::Str)
-			{
-				processed.push_back(t);
-				continue;
-			}
-
-			auto interpolated = si.Interpolate(t);
-			if(interpolated.empty())
-			{//todo error
-				throw 'n';
-			}
-			processed.insert(processed.end(), interpolated.begin(), interpolated.end());
-		}
-
-		Parser p(processed);
-		auto ast = p.Parse();
-		if(!p._errors.empty())
-		{
-			errs.insert(errs.end(), p._errors.begin(), p._errors.end());
-			break;
-		}
-
-		SemanticAnalyzer sa;
-		sa.Analyze(*ast);
-		if(!sa._errors.empty())
-		{
-			errs.insert(errs.end(), sa._errors.begin(), sa._errors.end());
-			break;
-		}
-
-		BytecodeBuilder bb;
-		if(!bb.Build(*ast, retProgram))
-		{//TODO trace
-			throw 'n';
-		}
-
-	#ifdef DEBUG_OUT
-		for(int i=0; i<retProgram._mainCode._codeStr.size(); i++)
-		{
-			cout << format("{:4} {}\n", i, retProgram._mainCode._codeStr[i]);
-		}
-	#endif
-
-	} while(0);
-
-	return errs;
-}
-
-
-static std::vector<Error> Run(const std::string& src)
-{
-	vector<Error> errs;
-
-	Program p;
-	errs = Build(src, p);
-	if(!errs.empty())
-		return errs;
-
-	yvm::Machine m;
-	m.Run(p);
-	return errs;
-}
-
 bool ylang::RunCode(const std::string& src)
 {
-	auto errs = Run(src);
+	vector<Error> errs;
+	ycom::Compiler cmplr;
+
+	Program p;
+	errs = cmplr.CompileCode(src, p);
 	if(!errs.empty())
 	{
 		cout << endl;
@@ -109,23 +28,21 @@ bool ylang::RunCode(const std::string& src)
 			cout << format("{}({}): error E{}: {}\n", "code", e.line, (int)e.code, e.msg);
 		}
 		cout << endl;
+		return false;
 	}
-	return errs.empty();
+
+	yvm::Machine m;
+	m.Run(p);
+	return true;
 }
 
 bool ylang::RunFile(const string& srcPath)
 {
-	filesystem::path path{srcPath};
-	string srcName = path.filename().string();
+	vector<Error> errs;
+	ycom::Compiler cmplr;
 
-	ifstream ifs(srcPath, ios::binary);
-	if (!ifs.is_open()) {
-		cout << format("failed to open file: {}\n", srcPath);
-		return false;
-	}
-	string src((istreambuf_iterator<char>(ifs)), {});
-	auto errs = Run(src);
-
+	Program p;
+	errs = cmplr.CompileFile(srcPath, p);
 	if(!errs.empty())
 	{
 		cout << endl;
@@ -134,8 +51,12 @@ bool ylang::RunFile(const string& srcPath)
 			cout << format("{}({}): error E{}: {}\n", srcPath, e.line, (int)e.code, e.msg);
 		}
 		cout << endl;
+		return false;
 	}
-	return errs.empty();
+
+	yvm::Machine m;
+	m.Run(p);
+	return true;
 }
 
 bool ylang::StartRepl()

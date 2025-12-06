@@ -7,6 +7,7 @@ enum class EErr
 {
 	NoError,
 	Error,
+	FileOpenError,
 	UnknownCharacter,
 	UnexpectedCharacter,
 	NewLineInString,
@@ -39,6 +40,7 @@ namespace ErrorBuilder
 
 	Error Default(uint32_t line, const std::string& s);
 
+	Error FileOpenError(uint32_t line, const std::string& file);
 	Error UnknownCharacter(uint32_t line, char c);
 	Error UnexpectedCharacter(uint32_t line, char c);
 	Error NewLineInString(uint32_t line);

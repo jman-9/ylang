@@ -1,6 +1,6 @@
 #include "util/Args.h"
-#include "../../tools/ylang/ylang.h"
-#include <iostream>
+#include "compiler/Compiler.h"
+#include "vm/Machine.h"
 using namespace std;
 
 
@@ -8,11 +8,15 @@ int main(int argc, const char** argv)
 {
 	yrun::ArgsCollector::Collect(argc, argv);
 
-	ylang y;
-	//y.RunFile("test.y");
-	y.RunFile("../../examples/maze_gen_find.y");
-	//y.RunFile("../../examples/rpg_sim.y");
-	//y.RunFile("../../examples/langton_ant.y");
+	ycom::Compiler cmplr;
+	Program prg;
+	//auto errs = cmplr.CompileFile("test.y", prg);
+	auto errs = cmplr.CompileFile("../../examples/maze_gen_find.y", prg);
+	//auto errs = cmplr.CompileFile("../../examples/rpg_sim.y", prg);
+	//auto errs = cmplr.CompileFile("../../examples/langton_ant.y", prg);
+	if(!errs.empty())
+		return 1;
 
-	return 0;
+	yvm::Machine m;
+	return m.Run(prg);
 }

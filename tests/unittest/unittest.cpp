@@ -5,6 +5,7 @@
 #include "compiler/Parser.h"
 #include "compiler/SemanticAnalyzer.h"
 #include "compiler/BytecodeBuilder.h"
+#include "compiler/Compiler.h"
 #include "util/Args.h"
 #include "vm/Machine.h"
 #include <iostream>
@@ -181,80 +182,6 @@ else
 #endif
 
 
-
-static std::vector<Error> Build(const std::string& src, Program& retProgram)
-{
-	vector<Error> errs;
-
-	do {	//todo memory leak
-		Scanner s;
-		s.Scan(src);
-		if(!s._errors.empty())
-		{
-			errs.insert(errs.end(), s._errors.begin(), s._errors.end());
-			break;
-		}
-
-		StringInterpolator si;
-		vector<Token> processed;
-		for(auto& t : s._tokens)
-		{
-			if(t != EToken::Str)
-			{
-				processed.push_back(t);
-				continue;
-			}
-
-			auto interpolated = si.Interpolate(t);
-			if(interpolated.empty())
-			{//todo error
-				throw 'n';
-			}
-			processed.insert(processed.end(), interpolated.begin(), interpolated.end());
-		}
-
-		Parser p(processed);
-		auto ast = p.Parse();
-		if(!p._errors.empty())
-		{
-			errs.insert(errs.end(), p._errors.begin(), p._errors.end());
-			break;
-		}
-
-		SemanticAnalyzer sa;
-		sa.Analyze(*ast);
-		if(!sa._errors.empty())
-		{
-			errs.insert(errs.end(), sa._errors.begin(), sa._errors.end());
-			break;
-		}
-
-		BytecodeBuilder bb;
-		if(!bb.Build(*ast, retProgram))
-		{//TODO trace
-			throw 'n';
-		}
-
-	#ifdef DEBUG_OUT
-		for(int i=0; i<retProgram._mainCode._codeStr.size(); i++)
-		{
-			cout << format("{:4} {}\n", i, retProgram._mainCode._codeStr[i]);
-		}
-	#endif
-
-	} while(0);
-
-#ifdef DEBUG_OUT
-	for(auto e : errs)
-	{
-		string errStr = format("{}({}): error E{}: {}", "some file", e.line, (int)e.code, e.msg);
-		cout << errStr << endl;
-	}
-#endif
-	return errs;
-}
-
-
 struct Result
 {
 	int code;
@@ -264,10 +191,11 @@ struct Result
 
 static Result Run(const std::string& src)
 {
+	ycom::Compiler cmplr;
 	vector<Error> errs;
-
 	Program p;
-	errs = Build(src, p);
+
+	errs = cmplr.CompileCode(src, p);
 	if(!errs.empty())
 		return { -98765432, false, errs };
 

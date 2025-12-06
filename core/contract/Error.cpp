@@ -33,6 +33,11 @@ Error Default(uint32_t line, const std::string& s)
 	return { line, EErr::Error, format("{}", s) };
 }
 
+Error FileOpenError(uint32_t line, const std::string& file)
+{
+	return { line, EErr::FileOpenError, format("'{}': file open error", file) };
+}
+
 Error UnknownCharacter(uint32_t line, char c)
 {
 	return { line, EErr::UnknownCharacter, format("unknown character '0x{:02X}'", c) };

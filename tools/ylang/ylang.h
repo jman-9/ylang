@@ -1,4 +1,5 @@
 #pragma once
+#include "contract/Program.h"
 #include <string>
 
 class ylang
