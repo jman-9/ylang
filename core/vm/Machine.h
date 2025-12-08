@@ -35,6 +35,7 @@ protected:
 	std::stack<uint16_t> _roffStack;
 	std::stack<uint32_t> _retStack;
 	std::stack<Variable*> _clsStack;
+	std::stack<Variable*> _prgStack;
 	int _sp;
 	int _roff;
 	int _pc;
@@ -67,6 +68,8 @@ protected:
 	//TODO
 	//inline bool InvokeClsFunc(const Variable& owner, const std::string& attrName);
 	//inline bool InvokeModFunc(const Variable& owner, const std::string& attrName);
+
+	inline bool CreateClassObj(const Class& cls, int numArgs);
 };
 
 }

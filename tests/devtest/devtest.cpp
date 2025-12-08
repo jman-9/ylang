@@ -6,17 +6,7 @@
 using namespace std;
 
 const char* testcode1 = R"TEST(
-a = [0];
-for(i=0; i<1000000; i++) {
-	a.append(10);
-	//a.pop_front();
-}
-
-println("{a.len()} pop start");
-for(i=0; i<1000000; i++) {
-	a.pop_back();
-}
-println("{a.len()} pop end");
+a.b.c.d.e();
 )TEST";
 const char* testcode2 = R"TEST(
 )TEST";

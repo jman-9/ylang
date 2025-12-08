@@ -168,4 +168,10 @@ struct LValueField
 	uint16_t field = 0;
 };
 
+struct IncPrg
+{
+	std::string nm;
+	std::string path;
+};
+
 }

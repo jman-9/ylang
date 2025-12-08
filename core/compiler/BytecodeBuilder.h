@@ -35,6 +35,7 @@ class ConstTable
 
 class SymbolTable
 {
+	friend class BytecodeBuilder;
 public:
 	enum ScopeType
 	{
@@ -107,13 +108,17 @@ public:
 	BytecodeBuilder();
 	~BytecodeBuilder();
 
-	bool Build(const TreeNode& code, Program& retProgram);
+	bool Build(const TreeNode& code, Program& retProgram, const std::unordered_map<std::string, Program>* programTable = nullptr);
 
 protected:
 	uint32_t _reg;
 	Program _prg;
 	ConstTable _constTbl;
 	SymbolTable _symTbl;
+
+	const std::unordered_map<std::string, Program>* _prgTbl = nullptr;
+	std::unordered_map<std::string, int> _namespaceMap;
+	std::string _namespace;
 
 	struct LoopControl
 	{

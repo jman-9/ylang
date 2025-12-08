@@ -41,7 +41,33 @@ Variable* Machine::ResolveVar(ERefKind k, int idx)
 			return &_literals[idx];
 		}
 
-	case ERefKind::Const: return &_consts[idx];
+	case ERefKind::Const:
+		{
+			if(_prgStack.empty())
+			{
+				return &_consts[idx];
+			}
+			else
+			{
+				if(idx >= _prgStack.top()->prgObj()._consts.size())
+				{
+					_prgStack.top()->prgObj()._consts.resize(idx+1);
+				}
+				if(_prgStack.top()->prgObj()._consts[idx] == Variable::NONE)
+				{
+					auto c = _prgStack.top()->prgObj()._prg->_consts[idx];
+					switch(c._type)
+					{
+					case Constant::INT:		_prgStack.top()->prgObj()._consts[idx].SetInt(c._int); break;
+					case Constant::FLOAT:	_prgStack.top()->prgObj()._consts[idx].SetFloat(c._float); break;
+					case Constant::STR:		_prgStack.top()->prgObj()._consts[idx].SetStr(c._str); break;
+					default: //TODO
+						throw 'n';
+					}
+				}
+				return &_prgStack.top()->prgObj()._consts[idx];
+			}
+		}
 
 	case ERefKind::Reg:
 		{
@@ -53,7 +79,19 @@ Variable* Machine::ResolveVar(ERefKind k, int idx)
 		{
 			if(_sp < _cspStack.top() + idx + 1)
 				_sp = _cspStack.top() + idx + 1;
-			return &_stack[idx + _cspStack.top()];
+
+			if(_prgStack.empty())
+			{
+				return &_stack[idx + _cspStack.top()];
+			}
+			else
+			{
+				if(_sp >= _prgStack.top()->prgObj()._local.size())
+				{
+					_prgStack.top()->prgObj()._local.resize(_sp);
+				}
+				return &_prgStack.top()->prgObj()._local[idx + _cspStack.top()];
+			}
 		}
 
 	case ERefKind::FieldVar:
@@ -163,12 +201,24 @@ bool Machine::Assign(const Op::Assign& as)
 				}
 				else if(dst->attr().owner == Variable::CLASSOBJ)
 				{
-					auto found = dst->attr().owner.clsObj()._cls->_fieldMap.find(dst->_u._attr->name);
+					auto found = dst->attr().owner.clsObj()._cls->_fieldMap.find(dst->attr().name);
 					if(found != dst->attr().owner.clsObj()._cls->_fieldMap.end())
 					{
 						dst->SetVar(dst->attr().owner.clsObj()._fields[found->second]);
 					}
-				}//TODO static class field
+				}
+				else if(dst->attr().owner == Variable::PROGRAMOBJ)
+				{
+					auto found = dst->attr().owner.prgObj()._prg->_globalTable.find(dst->attr().name);
+					if(found != dst->attr().owner.prgObj()._prg->_globalTable.end())
+					{
+						if(found->second.kind == EGlobalSymbol::Var)
+						{
+							dst->SetVar(dst->attr().owner.prgObj()._local[found->second.idx]);
+						}
+					}
+				}
+				//TODO static class field
 			}
 		}
 		else if(src1)
@@ -541,6 +591,30 @@ bool Machine::Invoke(const Op::Invoke& ivk)
 		int a = 1;
 		throw 'n';
 	}
+	else if(owner == Variable::PROGRAMOBJ)
+	{
+		auto prg = owner.prgObj()._prg;
+		auto found = prg->_classTable.find(dst->attr().name);
+		if(found == prg->_classTable.end())
+		{//TODO
+			throw 'n';
+		}
+
+		_roff = ivk.dst;
+		_prgStack.push(&owner);
+		_cspStack.push(_sp);
+		_sp = 0;
+		CreateClassObj(found->second, ivk.numArgs);
+		_sp = _cspStack.top();
+		_cspStack.pop();
+		_prgStack.pop();
+		return true;
+	}
+	else if(owner == Variable::PROGRAM)
+	{//TODO
+		int a = 1;
+		throw 'n';
+	}
 
 	const ymod::ModuleDesc* modDesc = primitive::GetModuleDesc(owner._type);
 	if(!modDesc)
@@ -662,14 +736,38 @@ bool Machine::Inc(const Op::Inc& inc)
 		throw 'n';
 	}
 
-	const ymod::ModuleDesc& modDesc = _modMgr.GetModuleDesc(name->str());
-	if(modDesc.IsNull())
-	{//TODO
-		throw 'n';
-	}
+	auto found = _prg->_programTable.find(name->str());
+	if(found != _prg->_programTable.end())
+	{
+		auto& prg = found->second;
+		//prg._mainCode
+		auto v = ResolveVar(ERefKind::LocalVar, _sp);
+		v->SetProgram(prg, true);
 
-	auto v = ResolveVar(ERefKind::LocalVar, _sp);
-	v->SetModule(modDesc, false);
+		_prgStack.push(v);
+		_cspStack.push(_sp);
+		_sp = 0;
+
+		int roffbk = _roff;
+		_roff++;
+		Exec(v->prgObj()._prg->_mainCode, 0);
+		_roff = roffbk;
+
+		_sp = _cspStack.top();
+		_cspStack.pop();
+		_prgStack.pop();
+	}
+	else
+	{
+		const ymod::ModuleDesc& modDesc = _modMgr.GetModuleDesc(name->str());
+		if(modDesc.IsNull())
+		{//TODO
+			throw 'n';
+		}
+
+		auto v = ResolveVar(ERefKind::LocalVar, _sp);
+		v->SetModule(modDesc, false);
+	}
 	return true;
 }
 
@@ -738,30 +836,7 @@ bool Machine::NewCls(const Op::NewCls& nc)
 		throw 'n';
 	}
 
-	Variable v;
-	v.SetClass(found->second, true);
-
-	_clsStack.push(&v);
-
-	int roffbk = _roff;
-	_roff++;
-	Exec(v.clsObj()._cls->_initer, 0);
-	_roff = roffbk;
-
-	if(nc.numArgs)
-	{
-		_roff -= (int)nc.numArgs - 1;
-	}
-
-	if(!v.clsObj()._cls->_ctor.empty())
-	{
-		Exec(v.clsObj()._cls->_ctor, 1);
-	}
-
-	_clsStack.pop();
-
-	dst = ResolveVar(ERefKind::Reg, _roff);
-	dst->SetVar(v);
+	CreateClassObj(found->second, nc.numArgs);
 	return true;
 }
 
@@ -839,6 +914,35 @@ bool Machine::CallBuiltinFunc(const Op::Call& cal)
 	return true;
 }
 
+
+bool Machine::CreateClassObj(const Class& cls, int numArgs)
+{// TODO .. very fragile
+	Variable v;
+	v.SetClass(cls, true);
+
+	_clsStack.push(&v);
+
+	int roffbk = _roff;
+	_roff++;
+	Exec(v.clsObj()._cls->_initer, 0);
+	_roff = roffbk;
+
+	if(numArgs)
+	{
+		_roff -= (int)numArgs - 1;
+	}
+
+	if(!v.clsObj()._cls->_ctor.empty())
+	{
+		Exec(v.clsObj()._cls->_ctor, 1);
+	}
+
+	_clsStack.pop();
+
+	auto dst = ResolveVar(ERefKind::Reg, _roff);
+	dst->SetVar(v);
+	return true;
+}
 
 int Machine::Run(const Program& program, int start /* = 0 */)
 {

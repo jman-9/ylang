@@ -11,9 +11,12 @@ int main(int argc, const char** argv)
 	ycom::Compiler cmplr;
 	Program prg;
 	//auto errs = cmplr.CompileFile("test.y", prg);
-	auto errs = cmplr.CompileFile("../../examples/maze_gen_find.y", prg);
+	//auto errs = cmplr.CompileFile("../../examples/maze_gen_find.y", prg);
 	//auto errs = cmplr.CompileFile("../../examples/rpg_sim.y", prg);
 	//auto errs = cmplr.CompileFile("../../examples/langton_ant.y", prg);
+	//auto errs = cmplr.CompileFile("app.y", prg);
+	auto errs = cmplr.CompileFile("s.y", prg);
+
 	if(!errs.empty())
 		return 1;
 

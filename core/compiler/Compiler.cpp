@@ -8,6 +8,7 @@
 #include <iostream>
 #include <fstream>
 #include <filesystem>
+#include <stack>
 using namespace std;
 
 
@@ -21,6 +22,126 @@ namespace ycom
 #endif
 
 vector<Error> Compiler::CompileCode(const string& src, Program& retProgram)
+{
+	vector<Error> totalErrs;
+	vector<Error> curErrs;
+	vector<TreeNodeSptr> includes;
+	stack<pair<vector<TreeNodeSptr>, int>> incStack;
+	unordered_map<string, TreeNodeSptr> astMap;
+	stack<TreeNodeSptr> astStack;
+
+	string curSrc = src;
+	string curMod = "_____main_____";
+
+	do {
+		if(!curSrc.empty())
+		{
+			auto inserted = astMap.insert({curMod, {}});
+			auto& ast = inserted.first->second;
+			totalErrs = ParseCode(curSrc, ast);
+			if(!totalErrs.empty()) break;
+
+			ast->self.val = curMod;
+
+			incStack.push({});
+			curErrs = ExtractIncludes(*ast, incStack.top().first);
+			if(!curErrs.empty())
+			{
+				totalErrs.insert(totalErrs.end(), curErrs.begin(), curErrs.end());
+				break;
+			}
+			astStack.push(ast);
+		}
+
+		curSrc = "";
+		for( ; !incStack.empty(); )
+		{
+			auto& incStmts = incStack.top().first;
+			auto& idx = incStack.top().second;
+
+			if(idx >= incStmts.size())
+			{
+				incStack.pop();
+				continue;
+			}
+
+			auto& stmt = incStmts[idx++];
+			auto& incName = stmt->childs.front()->self.val;
+			curErrs = ReadSourceFile(incName + ".y", curSrc);
+			if(!curErrs.empty())
+			{
+				totalErrs.insert(totalErrs.end(), curErrs.begin(), curErrs.end());
+				break;
+			}
+			if(!curSrc.empty())
+			{
+				curMod = filesystem::absolute({incName + ".y"}).string();
+				break;
+			}
+		}
+		if(!curErrs.empty()) break;
+	} while(!curSrc.empty());
+
+	unordered_map<std::string, Program> prgMap;
+	if(totalErrs.empty())
+	{
+		while(!astStack.empty())
+		{
+			auto ast = astStack.top();
+			astStack.pop();
+
+			SemanticAnalyzer sa;
+			sa.Analyze(*ast);
+			if(!sa._errors.empty())
+			{
+				totalErrs.insert(totalErrs.end(), sa._errors.begin(), sa._errors.end());
+				break;
+			}
+
+			BytecodeBuilder bb;
+			if(!bb.Build(*ast, retProgram, &prgMap))
+			{//TODO trace
+				throw 'n';
+			}
+
+			prgMap[ ast->self.val ] = retProgram;
+
+		#ifdef BYTECODE_DEBUG_OUT
+			for(int i=0; i<retProgram._mainCode._codeStr.size(); i++)
+			{
+				cout << format("{:4} {}\n", i, retProgram._mainCode._codeStr[i]);
+			}
+		#endif
+		}
+	}
+
+	retProgram._programTable = prgMap;
+
+	if(!totalErrs.empty())
+	{
+	#ifdef ERROR_DEBUG_OUT
+		for(auto e : totalErrs)
+		{
+			string errStr = format("{}({}): error E{}: {}", "some file", e.line, (int)e.code, e.msg);
+			cout << errStr << endl;
+		}
+	#endif
+		return totalErrs;
+	}
+
+	return {};
+}
+
+vector<Error> Compiler::CompileFile(const string& srcPath, Program& retProgram)
+{
+	string src;
+	auto errs = ReadSourceFile(srcPath, src);
+	if(!errs.empty()) return errs;
+	return CompileCode(src, retProgram);
+}
+
+
+vector<Error> Compiler::ParseCode(const string& src, TreeNodeSptr& retAstRoot)
 {
 	vector<Error> errs;
 
@@ -66,28 +187,7 @@ vector<Error> Compiler::CompileCode(const string& src, Program& retProgram)
 			errs.insert(errs.end(), p._errors.begin(), p._errors.end());
 			break;
 		}
-
-		SemanticAnalyzer sa;
-		sa.Analyze(*ast);
-		if(!sa._errors.empty())
-		{
-			errs.insert(errs.end(), sa._errors.begin(), sa._errors.end());
-			break;
-		}
-
-		BytecodeBuilder bb;
-		if(!bb.Build(*ast, retProgram))
-		{//TODO trace
-			throw 'n';
-		}
-
-	#ifdef BYTECODE_DEBUG_OUT
-		for(int i=0; i<retProgram._mainCode._codeStr.size(); i++)
-		{
-			cout << format("{:4} {}\n", i, retProgram._mainCode._codeStr[i]);
-		}
-	#endif
-
+		retAstRoot = ast;
 	} while(0);
 
 #ifdef ERROR_DEBUG_OUT
@@ -100,7 +200,29 @@ vector<Error> Compiler::CompileCode(const string& src, Program& retProgram)
 	return errs;
 }
 
-vector<Error> Compiler::CompileFile(const std::string& srcPath, Program& retProgram)
+vector<Error> Compiler::ParseFile(const std::string& srcPath, TreeNodeSptr& retAstRoot)
+{
+	string src;
+	auto errs = ReadSourceFile(srcPath, src);
+	if(!errs.empty()) return errs;
+	return ParseCode(src, retAstRoot);
+}
+
+vector<Error> Compiler::ExtractIncludes(const TreeNode& root, vector<TreeNodeSptr>& retIncludes)
+{
+	for(auto& stmt : root.childs)
+	{
+		if(stmt->self != EToken::Include)
+			continue;
+
+		//TODO
+		cout << stmt->childs.front()->self.val << endl;
+		retIncludes.push_back(stmt);
+	}
+	return {};
+}
+
+vector<Error> Compiler::ReadSourceFile(const std::string& srcPath, std::string& retSrc) const
 {
 	filesystem::path path{srcPath};
 	string srcName = path.filename().string();
@@ -111,9 +233,8 @@ vector<Error> Compiler::CompileFile(const std::string& srcPath, Program& retProg
 		e.push_back(ErrorBuilder::FileOpenError(0, srcPath));
 		return e;
 	}
-	string src((istreambuf_iterator<char>(ifs)), {});
-	return CompileFile(src, retProgram);
+	retSrc = string((istreambuf_iterator<char>(ifs)), {});
+	return {};
 }
-
 
 }

@@ -2,6 +2,7 @@
 #include "BuiltinFuncTable.h"
 #include <format>
 #include <iostream>
+#include <filesystem>
 using namespace std;
 
 
@@ -196,8 +197,10 @@ BytecodeBuilder::~BytecodeBuilder()
 }
 
 
-bool BytecodeBuilder::Build(const TreeNode& code, Program& retProgram)
+bool BytecodeBuilder::Build(const TreeNode& code, Program& retProgram, const unordered_map<std::string, Program>* programTable /* = nullptr */)
 {
+	_prgTbl = programTable;
+
 	for(const auto& stmt : code.childs)
 	{
 		if(!BuildStmt(_prg._mainCode, *stmt))
@@ -232,6 +235,19 @@ bool BytecodeBuilder::Build(const TreeNode& code, Program& retProgram)
 		}
 
 		_prg._consts[idx] = c;
+	}
+
+	for(auto& [k, v] : _symTbl._symTbl.front())
+	{//global
+		switch(k.kind)
+		{
+		case ESymbol::Var: _prg._globalTable[k.name] = GlobalSymbol{ .kind = EGlobalSymbol::Var, .name = k.name, .idx = (uint32_t)v }; break;
+		case ESymbol::Fn: _prg._globalTable[k.name] = GlobalSymbol{ .kind = EGlobalSymbol::Fn, .name = k.name, .pos = (uint32_t)k.pos, .prms = (uint32_t)k.params.size() }; break;
+		}
+	}
+	for(auto& [k, v] : _prg._classTable)
+	{
+		_prg._globalTable[k] = GlobalSymbol{ .kind = EGlobalSymbol::Cls, .name = k, .cls = v }; break;
 	}
 
 	retProgram = _prg;
@@ -276,14 +292,34 @@ bool BytecodeBuilder::BuildInclude(Bytecode& retCtx, const TreeNode& stmt)
 {
 	auto& incName = *stmt.childs[0];
 
-	_symTbl.AddOrNot({ incName.self.val, ESymbol::Mod });
+	//TODO function... resolve module
+	string absPath = filesystem::absolute({incName.self.val + ".y"}).string();
+	if(_prgTbl && _prgTbl->contains(absPath))
+	{
+		//TODOqaz namespace map update
+		_namespaceMap[ incName.self.val ] = 1;
 
-	int idx = _constTbl.AddOrNot(incName.self);
-	Op::Inc inc { .inc = (uint16_t)idx };
-	retCtx.PushBytecode(inc, stmt.self.line);
+		//TODO
+		_symTbl.AddOrNot({ incName.self.val, ESymbol::Prg });
 
-	//TODO
-	_prg._moduleTable[ incName.self.val ] = idx;
+		Token incPath = stmt.childs[0]->self;
+		incPath.val = absPath;
+		int idx = _constTbl.AddOrNot(incPath);
+		Op::Inc inc { .inc = (uint16_t)idx };
+		retCtx.PushBytecode(inc, stmt.self.line);
+	}
+	else
+	{
+		//TODO
+		_symTbl.AddOrNot({ incName.self.val, ESymbol::Mod });
+
+		int idx = _constTbl.AddOrNot(incName.self);
+		Op::Inc inc { .inc = (uint16_t)idx };
+		retCtx.PushBytecode(inc, stmt.self.line);
+
+		_prg._moduleTable[ incName.self.val ] = idx;
+	}
+
 	return true;
 }
 
@@ -310,7 +346,7 @@ bool BytecodeBuilder::BuildExp(Bytecode& retCtx, const TreeNode& stmt, bool root
 				inst.src1 = _constTbl.AddOrNot(stmt.self);
 			}
 		}
-		else
+		else // qaz namespace
 		{
 			auto idx = _symTbl.AddOrNot({ .name = stmt.self.val, .kind = ESymbol::Var });
 
@@ -423,7 +459,6 @@ bool BytecodeBuilder::BuildExp(Bytecode& retCtx, const TreeNode& stmt, bool root
 	TreeNode* lhs = !stmt.childs.empty() ? stmt.childs.front().get() : nullptr;
 	TreeNode* rhs = stmt.childs.size() > 1 ? stmt.childs.back().get() : nullptr;
 
-
 	if(!lhs)
 	{
 		throw 'n';
@@ -454,15 +489,31 @@ bool BytecodeBuilder::BuildExp(Bytecode& retCtx, const TreeNode& stmt, bool root
 				inst.src1 = _constTbl.AddOrNot(lhs->self);
 			}
 		}
+		else if(lhs->childs.empty() && _namespaceMap.contains(lhs->self.val))
+		{// qaz namespace start
+			int test = _namespaceMap[lhs->self.val];
+			if(test >= 0)
+			{
+				auto idx = _symTbl.GetIdx(lhs->self.val);
+				inst.src1Kind = TO_REF_KIND_U8(idx.kind);
+				inst.src1 = (uint16_t)idx.idx;
+			}
+			else
+			{
+				_namespace = lhs->self.val;
+			}
+		}
 		else
 		{
+				// terminated namespace
+				_namespace;
+
 			auto idx = _symTbl.AddOrNot({ .name = lhs->self.val, .kind = ESymbol::Var });
 
 			inst.src1Kind = TO_REF_KIND_U8(idx.kind);
 			inst.src1 = (uint16_t)idx.idx;
 		}
 	}
-
 
 	int logicalOpLine = -1;
 	if(stmt.self == EToken::And || stmt.self == EToken::Or)
@@ -485,7 +536,11 @@ bool BytecodeBuilder::BuildExp(Bytecode& retCtx, const TreeNode& stmt, bool root
 		}
 		else
 		{
-			if(rhs->self.IsLiteral())
+			if(stmt.self == EToken::Dot && rhs->childs.empty() && _namespaceMap.contains(_namespace +  + "." + rhs->self.val))
+			{ // qaz namespacing
+				_namespace += "." + rhs->self.val;
+			}
+			else if(rhs->self.IsLiteral())
 			{		//TODO make table
 				switch(rhs->self.kind)
 				{
@@ -499,6 +554,10 @@ bool BytecodeBuilder::BuildExp(Bytecode& retCtx, const TreeNode& stmt, bool root
 			}
 			else
 			{
+				// terminated namespace
+				_namespace;
+
+
 				auto idx = _symTbl.GetIdx(rhs->self.val);
 				if(idx.kind == SymbolTable::Idx::NONE)
 				{
@@ -574,6 +633,18 @@ bool BytecodeBuilder::BuildExp(Bytecode& retCtx, const TreeNode& stmt, bool root
 	}
 
 	_reg = regStack;
+	if(!_namespace.empty())
+	{	//qaz namespace resolve
+		auto found = _namespaceMap.find(_namespace);
+		if(found->second >= 0)
+		{
+			int a = 1;
+			_namespace = "";
+		}
+		return true;
+	}
+
+
 	if(!root)
 	{
 		inst.dstKind = (uint8_t)ERefKind::Reg;

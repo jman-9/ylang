@@ -36,11 +36,41 @@ struct Class
 };
 
 
+enum class EGlobalSymbol
+{
+	None,
+
+	Var,
+	Fn,
+	Cls,
+};
+struct GlobalSymbol
+{
+	EGlobalSymbol kind = EGlobalSymbol::None;
+
+	std::string name = "";
+
+	// var
+	uint32_t idx = 0;
+
+	// fn
+	uint32_t seg = 0;
+	uint32_t pos = 0;
+	uint32_t prms = 0;
+
+	// cls
+	Class cls;
+};
+
+
 struct Program
 {
 	std::unordered_map<std::string, Class> _classTable;
 	std::unordered_map<std::string, int> _moduleTable;
+	std::unordered_map<std::string, Program> _programTable;
 
 	std::vector<Constant> _consts;
 	Bytecode _mainCode;
+
+	std::unordered_map<std::string, GlobalSymbol> _globalTable;
 };

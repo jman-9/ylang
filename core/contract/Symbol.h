@@ -12,6 +12,7 @@ enum class ESymbol
 	Cls,
 	Mod,
 	Field,
+	Prg,
 };
 
 struct Param

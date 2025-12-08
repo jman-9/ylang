@@ -604,6 +604,12 @@ TEST_CASE( "Increment Decrement Test", "[incdec]" )
 	REQUIRE( ret.code == 0 );
 }
 
+TEST_CASE( "Includes Test", "[includes]" )
+{
+	Result ret;
+
+	ycom::Compiler com;
+}
 
 
 static const Catch::LeakDetector leakDetector;
@@ -627,8 +633,9 @@ int main(int argc, const char** argv)
 // 	cfg.testsOrTags.push_back("[bltjson],");
 // 	cfg.testsOrTags.push_back("[exp],");
 // 	cfg.testsOrTags.push_back("[logop],");
-	cfg.testsOrTags.push_back("[class],");
-	cfg.testsOrTags.push_back("[incdec],");
+	//cfg.testsOrTags.push_back("[class],");
+	//cfg.testsOrTags.push_back("[incdec],");
+	cfg.testsOrTags.push_back("[includes],");
 
 	int numFailed = _session.run();
 };

@@ -22,6 +22,12 @@ struct ModuleObject
 	ymod::Module _mod;
 	void* _o;
 };
+struct ProgramObject
+{
+	std::vector<Variable> _local;
+	std::vector<Variable> _consts;
+	const Program* _prg;
+};
 
 
 struct Variable
@@ -38,12 +44,14 @@ struct Variable
 		ATTR,
 		CLASS,
 		MODULE,
+		PROGRAM,
 
 		OBJ,
 		LIST,
 		DICT,
 		CLASSOBJ,
 		MODULEOBJ,
+		PROGRAMOBJ,
 
 		_NULL_,
 		_TRUE_,
@@ -62,6 +70,7 @@ struct Variable
 		Variable* _ref;
 		Attribute* _attr;
 		const Class* _cls;
+		const Program* _prg;
 		//ymod::ModuleDesc* _mod; //TODO to separate module and moduleobj
 	} _u;
 
@@ -84,6 +93,7 @@ struct Variable
 	void SetDict(const std::unordered_map<std::string, Variable>& dict = std::unordered_map<std::string, Variable>());
 	void SetClass(const Class& cls, bool makeInstance);
 	void SetModule(const ymod::ModuleDesc& mod, bool makeInstance);
+	void SetProgram(const Program& prg, bool makeInstance);
 	void SetVar(Variable& var);
 
 	bool Assign(EToken op, Variable& rval);
@@ -108,6 +118,7 @@ struct Variable
 	Attribute& attr();
 	const Class& cls() const;
 	const ymod::ModuleDesc& mod() const;
+	const Program& prg() const;
 	const std::vector<Variable>& list() const;
 	std::vector<Variable>& list();
 	const std::unordered_map<std::string, Variable>& dict() const;
@@ -116,6 +127,8 @@ struct Variable
 	ClassObject& clsObj();
 	const ModuleObject& modObj() const;
 	ModuleObject& modObj();
+	const ProgramObject& prgObj() const;
+	ProgramObject& prgObj();
 
 	void SetValueFromContract(YArg o);
 	YArg ToContract() const;
@@ -128,6 +141,7 @@ struct Variable
 		std::unordered_map<std::string, Variable> _dict;
 		ClassObject _clso;
 		ModuleObject _modo;
+		ProgramObject _prgo;
 
 		Object();
 		~Object();

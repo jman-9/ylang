@@ -47,9 +47,9 @@ void Variable::Clear()
 	case CLASS:
 	case CLASSOBJ:
 	case MODULEOBJ:
+	case PROGRAMOBJ:
 		if(_u._o) { _u._o->ReleaseRef(); _u._o = nullptr; }
 		break;
-
 	}
 
 	_type = NONE;
@@ -169,6 +169,24 @@ void Variable::SetModule(const ModuleDesc& mod, bool makeInstance)
 		throw 'n';
 	}*/
 }
+void Variable::SetProgram(const Program& prg, bool makeInstance)
+{
+	if(makeInstance)
+	{
+		ResetNewObj();
+
+		_u._o->_prgo._prg = &prg;
+		_u._o->_prgo._local.resize(100);
+		_u._o->_type = PROGRAMOBJ;
+		_type = PROGRAMOBJ;
+	}
+	else
+	{
+		Clear();
+		_u._prg = &prg;
+		_type = PROGRAM;
+	}
+}
 
 void Variable::SetVar(Variable& var)
 {
@@ -188,13 +206,15 @@ void Variable::SetVar(Variable& var)
 	case LVREF: SetVarLVRef(var); break;
 	case ATTR: SetAttr(var._u._attr->owner, var._u._attr->name); break;
 	case CLASS: SetClass(*var._u._cls, false); break;
+	case PROGRAM: SetProgram(*var._u._prg, false); break;
 
 	case OBJ:
 	case LIST:
 	case DICT:
 	case CLASSOBJ:
 	case MODULE:
-	case MODULEOBJ: SetObj(var._u._o); break;
+	case MODULEOBJ:
+	case PROGRAMOBJ: SetObj(var._u._o); break;
 
 	case _NULL_:
 	case _TRUE_:
@@ -606,6 +626,8 @@ string Variable::ToStr() const
 		return "class: " + cls().name;
 	case MODULE:
 		return "module: " + mod().name;
+	case PROGRAM:
+		return "program: (WIP)";
 
 	case OBJ:
 		return "obj: (uninitialized)";
@@ -647,6 +669,8 @@ string Variable::ToStr() const
 		return "classobj: " + clsObj()._cls->name;
 	case MODULEOBJ:
 		return "moduleobj: " + modObj()._mod.modDesc->name;
+	case PROGRAMOBJ:
+		return "programobj: (WIP)";
 
 	case _NULL_:
 		return "null";
@@ -677,10 +701,12 @@ bool Variable::IsNullOrFalse() const
 	case ATTR:		return attr().name.empty();
 	case CLASS:		return !_u._cls || cls().name.empty();
 	case MODULE:	return mod().IsNull(); //TODO qaz !_u._mod ||
+	case PROGRAM:	return !_u._prg || prg()._mainCode.empty(); //TODO
 	case LIST:		return list().empty();
 	case DICT:		return dict().empty();
 	case CLASSOBJ:	return !clsObj()._cls;
 	case MODULEOBJ:	return !modObj()._mod.modDesc;
+	case PROGRAMOBJ:	return !prgObj()._prg;
 	}
 	return false;
 }
@@ -748,6 +774,16 @@ const ModuleDesc& Variable::mod() const
 	return *modObj()._mod.modDesc;
 }
 
+const Program& Variable::prg() const
+{
+	if(_type == PROGRAM)
+		return *_u._prg;
+	else if(_type == PROGRAMOBJ)
+		return *_u._o->_prgo._prg;
+	else
+		throw 'n'; //TODO
+}
+
 const std::vector<Variable>& Variable::list() const
 {
 	if(_type != LIST) throw 'n'; //TODO
@@ -789,6 +825,16 @@ ModuleObject& Variable::modObj()
 	//qaz
 	if(_type != MODULE && _type != MODULEOBJ) throw 'n'; //TODO
 	return _u._o->_modo;
+}
+const ProgramObject& Variable::prgObj() const
+{
+	if(_type != PROGRAMOBJ) throw 'n'; //TODO
+	return _u._o->_prgo;
+}
+ProgramObject& Variable::prgObj()
+{
+	if(_type != PROGRAMOBJ) throw 'n'; //TODO
+	return _u._o->_prgo;
 }
 
 void Variable::SetValueFromContract(YArg o)
