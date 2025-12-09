@@ -298,7 +298,6 @@ uint32_t Scanner::AdvanceComment(const std::string& code, int start, uint32_t& r
 			}
 			else if(code.compare(end, commentBlockEndToken.size(), commentBlockEndToken) == 0)
 			{
-				end += (int)commentBlockEndToken.size();
 				break;
 			}
 			else
@@ -309,6 +308,10 @@ uint32_t Scanner::AdvanceComment(const std::string& code, int start, uint32_t& r
 		if(end >= code.size())
 		{
 			retError = ErrorBuilder::UnexpectedEof(0);
+		}
+		else
+		{
+			end += (int)commentBlockEndToken.size();
 		}
 	}
 

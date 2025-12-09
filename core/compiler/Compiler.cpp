@@ -21,6 +21,8 @@ namespace ycom
 #define ERROR_DEBUG_OUT
 #endif
 
+#define MAIN_PRG "_____main_____"
+
 vector<Error> Compiler::CompileCode(const string& src, Program& retProgram)
 {
 	vector<Error> totalErrs;
@@ -31,7 +33,7 @@ vector<Error> Compiler::CompileCode(const string& src, Program& retProgram)
 	stack<TreeNodeSptr> astStack;
 
 	string curSrc = src;
-	string curMod = "_____main_____";
+	string curMod = MAIN_PRG;
 
 	do {
 		if(!curSrc.empty())
@@ -67,7 +69,8 @@ vector<Error> Compiler::CompileCode(const string& src, Program& retProgram)
 
 			auto& stmt = incStmts[idx++];
 			auto& incName = stmt->childs.front()->self.val;
-			curErrs = ReadSourceFile(incName + ".y", curSrc);
+			auto incPath = ResolveIncludePath(incName);
+			curErrs = ReadSourceFile(incPath, curSrc);
 			if(!curErrs.empty())
 			{
 				totalErrs.insert(totalErrs.end(), curErrs.begin(), curErrs.end());
@@ -75,7 +78,7 @@ vector<Error> Compiler::CompileCode(const string& src, Program& retProgram)
 			}
 			if(!curSrc.empty())
 			{
-				curMod = filesystem::absolute({incName + ".y"}).string();
+				curMod = incPath;
 				break;
 			}
 		}
@@ -87,35 +90,45 @@ vector<Error> Compiler::CompileCode(const string& src, Program& retProgram)
 	{
 		while(!astStack.empty())
 		{
+			Program prg;
+
 			auto ast = astStack.top();
 			astStack.pop();
 
+			if(prgMap.contains(ast->self.val))
+				continue;
+			/* qaz
 			SemanticAnalyzer sa;
 			sa.Analyze(*ast);
 			if(!sa._errors.empty())
 			{
 				totalErrs.insert(totalErrs.end(), sa._errors.begin(), sa._errors.end());
 				break;
-			}
+			}*/
 
 			BytecodeBuilder bb;
-			if(!bb.Build(*ast, retProgram, &prgMap))
+			if(!bb.Build(*ast, prg, &prgMap))
 			{//TODO trace
 				throw 'n';
 			}
 
-			prgMap[ ast->self.val ] = retProgram;
+			prg._name = filesystem::path(ast->self.val).stem().string();
+			prgMap[ ast->self.val ] = prg;
 
 		#ifdef BYTECODE_DEBUG_OUT
-			for(int i=0; i<retProgram._mainCode._codeStr.size(); i++)
+			cout << prg._name << endl;
+			for(int i=0; i<prg._mainCode._codeStr.size(); i++)
 			{
-				cout << format("{:4} {}\n", i, retProgram._mainCode._codeStr[i]);
+				cout << format("{:4} {}\n", i, prg._mainCode._codeStr[i]);
 			}
+			cout << endl;
 		#endif
 		}
 	}
 
+	retProgram = prgMap[ MAIN_PRG ];
 	retProgram._programTable = prgMap;
+	retProgram._programTable.erase(MAIN_PRG);
 
 	if(!totalErrs.empty())
 	{
@@ -137,7 +150,11 @@ vector<Error> Compiler::CompileFile(const string& srcPath, Program& retProgram)
 	string src;
 	auto errs = ReadSourceFile(srcPath, src);
 	if(!errs.empty()) return errs;
-	return CompileCode(src, retProgram);
+	errs = CompileCode(src, retProgram);
+	if(!errs.empty()) return errs;
+
+	retProgram._name = filesystem::path(srcPath).stem().string();
+	return {};
 }
 
 
@@ -235,6 +252,31 @@ vector<Error> Compiler::ReadSourceFile(const std::string& srcPath, std::string& 
 	}
 	retSrc = string((istreambuf_iterator<char>(ifs)), {});
 	return {};
+}
+
+string Compiler::ResolveIncludePath(const string& incStr)
+{
+	string delim = ".";
+
+	size_t start = 0;
+	size_t end = 0;
+
+	vector<string> split;
+	for( ; (end = incStr.find(delim, start)) != std::string::npos; )
+	{
+		split.push_back(incStr.substr(start, end - start));
+		start = end + delim.length();
+	}
+	split.push_back(incStr.substr(start, end - start));
+
+	string res = split[0];
+	for(size_t i=1; i<split.size(); i++)
+	{
+		res += "/" + split[i];
+	}
+
+	res = filesystem::absolute({res + ".y"}).string();
+	return res;
 }
 
 }

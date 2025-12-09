@@ -291,13 +291,43 @@ bool BytecodeBuilder::BuildStmt(Bytecode& retCtx, const TreeNode& stmt)
 bool BytecodeBuilder::BuildInclude(Bytecode& retCtx, const TreeNode& stmt)
 {
 	auto& incName = *stmt.childs[0];
+	const auto& incStr = incName.self.val;
+
+	string delim = ".";
+
+	size_t start = 0;
+	size_t end = 0;
+
+	vector<string> split;
+	for( ; (end = incStr.find(delim, start)) != std::string::npos; )
+	{
+		split.push_back(incStr.substr(start, end - start));
+		start = end + delim.length();
+	}
+	split.push_back(incStr.substr(start, end - start));
+
+	string res = split[0];
+	for(size_t i=1; i<split.size(); i++)
+	{
+		res += "/" + split[i];
+	}
+	res = filesystem::absolute({res + ".y"}).string();
 
 	//TODO function... resolve module
-	string absPath = filesystem::absolute({incName.self.val + ".y"}).string();
+	string absPath = res;
 	if(_prgTbl && _prgTbl->contains(absPath))
 	{
 		//TODOqaz namespace map update
-		_namespaceMap[ incName.self.val ] = 1;
+
+		string nsStr = split[0];
+		_namespaceMap[ nsStr ] = -1;
+		for(size_t i=1; i<split.size(); i++)
+		{
+			nsStr += "." + split[i];
+			_namespaceMap[ nsStr ] = -1;
+		}
+		_namespaceMap[ nsStr ] = 0;
+
 
 		//TODO
 		_symTbl.AddOrNot({ incName.self.val, ESymbol::Prg });
@@ -470,9 +500,25 @@ bool BytecodeBuilder::BuildExp(Bytecode& retCtx, const TreeNode& stmt, bool root
 		{
 			throw 'n';
 		}
-		inst.src1Kind = (uint8_t)ERefKind::Reg;
-		inst.src1 = (uint16_t)_reg;
-		_reg++;
+
+		//qaz
+		if(!_namespace.empty())
+		{
+			auto found = _namespaceMap.find(_namespace);
+			if(found->second >= 0)
+			{
+				auto idx = _symTbl.GetIdx(_namespace);
+				inst.src1Kind = TO_REF_KIND_U8(idx.kind);
+				inst.src1 = (uint16_t)idx.idx;
+				_namespace = "";
+			}
+		}
+		else
+		{
+			inst.src1Kind = (uint8_t)ERefKind::Reg;
+			inst.src1 = (uint16_t)_reg;
+			_reg++;
+		}
 	}
 	else
 	{
@@ -505,9 +551,6 @@ bool BytecodeBuilder::BuildExp(Bytecode& retCtx, const TreeNode& stmt, bool root
 		}
 		else
 		{
-				// terminated namespace
-				_namespace;
-
 			auto idx = _symTbl.AddOrNot({ .name = lhs->self.val, .kind = ESymbol::Var });
 
 			inst.src1Kind = TO_REF_KIND_U8(idx.kind);
@@ -554,10 +597,6 @@ bool BytecodeBuilder::BuildExp(Bytecode& retCtx, const TreeNode& stmt, bool root
 			}
 			else
 			{
-				// terminated namespace
-				_namespace;
-
-
 				auto idx = _symTbl.GetIdx(rhs->self.val);
 				if(idx.kind == SymbolTable::Idx::NONE)
 				{
@@ -638,10 +677,16 @@ bool BytecodeBuilder::BuildExp(Bytecode& retCtx, const TreeNode& stmt, bool root
 		auto found = _namespaceMap.find(_namespace);
 		if(found->second >= 0)
 		{
-			int a = 1;
+			auto idx = _symTbl.GetIdx(_namespace);
+			inst.src1Kind = TO_REF_KIND_U8(idx.kind);
+			inst.src1 = (uint16_t)idx.idx;
+			inst.op = (uint8_t)EToken::None;
 			_namespace = "";
 		}
-		return true;
+		else
+		{
+			return true;
+		}
 	}
 
 

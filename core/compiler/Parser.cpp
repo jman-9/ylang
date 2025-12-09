@@ -704,7 +704,7 @@ TreeNodeSptr Parser::ParseStmt(const std::set<EToken>& allowed /* = std::set<ETo
 
 TreeNodeSptr Parser::ParseInclude()
 {
-	if(GetCur().kind != EToken::Include)
+	if(GetCur() != EToken::Include)
 	{
 		return nullptr;
 	}
@@ -712,14 +712,40 @@ TreeNodeSptr Parser::ParseInclude()
 	TreeNodeSptr inc = NewNode(GetCur());
 	MoveNext();
 
-	if(GetCur().kind != EToken::Id)
+	string incName;
+	if(GetCur() == EToken::Str)
+	{
+		incName = GetCur().val;
+		MoveNext();
+	}
+	else
+	{
+		for( ; GetCur() != EToken::Semicolon; )
+		{
+			auto& cur = GetCur();
+			if(cur == EToken::Id || cur == EToken::Dot)
+			{
+				incName += cur.val;
+				MoveNext();
+			}
+			else
+			{
+				_errors.push_back(ErrorBuilder::SyntaxError(cur.line, cur.val));
+				return nullptr;
+			}
+		}
+	}
+	if(incName.empty())
 	{
 		_errors.push_back(ErrorBuilder::Expected(inc->self.line, "INCLUDE_NAME"));
 		return nullptr;
 	}
 
-	inc->PushBackChild(NewNode(GetCur()));
-	MoveNext();
+	EToken kind		= EToken::None;
+	uint32_t line	= 0;
+	std::string val	= "";
+	Token t = { EToken::Str, inc->self.line, incName };
+	inc->PushBackChild(NewNode(t));
 	return inc;
 }
 

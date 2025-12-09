@@ -165,8 +165,9 @@ bool SemanticAnalyzer::AnalyzeInclude(const TreeNode& stmt)
 	}
 
 	auto& modName = stmt.childs.front()->self;
-	if(modName != EToken::Id)
-	{//todo
+	if(modName != EToken::Id && modName != EToken::Str)
+	{//todo clarify and find path
+		_errors.push_back(ErrorBuilder::Default(modName.line, "TODO : " + modName.val));
 		return false;
 	}
 

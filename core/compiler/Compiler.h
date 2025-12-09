@@ -23,9 +23,7 @@ protected:
 
 	std::vector<Error> ReadSourceFile(const std::string& srcPath, std::string& retSrc) const;
 
-	//bool ResolveModPath(reeNodeSptr& retAstRoot);
-
-	//std::vector<Error> ProcessCompileLoop(const std::string& mainSrc, Program& retProgram) const;
+	std::string ResolveIncludePath(const std::string& incStr);
 };
 
 }
