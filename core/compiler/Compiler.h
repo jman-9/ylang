@@ -4,16 +4,18 @@
 #include "TreeNode.h"
 #include <string>
 #include <vector>
+#include <map>
 
 
 namespace ycom
 {
+using ErrorTable = std::map<std::string, std::vector<Error>>;
 
 class Compiler
 {
 public:
-	std::vector<Error> CompileCode(const std::string& src, Program& retProgram);
-	std::vector<Error> CompileFile(const std::string& srcPath, Program& retProgram);
+	ErrorTable CompileCode(const std::string& src, Program& retProgram);
+	ErrorTable CompileFile(const std::string& srcPath, Program& retProgram);
 
 protected:
 	std::vector<Error> ParseCode(const std::string& src, TreeNodeSptr& retAstRoot);

@@ -14,17 +14,18 @@ using namespace std;
 
 bool ylang::RunCode(const std::string& src)
 {
-	vector<Error> errs;
+	ycom::ErrorTable errTbl;
 	ycom::Compiler cmplr;
 
 	Program p;
-	errs = cmplr.CompileCode(src, p);
-	if(!errs.empty())
+	errTbl = cmplr.CompileCode(src, p);
+	if(!errTbl.empty())
 	{
 		cout << endl;
-		for(auto e : errs)
+		for(auto& [f, es] : errTbl)
 		{
-			cout << format("{}({}): error E{}: {}\n", "code", e.line, (int)e.code, e.msg);
+			for(auto& e : es)
+				cout << format("{}({}): error E{}: {}\n", f, e.line, (int)e.code, e.msg);
 		}
 		cout << endl;
 		return false;
@@ -37,17 +38,18 @@ bool ylang::RunCode(const std::string& src)
 
 bool ylang::RunFile(const string& srcPath)
 {
-	vector<Error> errs;
+	ycom::ErrorTable errTbl;
 	ycom::Compiler cmplr;
 
 	Program p;
-	errs = cmplr.CompileFile(srcPath, p);
-	if(!errs.empty())
+	errTbl = cmplr.CompileFile(srcPath, p);
+	if(!errTbl.empty())
 	{
 		cout << endl;
-		for(auto e : errs)
+		for(auto& [f, es] : errTbl)
 		{
-			cout << format("{}({}): error E{}: {}\n", srcPath, e.line, (int)e.code, e.msg);
+			for(auto& e : es)
+				cout << format("{}({}): error E{}: {}\n", f, e.line, (int)e.code, e.msg);
 		}
 		cout << endl;
 		return false;

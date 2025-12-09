@@ -188,21 +188,21 @@ struct Result
 {
 	int code;
 	bool build;
-	vector<Error> errs;
+	ycom::ErrorTable errTbl;
 };
 
 static Result Run(const std::string& src)
 {
 	ycom::Compiler cmplr;
-	vector<Error> errs;
+	ycom::ErrorTable errTbl;
 	Program p;
 
-	errs = cmplr.CompileCode(src, p);
-	if(!errs.empty())
-		return { -98765432, false, errs };
+	errTbl = cmplr.CompileCode(src, p);
+	if(!errTbl.empty())
+		return { -98765432, false, errTbl };
 
 	yvm::Machine m;
-	return { m.Run(p), true, errs };
+	return { m.Run(p), true, errTbl };
 }
 
 

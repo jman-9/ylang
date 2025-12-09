@@ -246,7 +246,7 @@ bool BytecodeBuilder::Build(const TreeNode& code, Program& retProgram, const uno
 	}
 	for(auto& [k, v] : _prg._classTable)
 	{
-		_prg._globalTable[k] = GlobalSymbol{ .kind = EGlobalSymbol::Cls, .name = k, .cls = v }; break;
+		_prg._globalTable[k] = GlobalSymbol{ .kind = EGlobalSymbol::Cls, .name = k, .cls = v };
 	}
 
 	retProgram = _prg;

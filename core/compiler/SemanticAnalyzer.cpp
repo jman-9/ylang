@@ -98,7 +98,7 @@ bool SemanticAnalyzer::AnalyzeExp(const TreeNode& stmt)
 				auto found = _symTbl.back().find(name->self.val);
 				if(found == _symTbl.back().end())
 				{
-					_errors.push_back(ErrorBuilder::Default(name->self.line, format("'{}': function not found", name->self.val)));
+					_errors.push_back(ErrorBuilder::NotFound(name->self.line, name->self.val));
 					return false;
 				}
 
@@ -133,7 +133,7 @@ bool SemanticAnalyzer::AnalyzeExp(const TreeNode& stmt)
 
 	if(stmt.self == EToken::Id || stmt.self == EToken::Str)
 	{
-		if(_nsTracker.IsExistingIfAppend(_nsCtx, stmt.self.val))
+		if((!_nsCtx.IsEmpty() || stmt.self == EToken::Id) && _nsTracker.IsExistingIfAppend(_nsCtx, stmt.self.val))
 		{
 			_nsCtx.Append(stmt.self.val);
 		}

@@ -26,10 +26,10 @@ namespace ycom
 
 #define MAIN_PRG "_____main_____"
 
-vector<Error> Compiler::CompileCode(const string& src, Program& retProgram)
+ErrorTable Compiler::CompileCode(const string& src, Program& retProgram)
 {
-	vector<Error> totalErrs;
-	vector<Error> curErrs;
+	ErrorTable errTbl;
+	vector<Error> errs;
 	vector<TreeNodeSptr> includes;
 	stack<pair<vector<TreeNodeSptr>, int>> incStack;
 	unordered_map<string, TreeNodeSptr> astMap;
@@ -43,16 +43,20 @@ vector<Error> Compiler::CompileCode(const string& src, Program& retProgram)
 		{
 			auto inserted = astMap.insert({curMod, {}});
 			auto& ast = inserted.first->second;
-			totalErrs = ParseCode(curSrc, ast);
-			if(!totalErrs.empty()) break;
+			errs = ParseCode(curSrc, ast);
+			if(!errs.empty())
+			{
+				errTbl[ curMod ] = errs;
+				break;
+			}
 
 			ast->self.val = curMod;
 
 			incStack.push({});
-			curErrs = ExtractIncludes(*ast, incStack.top().first);
-			if(!curErrs.empty())
+			errs = ExtractIncludes(*ast, incStack.top().first);
+			if(!errs.empty())
 			{
-				totalErrs.insert(totalErrs.end(), curErrs.begin(), curErrs.end());
+				errTbl[ curMod ].insert(errTbl[ curMod ].end(), errs.begin(), errs.end());
 				break;
 			}
 			astStack.push(ast);
@@ -76,10 +80,10 @@ vector<Error> Compiler::CompileCode(const string& src, Program& retProgram)
 
 			auto resInc = NamespaceUtil::ResolveInclude(incName);
 			//TODO qaz mod check
-			curErrs = ReadSourceFile(resInc.absPath + ".y", curSrc);
-			if(!curErrs.empty())
+			errs = ReadSourceFile(resInc.absPath + ".y", curSrc);
+			if(!errs.empty())
 			{
-				totalErrs.insert(totalErrs.end(), curErrs.begin(), curErrs.end());
+				errTbl[ curMod ].insert(errTbl[ curMod ].end(), errs.begin(), errs.end());
 				break;
 			}
 			if(!curSrc.empty())
@@ -88,11 +92,11 @@ vector<Error> Compiler::CompileCode(const string& src, Program& retProgram)
 				break;
 			}
 		}
-		if(!curErrs.empty()) break;
+		if(!errs.empty()) break;
 	} while(!curSrc.empty());
 
 	unordered_map<std::string, Program> prgMap;
-	if(totalErrs.empty())
+	if(errTbl.empty())
 	{
 		while(!astStack.empty())
 		{
@@ -108,7 +112,7 @@ vector<Error> Compiler::CompileCode(const string& src, Program& retProgram)
 			sa.Analyze(*ast);
 			if(!sa._errors.empty())
 			{
-				totalErrs.insert(totalErrs.end(), sa._errors.begin(), sa._errors.end());
+				errTbl[ast->self.val] = sa._errors;
 				break;
 			}
 
@@ -132,16 +136,18 @@ vector<Error> Compiler::CompileCode(const string& src, Program& retProgram)
 		}
 	}
 
-	if(!totalErrs.empty())
+	if(!errTbl.empty())
 	{
 	#ifdef ERROR_DEBUG_OUT
-		for(auto e : totalErrs)
+		for(auto& [f, es] : errTbl)
 		{
-			string errStr = format("{}({}): error E{}: {}", "some file", e.line, (int)e.code, e.msg);
-			cout << errStr << endl;
+			for(auto& e : es)
+			{
+				cout << format("{}({}): error E{}: {}\n", f, e.line, (int)e.code, e.msg);
+			}
 		}
 	#endif
-		return totalErrs;
+		return errTbl;
 	}
 
 	retProgram = prgMap[ MAIN_PRG ];
@@ -150,13 +156,22 @@ vector<Error> Compiler::CompileCode(const string& src, Program& retProgram)
 	return {};
 }
 
-vector<Error> Compiler::CompileFile(const string& srcPath, Program& retProgram)
+ErrorTable Compiler::CompileFile(const string& srcPath, Program& retProgram)
 {
+	string base = filesystem::path{srcPath}.parent_path().string();
+	if(!base.empty())
+		filesystem::current_path(base);
+
 	string src;
 	auto errs = ReadSourceFile(srcPath, src);
-	if(!errs.empty()) return errs;
-	errs = CompileCode(src, retProgram);
-	if(!errs.empty()) return errs;
+	if(!errs.empty())
+	{
+		ErrorTable errTbl;
+		errTbl[srcPath] = errs;
+		return errTbl;
+	}
+	auto errTbl = CompileCode(src, retProgram);
+	if(!errTbl.empty()) return errTbl;
 
 	retProgram._name = filesystem::path(srcPath).stem().string();
 	return {};
