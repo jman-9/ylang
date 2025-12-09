@@ -98,14 +98,19 @@ Error Expected(uint32_t line, const std::string& s)
 	return { line, EErr::Expected, format("expected : '{}'", s) };
 }
 
-Error AlreadyExisting(uint32_t line, const std::string& s)
+Error AlreadyExists(uint32_t line, const std::string& s)
 {
-	return { line, EErr::AlreadyExisting, format("'{}': already existing", s) };
+	return { line, EErr::AlreadyExists, format("'{}': already exists", s) };
 }
 
 Error NotInitialized(uint32_t line, const std::string& s)
 {
 	return { line, EErr::NotInitialized, format("'{}': not initialized", s) };
+}
+
+Error NotFound(uint32_t line, const std::string& s)
+{
+	return { line, EErr::NotFound, format("'{}': not found", s) };
 }
 
 }

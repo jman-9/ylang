@@ -62,8 +62,8 @@ bool ylang::StartRepl()
 {
 	cout << format("ylang {}\n\n", YLANG_VER);
 
-	SemanticAnalyzer sa;
-	BytecodeBuilder bb;
+	ycom::SemanticAnalyzer sa;
+	ycom::BytecodeBuilder bb;
 	yvm::Machine replMachine;
 
 	vector<string> lines;
@@ -113,7 +113,7 @@ bool ylang::StartRepl()
 
 		bool run = false;
 		do {	//todo memory leak
-			Scanner s;
+			ycom::Scanner s;
 			s.Scan(code);
 			if(s._tokens.empty() || !s._errors.empty())
 			{
@@ -122,7 +122,7 @@ bool ylang::StartRepl()
 				break;
 			}
 
-			StringInterpolator si;
+			ycom::StringInterpolator si;
 			vector<Token> processed;
 			for(auto& t : s._tokens)
 			{
@@ -140,7 +140,7 @@ bool ylang::StartRepl()
 				processed.insert(processed.end(), interpolated.begin(), interpolated.end());
 			}
 
-			Parser p(processed);
+			ycom::Parser p(processed);
 			auto ast = p.Parse();
 			if(!ast || !p._errors.empty())
 			{

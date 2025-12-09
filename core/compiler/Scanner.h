@@ -7,6 +7,9 @@
 #include <vector>
 
 
+namespace ycom
+{
+
 class Scanner
 {
 public:
@@ -41,3 +44,5 @@ protected:
 	uint32_t AdvanceInteger(const std::string& code, int start, Error& retError);
 	uint32_t AdvanceId(const std::string& code, int start, Error& retError);
 };
+
+}

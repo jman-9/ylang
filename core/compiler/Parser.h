@@ -6,6 +6,9 @@
 #include <set>
 
 
+namespace ycom
+{
+
 class Parser
 {
 public:
@@ -40,3 +43,5 @@ protected:
 	const Token& GetCur() const;
 	const Token& GetNext() const;
 };
+
+}

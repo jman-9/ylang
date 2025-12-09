@@ -103,14 +103,14 @@ vector<Error> Compiler::CompileCode(const string& src, Program& retProgram)
 
 			if(prgMap.contains(ast->self.val))
 				continue;
-			/* qaz
+
 			SemanticAnalyzer sa;
 			sa.Analyze(*ast);
 			if(!sa._errors.empty())
 			{
 				totalErrs.insert(totalErrs.end(), sa._errors.begin(), sa._errors.end());
 				break;
-			}*/
+			}
 
 			BytecodeBuilder bb;
 			if(!bb.Build(*ast, prg, &prgMap))
@@ -132,10 +132,6 @@ vector<Error> Compiler::CompileCode(const string& src, Program& retProgram)
 		}
 	}
 
-	retProgram = prgMap[ MAIN_PRG ];
-	retProgram._programTable = prgMap;
-	retProgram._programTable.erase(MAIN_PRG);
-
 	if(!totalErrs.empty())
 	{
 	#ifdef ERROR_DEBUG_OUT
@@ -148,6 +144,9 @@ vector<Error> Compiler::CompileCode(const string& src, Program& retProgram)
 		return totalErrs;
 	}
 
+	retProgram = prgMap[ MAIN_PRG ];
+	retProgram._programTable = prgMap;
+	retProgram._programTable.erase(MAIN_PRG);
 	return {};
 }
 

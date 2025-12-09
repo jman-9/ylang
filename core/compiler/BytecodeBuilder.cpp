@@ -6,6 +6,9 @@
 using namespace std;
 
 
+namespace ycom
+{
+
 static const BuiltinFuncTable _builtinFuncTbl;
 
 
@@ -185,18 +188,14 @@ Symbol SymbolTable::GetSymbol(const string& name) const
 	return GetSymbolData(name).sym;
 }
 
-
 BytecodeBuilder::BytecodeBuilder()
 	: _reg(0)
 {
 	_prg._mainCode.PushBytecode<EOpcode::Noop>();
 }
-
 BytecodeBuilder::~BytecodeBuilder()
 {
 }
-
-
 bool BytecodeBuilder::Build(const TreeNode& code, Program& retProgram, const unordered_map<std::string, Program>* programTable /* = nullptr */)
 {
 	_prgTbl = programTable;
@@ -254,51 +253,12 @@ bool BytecodeBuilder::Build(const TreeNode& code, Program& retProgram, const uno
 	return true;
 }
 
-bool BytecodeBuilder::IsTerminalNamespace() const
-{
-	auto found = _namespaceMap.find(_namespacePath);
-	return found == _namespaceMap.end() ? true : found->second;
-}
-bool BytecodeBuilder::IsEmptyNamespacePath() const
-{
-	return _namespacePath.empty();
-}
-bool BytecodeBuilder::IsExistingNamespacePath() const
-{
-	return _namespaceMap.contains(_namespacePath);
-}
-bool BytecodeBuilder::IsExistingNamespacePathIfAppend(const std::string& toAppend) const
-{
-	if(IsEmptyNamespacePath())
-		return _namespaceMap.contains(toAppend);
-	else
-		return _namespaceMap.contains(_namespacePath + "." + toAppend);
-}
+
 SymbolTable::Idx BytecodeBuilder::GetNamespacePathIdx() const
 {
-	return _symTbl.GetIdx(_namespacePath);
+	return _symTbl.GetIdx(_nsCtx.Get());
 }
-void BytecodeBuilder::ClearNamespacePath()
-{
-	_namespacePath.clear();
-}
-void BytecodeBuilder::AppendNamespaceToPath(const std::string& nm)
-{
-	_namespacePath = _namespacePath.empty() ? nm : (_namespacePath + "." + nm);
-}
-void BytecodeBuilder::AddNamespacePathToMap(const std::string& path)
-{
-	auto split = StrUtil::Split(path, ".");
 
-	string nsStr = split[0];
-	_namespaceMap[ nsStr ] = false;
-	for(size_t i=1; i<split.size(); i++)
-	{
-		nsStr += "." + split[i];
-		_namespaceMap[ nsStr ] = false;
-	}
-	_namespaceMap[ nsStr ] = true;
-}
 
 void BytecodeBuilder::BuildBlockOpen(Bytecode& retCtx)
 {
@@ -345,7 +305,7 @@ bool BytecodeBuilder::BuildInclude(Bytecode& retCtx, const TreeNode& stmt)
 	if(_prgTbl && _prgTbl->contains(res.absPath))
 	{
 		//TODOqaz namespace map update except real path
-		AddNamespacePathToMap(res.namespacePath);
+		_nsTracker.AddTrackingPath(res.namespacePath);
 
 		//TODO
 		_symTbl.AddOrNot({ res.namespacePath, ESymbol::Prg });
@@ -520,14 +480,14 @@ bool BytecodeBuilder::BuildExp(Bytecode& retCtx, const TreeNode& stmt, bool root
 		}
 
 		//qaz
-		if(!IsEmptyNamespacePath())
+		if(!_nsCtx.IsEmpty())
 		{
-			if(IsTerminalNamespace())
+			if(_nsTracker.IsTerminal(_nsCtx))
 			{
 				auto idx = GetNamespacePathIdx();
 				inst.src1Kind = TO_REF_KIND_U8(idx.kind);
 				inst.src1 = (uint16_t)idx.idx;
-				ClearNamespacePath();
+				_nsCtx.Clear();
 			}
 		}
 		else
@@ -552,15 +512,15 @@ bool BytecodeBuilder::BuildExp(Bytecode& retCtx, const TreeNode& stmt, bool root
 				inst.src1 = _constTbl.AddOrNot(lhs->self);
 			}
 		}
-		else if(lhs->childs.empty() && IsExistingNamespacePathIfAppend(lhs->self.val))
+		else if(lhs->childs.empty() && _nsTracker.IsExistingIfAppend(_nsCtx, lhs->self.val))
 		{// qaz namespace start
-			AppendNamespaceToPath(lhs->self.val);
-			if(IsTerminalNamespace())
+			_nsCtx.Append(lhs->self.val);
+			if(_nsTracker.IsTerminal(_nsCtx))
 			{
 				auto idx = _symTbl.GetIdx(lhs->self.val);
 				inst.src1Kind = TO_REF_KIND_U8(idx.kind);
 				inst.src1 = (uint16_t)idx.idx;
-				ClearNamespacePath();
+				_nsCtx.Clear();
 			}
 		}
 		else
@@ -593,9 +553,9 @@ bool BytecodeBuilder::BuildExp(Bytecode& retCtx, const TreeNode& stmt, bool root
 		}
 		else
 		{
-			if(stmt.self == EToken::Dot && rhs->childs.empty() && IsExistingNamespacePathIfAppend(rhs->self.val))
+			if(stmt.self == EToken::Dot && rhs->childs.empty() && _nsTracker.IsExistingIfAppend(_nsCtx, rhs->self.val))
 			{ // qaz namespacing
-				AppendNamespaceToPath(rhs->self.val);
+				_nsCtx.Append(rhs->self.val);
 			}
 			else if(rhs->self.IsLiteral())
 			{		//TODO make table
@@ -686,15 +646,15 @@ bool BytecodeBuilder::BuildExp(Bytecode& retCtx, const TreeNode& stmt, bool root
 	}
 
 	_reg = regStack;
-	if(!IsEmptyNamespacePath())
+	if(!_nsCtx.IsEmpty())
 	{	//qaz namespace resolve
-		if(IsTerminalNamespace())
+		if(_nsTracker.IsTerminal(_nsCtx))
 		{
 			auto idx = GetNamespacePathIdx();
 			inst.src1Kind = TO_REF_KIND_U8(idx.kind);
 			inst.src1 = (uint16_t)idx.idx;
 			inst.op = (uint8_t)EToken::None;
-			ClearNamespacePath();
+			_nsCtx.Clear();
 		}
 		else
 		{
@@ -1172,4 +1132,6 @@ bool BytecodeBuilder::BuildCompound(Bytecode& retCtx, const TreeNode& stmt)
 
 	BuildBlockClose(retCtx);
 	return true;
+}
+
 }

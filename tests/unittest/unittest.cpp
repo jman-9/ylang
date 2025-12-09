@@ -11,6 +11,8 @@
 #include <iostream>
 #include <map>
 #include <vector>
+#include <fstream>
+#include <filesystem>
 using namespace std;
 using namespace yvm;
 
@@ -606,9 +608,96 @@ TEST_CASE( "Increment Decrement Test", "[incdec]" )
 
 TEST_CASE( "Includes Test", "[includes]" )
 {
-	Result ret;
+	string mod3y =
+R"YT(mod3v = "mod3";
+class Mod { name = ["mod3", "class"]; }
+)YT";
 
-	ycom::Compiler com;
+	string mod2y =
+R"YT(mod2v = "mod2 global";
+class Mod2 { name = "mod2 class"; }
+)YT";
+
+	string mody =
+R"YT(include mod2;
+modv = "mod global " + mod2.mod2v;
+class Mod { name = "mod class" + mod2.mod2v; }
+println("here mod {modv}");
+)YT";
+
+	string appy =
+R"YT(include mod;
+include mod2;
+include ylangd1.d2.mod3;
+include ylangd1/d2.mod3;
+include math;
+
+app = "app test";
+fn appTest(a, b) { println("{a} {b}"); }
+class App { name = "app"; }
+
+if(App().name != "app") exit(1);
+if(mod.modv != "mod global " + mod2.mod2v) exit(2);
+if(mod2.Mod2().name != "mod2 class") exit(3);
+appTest(app, mod2.mod2v);
+
+if(math.sqrt(4) != 2.0) exit(4);
+
+if(ylangd1.d2.mod3.mod3v != "mod3") exit(5);
+if(ylangd1.d2.mod3.Mod().name[0] != "mod3") exit(6);
+if(d2.mod3.Mod().name[1] != "class") exit(7);
+if(d2.mod3.mod3v != "mod3") exit(8);
+)YT";
+
+	ofstream fout("app.y");
+	fout.write(appy.c_str(), appy.size());
+	fout.close();
+
+	fout.open("mod.y");
+	fout.write(mody.c_str(), mody.size());
+	fout.close();
+
+	fout.open("mod2.y");
+	fout.write(mod2y.c_str(), mod2y.size());
+	fout.close();
+
+	filesystem::create_directories("ylangd1/d2");
+	fout.open("ylangd1/d2/mod3.y");
+	fout.write(mod3y.c_str(), mod3y.size());
+	fout.close();
+
+	SECTION("main test")
+	{
+		Result ret;
+
+		ycom::Compiler com;
+		Program prg;
+		auto errs = com.CompileFile("app.y", prg);
+		REQUIRE(errs.empty());
+
+		yvm::Machine m;
+		int code = m.Run(prg);
+		REQUIRE(!code);
+
+		ret = Run( R"YT( include aaa+eee; )YT" );
+		REQUIRE( !ret.build );
+		ret = Run( R"YT( include aaa!eee; )YT" );
+		REQUIRE( !ret.build );
+		ret = Run( R"YT( include /ddpe/aaa.dpdpd/eee; )YT" );
+		REQUIRE( !ret.build );
+		ret = Run( R"YT( include /ddpe/../aaa.dpdpd..eee; )YT" );
+		REQUIRE( !ret.build );
+
+		ret = Run( R"YT( include ylangd1.d2.mod3; a = ylangd1.c; )YT" );
+		REQUIRE( !ret.build );
+		ret = Run( R"YT( include ylangd1.d2.mod3; a = ylangd1.d2.gg(); )YT" );
+		REQUIRE( !ret.build );
+	}
+
+	filesystem::remove("app.y");
+	filesystem::remove("mod.y");
+	filesystem::remove("mod2.y");
+	filesystem::remove_all("ylangd1");
 }
 
 
@@ -626,15 +715,15 @@ int main(int argc, const char** argv)
 	Catch::ConfigData& cfg = _session.configData();
 
 	cfg.showSuccessfulTests = true;
-// 	cfg.testsOrTags.push_back("[primstr],");
-// 	cfg.testsOrTags.push_back("[bltrand],");
-// 	cfg.testsOrTags.push_back("[bltsys],");
-// 	cfg.testsOrTags.push_back("[bltfile],");
-// 	cfg.testsOrTags.push_back("[bltjson],");
-// 	cfg.testsOrTags.push_back("[exp],");
-// 	cfg.testsOrTags.push_back("[logop],");
-	//cfg.testsOrTags.push_back("[class],");
-	//cfg.testsOrTags.push_back("[incdec],");
+	cfg.testsOrTags.push_back("[primstr],");
+	cfg.testsOrTags.push_back("[bltrand],");
+	cfg.testsOrTags.push_back("[bltsys],");
+	cfg.testsOrTags.push_back("[bltfile],");
+	cfg.testsOrTags.push_back("[bltjson],");
+	cfg.testsOrTags.push_back("[exp],");
+	cfg.testsOrTags.push_back("[logop],");
+	cfg.testsOrTags.push_back("[class],");
+	cfg.testsOrTags.push_back("[incdec],");
 	cfg.testsOrTags.push_back("[includes],");
 
 	int numFailed = _session.run();

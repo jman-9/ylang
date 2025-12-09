@@ -3,6 +3,9 @@
 #include <vector>
 
 
+namespace ycom
+{
+
 class StringInterpolator
 {
 public:
@@ -11,3 +14,5 @@ public:
 protected:
 	bool ReplaceAllEscapeChars(std::string& inoutSrc);
 };
+
+}

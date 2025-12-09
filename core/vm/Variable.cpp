@@ -738,12 +738,12 @@ const std::string& Variable::str() const
 }
 const Variable& Variable::ref() const
 {
-	if(_type != REF || _type != LVREF) throw 'n'; //TODO
+	if(_type != REF && _type != LVREF) throw 'n'; //TODO
 	return *_u._ref;
 }
 Variable& Variable::ref()
 {
-	if(_type != REF || _type != LVREF) throw 'n'; //TODO
+	if(_type != REF && _type != LVREF) throw 'n'; //TODO
 	return *_u._ref;
 }
 const Attribute& Variable::attr() const

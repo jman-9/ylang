@@ -3,6 +3,9 @@
 #include <format>
 
 
+namespace ycom
+{
+
 static const BuiltinFuncTable _builtinFuncTbl;
 
 
@@ -110,6 +113,13 @@ bool SemanticAnalyzer::AnalyzeExp(const TreeNode& stmt)
 				}
 			}
 		}
+		else
+		{
+			if(!AnalyzeExp(*stmt.childs[0]))
+			{//todo trace
+				return false;
+			}
+		}
 
 		for(size_t i=1; i<stmt.childs.size(); i++)
 		{
@@ -121,16 +131,42 @@ bool SemanticAnalyzer::AnalyzeExp(const TreeNode& stmt)
 		return true;
 	}
 
-	if(stmt.self == EToken::Id)
+	if(stmt.self == EToken::Id || stmt.self == EToken::Str)
 	{
-		auto found = _symTbl.back().find(stmt.self.val);
-		if(found == _symTbl.back().end())
-		{//todo message
-			_errors.push_back(ErrorBuilder::NotInitialized(stmt.self.line, stmt.self.val));
-			return false;
+		if(_nsTracker.IsExistingIfAppend(_nsCtx, stmt.self.val))
+		{
+			_nsCtx.Append(stmt.self.val);
 		}
+		else
+		{
+			if(_nsTracker.IsTerminal(_nsCtx))
+			{//TODO module member field check
+				_nsCtx.Clear();
+			}
+			else
+			{
+				_errors.push_back(ErrorBuilder::NotFound(stmt.self.line, stmt.self.val));
+				return false;
+			}
 
+			if(stmt.self == EToken::Id)
+			{
+				auto found = _symTbl.back().find(stmt.self.val);
+				if(found == _symTbl.back().end())
+				{//todo message
+					_errors.push_back(ErrorBuilder::NotInitialized(stmt.self.line, stmt.self.val));
+					return false;
+				}
+			}
+		}
 		return true;
+	}
+
+	if(!_nsTracker.IsTerminal(_nsCtx))
+	{
+		_errors.push_back(ErrorBuilder::NotFound(stmt.self.line, stmt.self.val));
+		_nsCtx.Clear();
+		return false;
 	}
 
 	if(stmt.self.IsIncDecOp())
@@ -164,21 +200,24 @@ bool SemanticAnalyzer::AnalyzeInclude(const TreeNode& stmt)
 		return false;
 	}
 
-	auto& modName = stmt.childs.front()->self;
-	if(modName != EToken::Id && modName != EToken::Str)
-	{//todo clarify and find path
-		_errors.push_back(ErrorBuilder::Default(modName.line, "TODO : " + modName.val));
+	auto& modPath = stmt.childs.front()->self;
+	if(modPath != EToken::Str)
+	{//todo clarify
+		_errors.push_back(ErrorBuilder::Default(modPath.line, "TODO : " + modPath.val));
 		return false;
 	}
 
-	auto found = _symTbl.back().find(modName.val);
+	auto res = NamespaceUtil::ResolveInclude(modPath.val);
+
+	auto found = _symTbl.back().find(res.namespacePath);
 	if(found != _symTbl.back().end())
 	{
-		_errors.push_back(ErrorBuilder::AlreadyExisting(modName.line, modName.val));
+		_errors.push_back(ErrorBuilder::AlreadyExists(modPath.line, modPath.val));
 		return false;
 	}
 
-	_symTbl.back()[modName.val] = Symbol{ .name = modName.val, .kind = ESymbol::Mod };
+	_nsTracker.AddTrackingPath(res.namespacePath);
+	_symTbl.back()[res.namespacePath] = Symbol{ .name = res.namespacePath, .kind = ESymbol::Mod };
 	return true;
 }
 
@@ -258,7 +297,7 @@ bool SemanticAnalyzer::AnalyzeFn(const TreeNode& stmt)
 	if(found != _symTbl.back().end() && !found->second.preRegister && found->second.kind != ESymbol::Cls)
 	{
 		//todo message
-		_errors.push_back(ErrorBuilder::AlreadyExisting(stmt.self.line, stmt.self.val));
+		_errors.push_back(ErrorBuilder::AlreadyExists(stmt.self.line, stmt.self.val));
 		return false;
 	}
 
@@ -271,7 +310,7 @@ bool SemanticAnalyzer::AnalyzeFn(const TreeNode& stmt)
 		if(found != _symTbl.back().end())
 		{
 			//todo message
-			_errors.push_back(ErrorBuilder::AlreadyExisting(stmt.self.line, p->self.val));
+			_errors.push_back(ErrorBuilder::AlreadyExists(stmt.self.line, p->self.val));
 			return false;
 		}
 
@@ -374,7 +413,7 @@ bool SemanticAnalyzer::AnalyzeClass(const TreeNode& stmt)
 				}
 				else if(!found->second.preRegister && found->second.kind != ESymbol::Cls)
 				{
-					_errors.push_back(ErrorBuilder::AlreadyExisting(fn.line, fn.val));
+					_errors.push_back(ErrorBuilder::AlreadyExists(fn.line, fn.val));
 					return false;
 				}
 			}
@@ -393,7 +432,7 @@ bool SemanticAnalyzer::AnalyzeClass(const TreeNode& stmt)
 				}
 				else if(!found->second.preRegister)
 				{
-					_errors.push_back(ErrorBuilder::AlreadyExisting(id.line, id.val));
+					_errors.push_back(ErrorBuilder::AlreadyExists(id.line, id.val));
 					return false;
 				}
 			}
@@ -445,4 +484,6 @@ bool SemanticAnalyzer::CanBeLValue(const TreeNode& stmt)
 	}
 
 	return true;
+}
+
 }

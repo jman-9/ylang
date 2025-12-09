@@ -5,6 +5,8 @@ using namespace std;
 
 //#define DEBUG_OUT
 
+namespace ycom
+{
 
 Scanner::Scanner()
 {
@@ -639,4 +641,6 @@ uint32_t Scanner::AdvanceId(const std::string& code, int start, Error& retError)
 		cout << "id: " << code.substr(start, end - start) << endl;
 	#endif
 	return end - start;
+}
+
 }

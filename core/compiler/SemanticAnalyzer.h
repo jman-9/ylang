@@ -2,9 +2,13 @@
 #include "TreeNode.h"
 #include "Symbol.h"
 #include "Error.h"
+#include "NamespaceUtil.h"
 #include <string>
 #include <map>
 
+
+namespace ycom
+{
 
 class SemanticAnalyzer
 {
@@ -19,6 +23,8 @@ public:
 protected:
 	std::vector<std::map<std::string, Symbol>> _symTbl;
 
+	NamespaceUtil::Context _nsCtx;
+	NamespaceUtil::Tracker _nsTracker;
 
 	bool AnalyzeStmt(const TreeNode& stmt);
 	bool AnalyzeExp(const TreeNode& stmt);
@@ -31,3 +37,5 @@ protected:
 
 	bool CanBeLValue(const TreeNode& stmt);
 };
+
+}

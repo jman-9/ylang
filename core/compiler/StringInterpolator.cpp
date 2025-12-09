@@ -4,6 +4,9 @@
 using namespace std;
 
 
+namespace ycom
+{
+
 bool StringInterpolator::ReplaceAllEscapeChars(string& inoutSrc)
 {
 	string after = "";
@@ -183,4 +186,6 @@ std::vector<Token> StringInterpolator::Interpolate(const Token& tokStr)
 	}
 
 	return result;
+}
+
 }

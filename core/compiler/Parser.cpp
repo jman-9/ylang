@@ -3,6 +3,9 @@
 using namespace std;
 
 
+namespace ycom
+{
+
 #define NewNode TreeNode::New
 
 static map<EToken, int> s_opMap;
@@ -1105,4 +1108,6 @@ const Token& Parser::GetCur() const
 const Token& Parser::GetNext() const
 {
 	return _pos+1 < _tokens.size() ? _tokens[_pos+1] : nullToken;
+}
+
 }

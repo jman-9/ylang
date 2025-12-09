@@ -4,12 +4,16 @@
 #include "Instruction.h"
 #include "Bytecode.h"
 #include "Program.h"
+#include "NamespaceUtil.h"
 #include <string>
 #include <vector>
 #include <map>
 #include <unordered_map>
 #include <stack>
 
+
+namespace ycom
+{
 
 class ConstTable
 {
@@ -116,9 +120,6 @@ protected:
 	ConstTable _constTbl;
 	SymbolTable _symTbl;
 
-	std::unordered_map<std::string, bool> _namespaceMap;
-	std::string _namespacePath;
-
 	const std::unordered_map<std::string, Program>* _prgTbl = nullptr;
 
 	struct LoopControl
@@ -138,14 +139,9 @@ protected:
 
 	std::stack<Class*> _clsStack;
 
-	bool IsTerminalNamespace() const;
-	bool IsEmptyNamespacePath() const;
-	bool IsExistingNamespacePath() const;
-	bool IsExistingNamespacePathIfAppend(const std::string& toAppend) const;
+	NamespaceUtil::Context _nsCtx;
+	NamespaceUtil::Tracker _nsTracker;
 	SymbolTable::Idx GetNamespacePathIdx() const;
-	void ClearNamespacePath();
-	void AppendNamespaceToPath(const std::string& nm);
-	void AddNamespacePathToMap(const std::string& path);
 
 	void BuildBlockOpen(Bytecode& retCtx);
 	void BuildBlockClose(Bytecode& retCtx);
@@ -166,3 +162,5 @@ protected:
 	bool BuildClass(Bytecode& retCtx, const TreeNode& stmt);
 	bool BuildLValueField(Bytecode& retCtx, const TreeNode& stmt);
 };
+
+}
