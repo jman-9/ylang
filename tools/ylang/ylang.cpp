@@ -1,4 +1,5 @@
 #include "ylang.h"
+#include "ylangDefs.h"
 #include "compiler/Scanner.h"
 #include "compiler/StringInterpolator.h"
 #include "compiler/Parser.h"
@@ -8,8 +9,6 @@
 #include "vm/Machine.h"
 #include <iostream>
 #include <format>
-#include <filesystem>
-#include <fstream>
 using namespace std;
 
 
@@ -61,7 +60,7 @@ bool ylang::RunFile(const string& srcPath)
 
 bool ylang::StartRepl()
 {
-	cout << "ylang 0.0.5\n\n";
+	cout << format("ylang {}\n\n", YLANG_VER);
 
 	SemanticAnalyzer sa;
 	BytecodeBuilder bb;

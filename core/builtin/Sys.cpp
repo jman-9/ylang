@@ -1,10 +1,13 @@
 #include "Sys.h"
+#include "ylangDefs.h"
 #include "util/Args.h"
 #include "vm/Variable.h"
+#include <format>
 
 
 namespace ybuiltin::Sys
 {
+using namespace std;
 using namespace yvm;
 using namespace ymod;
 
@@ -28,7 +31,7 @@ Module Init()
 {
 	Module o(&GetModuleDesc());
 	Variable* v = new Variable;
-	v->SetStr("ylang 0.0.5");
+	v->SetStr(format("ylang {}", YLANG_VER));
 	o.memberVars["version"] = YArg{v, YEArg::YVar};
 
 	auto argv = new Variable;
