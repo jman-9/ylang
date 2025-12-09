@@ -5,6 +5,7 @@
 #include "SemanticAnalyzer.h"
 #include "BytecodeBuilder.h"
 #include "NamespaceUtil.h"
+#include "builtin/BuiltinGarage.h"
 #include "util/StrUtil.h"
 #include <vector>
 #include <iostream>
@@ -71,6 +72,8 @@ vector<Error> Compiler::CompileCode(const string& src, Program& retProgram)
 
 			auto& stmt = incStmts[idx++];
 			auto& incName = stmt->childs.front()->self.val;
+			if(ybuiltin::Garage::IsBuiltin(incName)) continue;
+
 			auto resInc = NamespaceUtil::ResolveInclude(incName);
 			//TODO qaz mod check
 			curErrs = ReadSourceFile(resInc.absPath + ".y", curSrc);
