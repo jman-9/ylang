@@ -72,6 +72,7 @@ static bool Init()
 	s_tokenStrMap[EToken::Null] = "null";
 	s_tokenStrMap[EToken::True] = "true";
 	s_tokenStrMap[EToken::False] = "false";
+	s_tokenStrMap[EToken::DotDot] = "..";
 
 	return true;
 }

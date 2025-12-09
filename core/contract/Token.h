@@ -86,6 +86,8 @@ enum class EToken : uint8_t
 	Null,
 	True,
 	False,
+
+	DotDot,
 };
 
 

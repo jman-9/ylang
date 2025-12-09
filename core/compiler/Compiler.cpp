@@ -4,6 +4,8 @@
 #include "Parser.h"
 #include "SemanticAnalyzer.h"
 #include "BytecodeBuilder.h"
+#include "NamespaceUtil.h"
+#include "util/StrUtil.h"
 #include <vector>
 #include <iostream>
 #include <fstream>
@@ -69,8 +71,9 @@ vector<Error> Compiler::CompileCode(const string& src, Program& retProgram)
 
 			auto& stmt = incStmts[idx++];
 			auto& incName = stmt->childs.front()->self.val;
-			auto incPath = ResolveIncludePath(incName);
-			curErrs = ReadSourceFile(incPath, curSrc);
+			auto resInc = NamespaceUtil::ResolveInclude(incName);
+			//TODO qaz mod check
+			curErrs = ReadSourceFile(resInc.absPath + ".y", curSrc);
 			if(!curErrs.empty())
 			{
 				totalErrs.insert(totalErrs.end(), curErrs.begin(), curErrs.end());
@@ -78,7 +81,7 @@ vector<Error> Compiler::CompileCode(const string& src, Program& retProgram)
 			}
 			if(!curSrc.empty())
 			{
-				curMod = incPath;
+				curMod = resInc.absPath;
 				break;
 			}
 		}
@@ -252,31 +255,6 @@ vector<Error> Compiler::ReadSourceFile(const std::string& srcPath, std::string& 
 	}
 	retSrc = string((istreambuf_iterator<char>(ifs)), {});
 	return {};
-}
-
-string Compiler::ResolveIncludePath(const string& incStr)
-{
-	string delim = ".";
-
-	size_t start = 0;
-	size_t end = 0;
-
-	vector<string> split;
-	for( ; (end = incStr.find(delim, start)) != std::string::npos; )
-	{
-		split.push_back(incStr.substr(start, end - start));
-		start = end + delim.length();
-	}
-	split.push_back(incStr.substr(start, end - start));
-
-	string res = split[0];
-	for(size_t i=1; i<split.size(); i++)
-	{
-		res += "/" + split[i];
-	}
-
-	res = filesystem::absolute({res + ".y"}).string();
-	return res;
 }
 
 }

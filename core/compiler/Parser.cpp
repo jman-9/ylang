@@ -720,11 +720,26 @@ TreeNodeSptr Parser::ParseInclude()
 	}
 	else
 	{
+		bool appearedDot = false;
 		for( ; GetCur() != EToken::Semicolon; )
 		{
 			auto& cur = GetCur();
-			if(cur == EToken::Id || cur == EToken::Dot)
+			if(cur == EToken::Id || cur == EToken::Dot || cur == EToken::Slash || cur == EToken::DotDot)
 			{
+				if(appearedDot)
+				{
+					if(cur == EToken::Slash || cur == EToken::DotDot)
+					{
+						_errors.push_back(ErrorBuilder::SyntaxError(cur.line, cur.val));
+						return nullptr;
+					}
+				}
+				else
+				{
+					if(cur == EToken::Dot)
+						appearedDot = true;
+				}
+
 				incName += cur.val;
 				MoveNext();
 			}

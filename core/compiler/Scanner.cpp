@@ -57,6 +57,7 @@ void Scanner::Init()
 	_transTbl.next['.'].next['7'] = { "", EToken::None, };
 	_transTbl.next['.'].next['8'] = { "", EToken::None, };
 	_transTbl.next['.'].next['9'] = { "", EToken::None, };
+	_transTbl.next['.'].next['.'] = { "..", EToken::DotDot, };
 
 	_transTbl.next['+'].next['+'] = { "++", EToken::PlusPlus, };
 	_transTbl.next['-'].next['-'] = { "--", EToken::MinusMinus, };

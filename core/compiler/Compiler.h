@@ -22,8 +22,6 @@ protected:
 	std::vector<Error> ExtractIncludes(const TreeNode& root, std::vector<TreeNodeSptr>& retIncludes);
 
 	std::vector<Error> ReadSourceFile(const std::string& srcPath, std::string& retSrc) const;
-
-	std::string ResolveIncludePath(const std::string& incStr);
 };
 
 }

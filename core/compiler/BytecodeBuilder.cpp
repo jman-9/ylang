@@ -1,5 +1,6 @@
 #include "BytecodeBuilder.h"
 #include "BuiltinFuncTable.h"
+#include "NamespaceUtil.h"
 #include "util/StrUtil.h"
 #include <filesystem>
 using namespace std;
@@ -338,20 +339,19 @@ bool BytecodeBuilder::BuildInclude(Bytecode& retCtx, const TreeNode& stmt)
 	auto& incName = *stmt.childs[0];
 	const auto& incStr = incName.self.val;
 
-	auto incPath = StrUtil::Replace(incStr, ".", "/") + ".y";
-	incPath = filesystem::absolute(incPath).string();
+	auto res = ycom::NamespaceUtil::ResolveInclude(incStr);
 
 	//TODOqaz function... resolve module
-	if(_prgTbl && _prgTbl->contains(incPath))
+	if(_prgTbl && _prgTbl->contains(res.absPath))
 	{
 		//TODOqaz namespace map update except real path
-		AddNamespacePathToMap(incStr);
+		AddNamespacePathToMap(res.namespacePath);
 
 		//TODO
-		_symTbl.AddOrNot({ incName.self.val, ESymbol::Prg });
+		_symTbl.AddOrNot({ res.namespacePath, ESymbol::Prg });
 
 		Token tokInc = stmt.childs[0]->self;
-		tokInc.val = incPath;
+		tokInc.val = res.absPath;
 		int idx = _constTbl.AddOrNot(tokInc);
 		Op::Inc inc { .inc = (uint16_t)idx };
 		retCtx.PushBytecode(inc, stmt.self.line);
