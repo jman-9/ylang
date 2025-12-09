@@ -1,7 +1,6 @@
 #include "BytecodeBuilder.h"
 #include "BuiltinFuncTable.h"
-#include <format>
-#include <iostream>
+#include "util/StrUtil.h"
 #include <filesystem>
 using namespace std;
 
@@ -254,6 +253,52 @@ bool BytecodeBuilder::Build(const TreeNode& code, Program& retProgram, const uno
 	return true;
 }
 
+bool BytecodeBuilder::IsTerminalNamespace() const
+{
+	auto found = _namespaceMap.find(_namespacePath);
+	return found == _namespaceMap.end() ? true : found->second;
+}
+bool BytecodeBuilder::IsEmptyNamespacePath() const
+{
+	return _namespacePath.empty();
+}
+bool BytecodeBuilder::IsExistingNamespacePath() const
+{
+	return _namespaceMap.contains(_namespacePath);
+}
+bool BytecodeBuilder::IsExistingNamespacePathIfAppend(const std::string& toAppend) const
+{
+	if(IsEmptyNamespacePath())
+		return _namespaceMap.contains(toAppend);
+	else
+		return _namespaceMap.contains(_namespacePath + "." + toAppend);
+}
+SymbolTable::Idx BytecodeBuilder::GetNamespacePathIdx() const
+{
+	return _symTbl.GetIdx(_namespacePath);
+}
+void BytecodeBuilder::ClearNamespacePath()
+{
+	_namespacePath.clear();
+}
+void BytecodeBuilder::AppendNamespaceToPath(const std::string& nm)
+{
+	_namespacePath = _namespacePath.empty() ? nm : (_namespacePath + "." + nm);
+}
+void BytecodeBuilder::AddNamespacePathToMap(const std::string& path)
+{
+	auto split = StrUtil::Split(path, ".");
+
+	string nsStr = split[0];
+	_namespaceMap[ nsStr ] = false;
+	for(size_t i=1; i<split.size(); i++)
+	{
+		nsStr += "." + split[i];
+		_namespaceMap[ nsStr ] = false;
+	}
+	_namespaceMap[ nsStr ] = true;
+}
+
 void BytecodeBuilder::BuildBlockOpen(Bytecode& retCtx)
 {
 	retCtx.PushBytecode<EOpcode::PushSp>();
@@ -293,54 +338,27 @@ bool BytecodeBuilder::BuildInclude(Bytecode& retCtx, const TreeNode& stmt)
 	auto& incName = *stmt.childs[0];
 	const auto& incStr = incName.self.val;
 
-	string delim = ".";
+	auto incPath = StrUtil::Replace(incStr, ".", "/") + ".y";
+	incPath = filesystem::absolute(incPath).string();
 
-	size_t start = 0;
-	size_t end = 0;
-
-	vector<string> split;
-	for( ; (end = incStr.find(delim, start)) != std::string::npos; )
+	//TODOqaz function... resolve module
+	if(_prgTbl && _prgTbl->contains(incPath))
 	{
-		split.push_back(incStr.substr(start, end - start));
-		start = end + delim.length();
-	}
-	split.push_back(incStr.substr(start, end - start));
-
-	string res = split[0];
-	for(size_t i=1; i<split.size(); i++)
-	{
-		res += "/" + split[i];
-	}
-	res = filesystem::absolute({res + ".y"}).string();
-
-	//TODO function... resolve module
-	string absPath = res;
-	if(_prgTbl && _prgTbl->contains(absPath))
-	{
-		//TODOqaz namespace map update
-
-		string nsStr = split[0];
-		_namespaceMap[ nsStr ] = -1;
-		for(size_t i=1; i<split.size(); i++)
-		{
-			nsStr += "." + split[i];
-			_namespaceMap[ nsStr ] = -1;
-		}
-		_namespaceMap[ nsStr ] = 0;
-
+		//TODOqaz namespace map update except real path
+		AddNamespacePathToMap(incStr);
 
 		//TODO
 		_symTbl.AddOrNot({ incName.self.val, ESymbol::Prg });
 
-		Token incPath = stmt.childs[0]->self;
-		incPath.val = absPath;
-		int idx = _constTbl.AddOrNot(incPath);
+		Token tokInc = stmt.childs[0]->self;
+		tokInc.val = incPath;
+		int idx = _constTbl.AddOrNot(tokInc);
 		Op::Inc inc { .inc = (uint16_t)idx };
 		retCtx.PushBytecode(inc, stmt.self.line);
 	}
 	else
 	{
-		//TODO
+		//TODO qaz
 		_symTbl.AddOrNot({ incName.self.val, ESymbol::Mod });
 
 		int idx = _constTbl.AddOrNot(incName.self);
@@ -502,15 +520,14 @@ bool BytecodeBuilder::BuildExp(Bytecode& retCtx, const TreeNode& stmt, bool root
 		}
 
 		//qaz
-		if(!_namespace.empty())
+		if(!IsEmptyNamespacePath())
 		{
-			auto found = _namespaceMap.find(_namespace);
-			if(found->second >= 0)
+			if(IsTerminalNamespace())
 			{
-				auto idx = _symTbl.GetIdx(_namespace);
+				auto idx = GetNamespacePathIdx();
 				inst.src1Kind = TO_REF_KIND_U8(idx.kind);
 				inst.src1 = (uint16_t)idx.idx;
-				_namespace = "";
+				ClearNamespacePath();
 			}
 		}
 		else
@@ -535,18 +552,15 @@ bool BytecodeBuilder::BuildExp(Bytecode& retCtx, const TreeNode& stmt, bool root
 				inst.src1 = _constTbl.AddOrNot(lhs->self);
 			}
 		}
-		else if(lhs->childs.empty() && _namespaceMap.contains(lhs->self.val))
+		else if(lhs->childs.empty() && IsExistingNamespacePathIfAppend(lhs->self.val))
 		{// qaz namespace start
-			int test = _namespaceMap[lhs->self.val];
-			if(test >= 0)
+			AppendNamespaceToPath(lhs->self.val);
+			if(IsTerminalNamespace())
 			{
 				auto idx = _symTbl.GetIdx(lhs->self.val);
 				inst.src1Kind = TO_REF_KIND_U8(idx.kind);
 				inst.src1 = (uint16_t)idx.idx;
-			}
-			else
-			{
-				_namespace = lhs->self.val;
+				ClearNamespacePath();
 			}
 		}
 		else
@@ -579,9 +593,9 @@ bool BytecodeBuilder::BuildExp(Bytecode& retCtx, const TreeNode& stmt, bool root
 		}
 		else
 		{
-			if(stmt.self == EToken::Dot && rhs->childs.empty() && _namespaceMap.contains(_namespace +  + "." + rhs->self.val))
+			if(stmt.self == EToken::Dot && rhs->childs.empty() && IsExistingNamespacePathIfAppend(rhs->self.val))
 			{ // qaz namespacing
-				_namespace += "." + rhs->self.val;
+				AppendNamespaceToPath(rhs->self.val);
 			}
 			else if(rhs->self.IsLiteral())
 			{		//TODO make table
@@ -672,16 +686,15 @@ bool BytecodeBuilder::BuildExp(Bytecode& retCtx, const TreeNode& stmt, bool root
 	}
 
 	_reg = regStack;
-	if(!_namespace.empty())
+	if(!IsEmptyNamespacePath())
 	{	//qaz namespace resolve
-		auto found = _namespaceMap.find(_namespace);
-		if(found->second >= 0)
+		if(IsTerminalNamespace())
 		{
-			auto idx = _symTbl.GetIdx(_namespace);
+			auto idx = GetNamespacePathIdx();
 			inst.src1Kind = TO_REF_KIND_U8(idx.kind);
 			inst.src1 = (uint16_t)idx.idx;
 			inst.op = (uint8_t)EToken::None;
-			_namespace = "";
+			ClearNamespacePath();
 		}
 		else
 		{

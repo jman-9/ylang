@@ -116,9 +116,10 @@ protected:
 	ConstTable _constTbl;
 	SymbolTable _symTbl;
 
+	std::unordered_map<std::string, bool> _namespaceMap;
+	std::string _namespacePath;
+
 	const std::unordered_map<std::string, Program>* _prgTbl = nullptr;
-	std::unordered_map<std::string, int> _namespaceMap;
-	std::string _namespace;
 
 	struct LoopControl
 	{
@@ -137,6 +138,14 @@ protected:
 
 	std::stack<Class*> _clsStack;
 
+	bool IsTerminalNamespace() const;
+	bool IsEmptyNamespacePath() const;
+	bool IsExistingNamespacePath() const;
+	bool IsExistingNamespacePathIfAppend(const std::string& toAppend) const;
+	SymbolTable::Idx GetNamespacePathIdx() const;
+	void ClearNamespacePath();
+	void AppendNamespaceToPath(const std::string& nm);
+	void AddNamespacePathToMap(const std::string& path);
 
 	void BuildBlockOpen(Bytecode& retCtx);
 	void BuildBlockClose(Bytecode& retCtx);
