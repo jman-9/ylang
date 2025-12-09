@@ -20,8 +20,8 @@ Machine::Machine()
 	_spStack.push(0);
 	_rpStack.push(0);
 	_cspStack.push(0);
-	_regs.resize(1000);
-	_stack.resize(5000);
+	_regs.resize(33);
+	_stack.resize(33);
 
 	//TODO remove hardcoding
 	_literals.resize(3);
@@ -72,6 +72,8 @@ Variable* Machine::ResolveVar(ERefKind k, int idx)
 	case ERefKind::Reg:
 		{
 			_roff = idx;
+			if(_rpStack.top() + idx >= _regs.size())
+				_regs.resize(_rpStack.top() + idx + 33);
 			return &_regs[_rpStack.top() + idx];
 		}
 	case ERefKind::GlobalVar: return &_stack[idx];
@@ -82,15 +84,17 @@ Variable* Machine::ResolveVar(ERefKind k, int idx)
 
 			if(_prgStack.empty())
 			{
-				return &_stack[idx + _cspStack.top()];
+				if(_cspStack.top() + idx >= _regs.size())
+					_stack.resize(_cspStack.top() + idx + 33);
+				return &_stack[_cspStack.top() + idx];
 			}
 			else
 			{
-				if(_sp >= _prgStack.top()->prgObj()._local.size())
+				if(_cspStack.top() + idx >= _prgStack.top()->prgObj()._local.size())
 				{
-					_prgStack.top()->prgObj()._local.resize(_sp);
+					_prgStack.top()->prgObj()._local.resize(_cspStack.top() + idx + 33);
 				}
-				return &_prgStack.top()->prgObj()._local[idx + _cspStack.top()];
+				return &_prgStack.top()->prgObj()._local[_cspStack.top() + idx];
 			}
 		}
 
