@@ -1,8 +1,6 @@
 #include "BytecodeBuilder.h"
 #include "BuiltinFuncTable.h"
 #include "NamespaceUtil.h"
-#include "util/StrUtil.h"
-#include <filesystem>
 using namespace std;
 
 
@@ -12,13 +10,13 @@ namespace ycom
 static const BuiltinFuncTable _builtinFuncTbl;
 
 
-inline ERefKind ToRefKind(SymbolTable::Idx::Kind idxKind)
+inline ERefKind ToRefKind(ScopeManager::Idx::Kind idxKind)
 {
 	switch(idxKind)
 	{
-	case SymbolTable::Idx::LOCAL: return ERefKind::LocalVar;
-	case SymbolTable::Idx::GLOBAL: return ERefKind::GlobalVar;
-	case SymbolTable::Idx::FIELD: return ERefKind::FieldVar;
+	case ScopeManager::Idx::LOCAL: return ERefKind::LocalVar;
+	case ScopeManager::Idx::GLOBAL: return ERefKind::GlobalVar;
+	case ScopeManager::Idx::FIELD: return ERefKind::FieldVar;
 	}
 	return ERefKind::None;
 }
@@ -43,151 +41,6 @@ int ConstTable::GetIdx(const Token& tok) const
 }
 
 
-SymbolTable::SymbolTable()
-{
-	_scopeTbl.push_back(SCOPE_FUNC);
-	_symTbl.resize(1);
-}
-
-SymbolTable::~SymbolTable()
-{}
-
-SymbolTable::SymbolData SymbolTable::GetSymbolData(const string& name) const
-{
-	int firstFunc = -1;
-	for(int i=(int)_symTbl.size()-1; i>=0; i--)
-	{
-		auto found = _symTbl[i].find( { .name = name } );
-		if(found != _symTbl[i].end())
-		{
-			if(found->first.kind == ESymbol::Field)
-			{
-				return SymbolData{ .idx = { .kind = Idx::FIELD, .idx = found->second }, .sym = found->first };
-			}
-			else
-			{
-				if(firstFunc >= 0)
-				{
-					return SymbolData{ .idx = { .kind = Idx::GLOBAL, .idx = found->second }, .sym = found->first };
-				}
-				else
-					return SymbolData{ .idx = { .kind = Idx::LOCAL, .idx = found->second - GetBehindFuncScopeCnt(i) }, .sym = found->first };
-			}
-		}
-
-		if(_scopeTbl[i] == SCOPE_FUNC)
-		{
-			if(firstFunc < 0)
-				firstFunc = i;
-			else
-			{//TODO
-				//throw 'n';
-			}
-		}
-	}
-
-	return SymbolData();
-}
-
-int SymbolTable::GetNewSlotIdx() const
-{
-	size_t sz = 0;
-	for(auto& scope : _symTbl)
-	{
-		sz += scope.size();
-	}
-	return (int)sz;
-}
-
-int SymbolTable::GetGlobalSymbolCnt() const
-{
-	if(_symTbl.size() <= 1)
-		return 0;
-
-	size_t sz = 0;
-	for(int i=0; i<_symTbl.size()-1; i++)
-	{
-		sz += _symTbl[i].size();
-	}
-	return (int)sz;
-}
-
-int SymbolTable::GetLocalSymbolCnt() const
-{
-	return (int)_symTbl.back().size();
-}
-
-int SymbolTable::GetSymbolCnt() const
-{
-	return GetGlobalSymbolCnt() + GetLocalSymbolCnt();
-}
-
-int SymbolTable::GetBehindFuncScopeCnt(int idx) const
-{
-	if(idx <= 0) return 0;
-	if(idx >= _symTbl.size()) return -1;
-
-	if(_symTbl.size() <= 1)
-		return 0;
-
-	size_t sz = 0;
-	for(int i=idx; i>=0; i--)
-	{
-		if(_scopeTbl[i] == SCOPE_FUNC)
-		{
-			for(int j=i-1; j>=0; j--)
-			{
-				sz += _symTbl[j].size();
-			}
-			break;
-		}
-	}
-	return (int)sz;
-}
-
-
-void SymbolTable::AddBlockScope()
-{
-	_symTbl.resize(_symTbl.size() + 1);
-	_scopeTbl.push_back(SCOPE_BLOCK);
-}
-
-void SymbolTable::AddFuncScope()
-{
-	_symTbl.resize(_symTbl.size() + 1);
-	_scopeTbl.push_back(SCOPE_FUNC);
-}
-
-void SymbolTable::PopScope()
-{
-	_symTbl.pop_back();
-	_scopeTbl.pop_back();
-}
-
-SymbolTable::Idx SymbolTable::AddOrNot(const Symbol& sym, int wantIdx /* = -1 */)
-{
-	auto idx = GetIdx(sym.name);
-	if(idx.kind != Idx::NONE)
-	{
-		return idx;
-	}
-
-	int newIdx = wantIdx < 0 ? GetNewSlotIdx() : wantIdx;
-	_symTbl.back()[sym] = newIdx;
-
-	return Idx{ .kind = Idx::LOCAL, .idx = newIdx - GetBehindFuncScopeCnt((int)_symTbl.size()-1) };
-}
-
-SymbolTable::Idx SymbolTable::GetIdx(const string& name) const
-{
-	return GetSymbolData(name).idx;
-}
-
-Symbol SymbolTable::GetSymbol(const string& name) const
-{
-	return GetSymbolData(name).sym;
-}
-
 BytecodeBuilder::BytecodeBuilder()
 	: _reg(0)
 {
@@ -206,7 +59,7 @@ bool BytecodeBuilder::Build(const TreeNode& code, Program& retProgram, const uno
 			return false;
 	}
 
-	auto main = _symTbl.GetSymbol("main");
+	auto main = _scopeMgr.GetSymbol("main");
 	if(main.kind == ESymbol::Fn)
 	{
 		Op::Call cal{ (uint16_t)main.params.size(), 0, (uint32_t)main.pos,  };
@@ -236,11 +89,11 @@ bool BytecodeBuilder::Build(const TreeNode& code, Program& retProgram, const uno
 		_prg._consts[idx] = c;
 	}
 
-	for(auto& [k, v] : _symTbl._symTbl.front())
+	for(auto& [k, v] : _scopeMgr._scopeTbl.front().symTbl)
 	{//global
 		switch(k.kind)
 		{
-		case ESymbol::Var: _prg._globalTable[k.name] = GlobalSymbol{ .kind = EGlobalSymbol::Var, .name = k.name, .idx = (uint32_t)v }; break;
+		case ESymbol::Var: _prg._globalTable[k.name] = GlobalSymbol{ .kind = EGlobalSymbol::Var, .name = k.name, .idx = (uint32_t)v.idx }; break;
 		case ESymbol::Fn: _prg._globalTable[k.name] = GlobalSymbol{ .kind = EGlobalSymbol::Fn, .name = k.name, .pos = (uint32_t)k.pos, .prms = (uint32_t)k.params.size() }; break;
 		}
 	}
@@ -254,9 +107,9 @@ bool BytecodeBuilder::Build(const TreeNode& code, Program& retProgram, const uno
 }
 
 
-SymbolTable::Idx BytecodeBuilder::GetNamespacePathIdx() const
+ScopeManager::Idx BytecodeBuilder::GetNamespacePathIdx() const
 {
-	return _symTbl.GetIdx(_nsCtx.Get());
+	return _scopeMgr.GetIdx(_nsCtx.Get());
 }
 
 
@@ -265,12 +118,12 @@ void BytecodeBuilder::BuildBlockOpen(Bytecode& retCtx)
 	retCtx.PushBytecode<EOpcode::PushSp>();
 	if(!_loopStack.empty()) _loopStack.top().pushSpCnt++;
 	if(!_fnStack.empty()) _fnStack.top().pushSpCnt++;
-	_symTbl.AddBlockScope();
+	_scopeMgr.AddLocalScope();
 }
 
 void BytecodeBuilder::BuildBlockClose(Bytecode& retCtx)
 {
-	_symTbl.PopScope();
+	_scopeMgr.PopScope();
 	if(!_loopStack.empty()) _loopStack.top().pushSpCnt--;
 	if(!_fnStack.empty()) _fnStack.top().pushSpCnt--;
 	retCtx.PushBytecode<EOpcode::PopSp>();
@@ -308,7 +161,7 @@ bool BytecodeBuilder::BuildInclude(Bytecode& retCtx, const TreeNode& stmt)
 		_nsTracker.AddTrackingPath(res.namespacePath);
 
 		//TODO
-		_symTbl.AddOrNot({ res.namespacePath, ESymbol::Prg });
+		_scopeMgr.AddOrNot({ res.namespacePath, ESymbol::Prg });
 
 		Token tokInc = stmt.childs[0]->self;
 		tokInc.val = res.absPath;
@@ -319,7 +172,7 @@ bool BytecodeBuilder::BuildInclude(Bytecode& retCtx, const TreeNode& stmt)
 	else
 	{
 		//TODO qaz
-		_symTbl.AddOrNot({ incName.self.val, ESymbol::Mod });
+		_scopeMgr.AddOrNot({ incName.self.val, ESymbol::Mod });
 
 		int idx = _constTbl.AddOrNot(incName.self);
 		Op::Inc inc { .inc = (uint16_t)idx };
@@ -356,7 +209,7 @@ bool BytecodeBuilder::BuildExp(Bytecode& retCtx, const TreeNode& stmt, bool root
 		}
 		else // qaz namespace
 		{
-			auto idx = _symTbl.AddOrNot({ .name = stmt.self.val, .kind = ESymbol::Var });
+			auto idx = _scopeMgr.AddOrNot({ .name = stmt.self.val, .kind = ESymbol::Var });
 
 			inst.src1Kind = TO_REF_KIND_U8(idx.kind);
 			inst.src1 = (uint16_t)idx.idx;
@@ -435,7 +288,7 @@ bool BytecodeBuilder::BuildExp(Bytecode& retCtx, const TreeNode& stmt, bool root
 			}
 			else
 			{
-				Op::Call cal{ (uint16_t)(stmt.childs.size()-1), 0, (uint32_t)_symTbl.GetSymbol(stmt.childs[0]->self.val).pos  };
+				Op::Call cal{ (uint16_t)(stmt.childs.size()-1), 0, (uint32_t)_scopeMgr.GetSymbol(stmt.childs[0]->self.val).pos  };
 				retCtx.PushBytecode(cal, stmt.self.line);
 			}
 		}
@@ -517,7 +370,7 @@ bool BytecodeBuilder::BuildExp(Bytecode& retCtx, const TreeNode& stmt, bool root
 			_nsCtx.Append(lhs->self.val);
 			if(_nsTracker.IsTerminal(_nsCtx))
 			{
-				auto idx = _symTbl.GetIdx(lhs->self.val);
+				auto idx = _scopeMgr.GetIdx(lhs->self.val);
 				inst.src1Kind = TO_REF_KIND_U8(idx.kind);
 				inst.src1 = (uint16_t)idx.idx;
 				_nsCtx.Clear();
@@ -525,7 +378,7 @@ bool BytecodeBuilder::BuildExp(Bytecode& retCtx, const TreeNode& stmt, bool root
 		}
 		else
 		{
-			auto idx = _symTbl.AddOrNot({ .name = lhs->self.val, .kind = ESymbol::Var });
+			auto idx = _scopeMgr.AddOrNot({ .name = lhs->self.val, .kind = ESymbol::Var });
 
 			inst.src1Kind = TO_REF_KIND_U8(idx.kind);
 			inst.src1 = (uint16_t)idx.idx;
@@ -571,8 +424,8 @@ bool BytecodeBuilder::BuildExp(Bytecode& retCtx, const TreeNode& stmt, bool root
 			}
 			else
 			{
-				auto idx = _symTbl.GetIdx(rhs->self.val);
-				if(idx.kind == SymbolTable::Idx::NONE)
+				auto idx = _scopeMgr.GetIdx(rhs->self.val);
+				if(idx.kind == ScopeManager::Idx::NONE)
 				{
 					throw 'n';
 				}
@@ -595,7 +448,7 @@ bool BytecodeBuilder::BuildExp(Bytecode& retCtx, const TreeNode& stmt, bool root
 			{
 			case EToken::Id:
 				{
-					auto idx = _symTbl.GetIdx(LValue.val);
+					auto idx = _scopeMgr.GetIdx(LValue.val);
 					srcKind = TO_REF_KIND_U8(idx.kind);
 					srcIdx = (uint16_t)idx.idx;
 					break;
@@ -873,9 +726,8 @@ bool BytecodeBuilder::BuildClass(Bytecode& retCtx, const TreeNode& stmt)
 
 	_clsStack.push(&cls);
 
-	_symTbl.AddBlockScope();
+	_scopeMgr.AddClassScope();
 
-	int fieldidx = 0;
 	for(auto& substmt : stmt.childs)
 	{
 		if(substmt->self == EToken::Assign)
@@ -883,7 +735,7 @@ bool BytecodeBuilder::BuildClass(Bytecode& retCtx, const TreeNode& stmt)
 			Symbol sym;
 			sym.name = substmt->childs.front()->self.val;
 			sym.kind = ESymbol::Field;
-			_symTbl.AddOrNot(sym, fieldidx++);
+			_scopeMgr.AddOrNot(sym);
 
 			cls._fieldMap[ sym.name ] = cls._fields.size();
 			cls._fields.push_back(sym);
@@ -923,7 +775,7 @@ bool BytecodeBuilder::BuildClass(Bytecode& retCtx, const TreeNode& stmt)
 		}
 	}
 
-	_symTbl.PopScope();
+	_scopeMgr.PopScope();
 
 	_clsStack.pop();
 	return true;
@@ -1068,9 +920,9 @@ bool BytecodeBuilder::BuildFn(Bytecode& retCtx, const TreeNode& stmt)
 	sym.name = name;
 	sym.pos = retCtx.endOfCode();
 	sym.kind = ESymbol::Fn;
-	_symTbl.AddOrNot(sym);
+	_scopeMgr.AddOrNot(sym);
 
-	_symTbl.AddFuncScope();
+	_scopeMgr.AddLocalScope();
 
 	for(auto& p : params)
 	{
@@ -1078,14 +930,14 @@ bool BytecodeBuilder::BuildFn(Bytecode& retCtx, const TreeNode& stmt)
 		prm.name = p->self.val;
 		sym.params.push_back(prm);
 
-		auto idx = _symTbl.AddOrNot( { .name = prm.name, .kind = ESymbol::Var } );
+		auto idx = _scopeMgr.AddOrNot( { .name = prm.name, .kind = ESymbol::Var } );
 	}
 
 	_reg += params.size() - 1;
 	for(int i=params.size() - 1; i>=0; i--)
 	{
 		auto& p = params[i];
-		auto idx = _symTbl.GetIdx(p->self.val);
+		auto idx = _scopeMgr.GetIdx(p->self.val);
 
 		Op::Assign as;
 		as.dstKind = (uint8_t)ERefKind::LocalVar;
@@ -1133,5 +985,6 @@ bool BytecodeBuilder::BuildCompound(Bytecode& retCtx, const TreeNode& stmt)
 	BuildBlockClose(retCtx);
 	return true;
 }
+
 
 }

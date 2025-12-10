@@ -3,6 +3,7 @@
 #include "Symbol.h"
 #include "Error.h"
 #include "NamespaceUtil.h"
+#include "ScopeManager.h"
 #include <string>
 #include <map>
 
@@ -22,6 +23,7 @@ public:
 
 protected:
 	std::vector<std::map<std::string, Symbol>> _symTbl;
+	ScopeManager _scopeMgr;
 
 	NamespaceUtil::Context _nsCtx;
 	NamespaceUtil::Tracker _nsTracker;

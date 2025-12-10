@@ -26,7 +26,7 @@ struct ModuleObject
 struct ProgramObject
 {
 	int _lsp;
-	std::vector<Variable> _local;
+	std::vector<Variable> _globals;
 	std::vector<Variable> _consts;
 	const Program* _prg;
 };

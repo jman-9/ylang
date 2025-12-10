@@ -288,6 +288,13 @@ bool SemanticAnalyzer::AnalyzeFn(const TreeNode& stmt)
 		//todo trace
 		throw 'n';
 
+	if(_scopeMgr.GetCurScope() == ScopeManager::SCOPE_LOCAL)
+	{//TODO
+		_errors.push_back(ErrorBuilder::Default(stmt.self.line, "nested function: currently not supported"));
+		return false;
+	}
+	_scopeMgr.AddLocalScope();
+
 	auto& name = stmt.self.val;
 	auto& params = stmt.childs[0]->childs;
 	auto& block = *stmt.childs[1];
@@ -336,6 +343,8 @@ bool SemanticAnalyzer::AnalyzeFn(const TreeNode& stmt)
 		return false;
 	}
 
+	_scopeMgr.PopScope();
+
 	return true;
 }
 
@@ -344,6 +353,7 @@ bool SemanticAnalyzer::AnalyzeCompound(const TreeNode& stmt, const std::vector<P
 	if(stmt.self != EToken::LBrace)
 		throw 'n';
 
+	_scopeMgr.AddLocalScope();
 	_symTbl.resize(_symTbl.size() + 1);
 	_symTbl.back() = _symTbl[_symTbl.size() - 2];
 
@@ -362,6 +372,7 @@ bool SemanticAnalyzer::AnalyzeCompound(const TreeNode& stmt, const std::vector<P
 	}
 
 	_symTbl.pop_back();
+	_scopeMgr.PopScope();
 
 	return true;
 }
@@ -370,6 +381,13 @@ bool SemanticAnalyzer::AnalyzeClass(const TreeNode& stmt)
 {
 	if(stmt.self != EToken::Class)
 		throw 'n';
+
+	if(_scopeMgr.GetCurScope() == ScopeManager::SCOPE_LOCAL)
+	{//TODO
+		_errors.push_back(ErrorBuilder::Default(stmt.self.line, "nested class: currently not supported"));
+		return false;
+	}
+	_scopeMgr.AddClassScope();
 
 	auto& name = stmt.self.val;
 
@@ -453,6 +471,7 @@ bool SemanticAnalyzer::AnalyzeClass(const TreeNode& stmt)
 	}
 
 	_symTbl.pop_back();
+	_scopeMgr.PopScope();
 	return true;
 }
 

@@ -21,6 +21,7 @@ Machine::Machine()
 	_spStack.push(0);
 	_rpStack.push(0);
 	_cspStack.push(0);
+	_globals.resize(33);
 	_regs.resize(33);
 	_stack.resize(33);
 
@@ -80,34 +81,18 @@ Variable* Machine::ResolveVar(ERefKind k, int idx)
 		}
 	case ERefKind::GlobalVar:
 		{
-			if(!_prgStack.empty())
-			{
-				return &_prgStack.top()->prgObj()._local[idx];
-			}
-			else
-			{
-				return &_stack[idx];
-			}
+			vector<Variable>* glb = _prgStack.empty() ? &_globals : &_prgStack.top()->prgObj()._globals;
+			if(idx >= glb->size()) glb->resize(idx + 33);
+			return &glb->at(idx);
 		}
 	case ERefKind::LocalVar:
 		{
 			if(_sp < _cspStack.top() + idx + 1)
 				_sp = _cspStack.top() + idx + 1;
 
-			if(!_prgStack.empty())
-			{
-				if(_cspStack.top() + idx >= _prgStack.top()->prgObj()._local.size())
-				{
-					_prgStack.top()->prgObj()._local.resize(_cspStack.top() + idx + 33);
-				}
-				return &_prgStack.top()->prgObj()._local[_cspStack.top() + idx];
-			}
-			else
-			{
-				if(_cspStack.top() + idx >= _regs.size())
-					_stack.resize(_cspStack.top() + idx + 33);
-				return &_stack[_cspStack.top() + idx];
-			}
+			if(_cspStack.top() + idx >= _regs.size())
+				_stack.resize(_cspStack.top() + idx + 33);
+			return &_stack[_cspStack.top() + idx];
 		}
 
 	case ERefKind::FieldVar:
@@ -238,7 +223,7 @@ bool Machine::Assign(const Op::Assign& as)
 					{
 						if(found->second.kind == EGlobalSymbol::Var)
 						{
-							dst->SetVar(dst->attr().owner.prgObj()._local[found->second.idx]);
+							dst->SetVar(dst->attr().owner.prgObj()._globals[found->second.idx]);
 						}
 					}
 				}

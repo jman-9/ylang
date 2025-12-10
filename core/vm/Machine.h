@@ -27,6 +27,7 @@ protected:
 
 	std::vector<Variable> _literals;
 	std::vector<Variable> _consts;
+	std::vector<Variable> _globals;
 	std::vector<Variable> _regs;
 	std::vector<Variable> _stack;
 	std::stack<uint16_t> _spStack;

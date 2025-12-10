@@ -1,13 +1,11 @@
 #pragma once
 #include "TreeNode.h"
-#include "Symbol.h"
-#include "Instruction.h"
+#include "ScopeManager.h"
 #include "Bytecode.h"
 #include "Program.h"
 #include "NamespaceUtil.h"
 #include <string>
 #include <vector>
-#include <map>
 #include <unordered_map>
 #include <stack>
 
@@ -37,74 +35,6 @@ class ConstTable
 	std::unordered_map<Token, uint16_t, TokenHash, TokenEqual> _constMap;
 };
 
-class SymbolTable
-{
-	friend class BytecodeBuilder;
-public:
-	enum ScopeType
-	{
-		SCOPE_BLOCK,
-		SCOPE_FUNC,
-	};
-
-	struct Idx
-	{
-		enum Kind
-		{
-			NONE,
-
-			GLOBAL,
-			LOCAL,
-			FIELD,
-		};
-		Kind kind = NONE;
-		int idx = 0;
-	};
-
-	struct SymbolData
-	{
-		Idx idx;
-		Symbol sym;
-	};
-
-public:
-	SymbolTable();
-	~SymbolTable();
-
-	void AddBlockScope();
-	void AddFuncScope();
-	void PopScope();
-
-	Idx AddOrNot(const Symbol& sym, int wantIdx = -1);
-	Idx GetIdx(const std::string& name) const;
-	Symbol GetSymbol(const std::string& name) const;
-
-protected:
-	struct SymbolHash {
-		std::size_t operator()(const Symbol& t) const noexcept {
-			return std::hash<std::string>()(t.name);
-		}
-	};
-
-	struct SymbolEqual {
-		bool operator()(const Symbol& a, const Symbol& b) const noexcept {
-			return a.name == b.name;
-		}
-	};
-
-	std::vector<std::unordered_map<Symbol, int, SymbolHash, SymbolEqual>> _symTbl;
-	std::vector<ScopeType> _scopeTbl;
-
-	SymbolData GetSymbolData(const std::string& name) const;
-
-	int GetNewSlotIdx() const;
-	int GetGlobalSymbolCnt() const;
-	int GetLocalSymbolCnt() const;
-	int GetSymbolCnt() const;
-	int GetBehindFuncScopeCnt(int idx) const;
-};
-
-
 
 class BytecodeBuilder
 {
@@ -118,7 +48,7 @@ protected:
 	uint32_t _reg;
 	Program _prg;
 	ConstTable _constTbl;
-	SymbolTable _symTbl;
+	ScopeManager _scopeMgr;
 
 	const std::unordered_map<std::string, Program>* _prgTbl = nullptr;
 
@@ -141,7 +71,7 @@ protected:
 
 	NamespaceUtil::Context _nsCtx;
 	NamespaceUtil::Tracker _nsTracker;
-	SymbolTable::Idx GetNamespacePathIdx() const;
+	ScopeManager::Idx GetNamespacePathIdx() const;
 
 	void BuildBlockOpen(Bytecode& retCtx);
 	void BuildBlockClose(Bytecode& retCtx);

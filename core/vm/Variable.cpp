@@ -184,7 +184,7 @@ void Variable::SetProgram(const Program& prg, bool makeInstance)
 
 		_u._o->_prgo._prg = &prg;
 		_u._o->_prgo._lsp = 0;
-		_u._o->_prgo._local.resize(33);
+		_u._o->_prgo._globals.resize(3);
 		_u._o->_type = PROGRAMOBJ;
 		_type = PROGRAMOBJ;
 	}
