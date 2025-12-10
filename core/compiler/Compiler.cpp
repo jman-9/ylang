@@ -158,12 +158,13 @@ ErrorTable Compiler::CompileCode(const string& src, Program& retProgram)
 
 ErrorTable Compiler::CompileFile(const string& srcPath, Program& retProgram)
 {
-	string base = filesystem::path{srcPath}.parent_path().string();
+	auto fsPath = filesystem::path{srcPath};
+	string base = fsPath.parent_path().string();
 	if(!base.empty())
 		filesystem::current_path(base);
 
 	string src;
-	auto errs = ReadSourceFile(srcPath, src);
+	auto errs = ReadSourceFile(fsPath.filename().string(), src);
 	if(!errs.empty())
 	{
 		ErrorTable errTbl;
@@ -173,7 +174,7 @@ ErrorTable Compiler::CompileFile(const string& srcPath, Program& retProgram)
 	auto errTbl = CompileCode(src, retProgram);
 	if(!errTbl.empty()) return errTbl;
 
-	retProgram._name = filesystem::path(srcPath).stem().string();
+	retProgram._name = fsPath.stem().string();
 	return {};
 }
 

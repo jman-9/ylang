@@ -15,8 +15,12 @@ struct Variable;
 struct ClassObject
 {
 	std::vector<Variable> _fields;
-	std::vector<Variable> _prgObj;
+	Variable* _prgObj;
 	const Class* _cls;
+
+private:
+	friend class Variable;
+	std::vector<Variable> _prgObjP;
 };
 struct ModuleObject
 {
@@ -25,7 +29,6 @@ struct ModuleObject
 };
 struct ProgramObject
 {
-	int _lsp;
 	std::vector<Variable> _globals;
 	std::vector<Variable> _consts;
 	const Program* _prg;
@@ -93,7 +96,7 @@ struct Variable
 	void SetAttr(Attribute& attr);
 	void SetList(const std::vector<Variable>& list = std::vector<Variable>());
 	void SetDict(const std::unordered_map<std::string, Variable>& dict = std::unordered_map<std::string, Variable>());
-	void SetClass(const Class& cls, Variable* prgObj, bool makeInstance);
+	void SetClass(const Class& cls, bool makeInstance, Variable* prgObj = nullptr);
 	void SetModule(const ymod::ModuleDesc& mod, bool makeInstance);
 	void SetProgram(const Program& prg, bool makeInstance);
 	void SetVar(Variable& var);

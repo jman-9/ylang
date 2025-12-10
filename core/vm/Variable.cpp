@@ -131,14 +131,20 @@ void Variable::SetDict(const std::unordered_map<std::string, Variable>& dict /*=
 	_u._o->_type = DICT;
 	_type = DICT;
 }
-void Variable::SetClass(const Class& cls, Variable* prg, bool makeInstance)
+void Variable::SetClass(const Class& cls, bool makeInstance, Variable* prgObj /* = nullptr */)
 {
 	if(makeInstance)
 	{
+		if(prgObj == nullptr)
+		{//TODO
+			throw 'n';
+		}
+
 		ResetNewObj();
 
 		_u._o->_clso._cls = &cls;
-		if(prg) _u._o->_clso._prgObj.push_back(*prg);
+		_u._o->_clso._prgObjP.push_back(*prgObj);
+		_u._o->_clso._prgObj = &(_u._o->_clso._prgObjP[0]);
 		_u._o->_type = CLASSOBJ;
 		_type = CLASSOBJ;
 
@@ -183,7 +189,6 @@ void Variable::SetProgram(const Program& prg, bool makeInstance)
 		ResetNewObj();
 
 		_u._o->_prgo._prg = &prg;
-		_u._o->_prgo._lsp = 0;
 		_u._o->_prgo._globals.resize(3);
 		_u._o->_type = PROGRAMOBJ;
 		_type = PROGRAMOBJ;
@@ -213,7 +218,7 @@ void Variable::SetVar(Variable& var)
 	case REF: SetVarRef(var); break;
 	case LVREF: SetVarLVRef(var); break;
 	case ATTR: SetAttr(var._u._attr->owner, var._u._attr->name); break;
-	case CLASS: SetClass(*var._u._cls, nullptr, false); break;
+	case CLASS: SetClass(*var._u._cls, false); break;
 	case PROGRAM: SetProgram(*var._u._prg, false); break;
 
 	case OBJ:

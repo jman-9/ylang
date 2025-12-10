@@ -19,7 +19,6 @@ void ScopeManager::AddGlobalScope()
 	scope.startLocalIdx = 0;
 	scope.type = SCOPE_GLOBAL;
 	_scopeTbl.push_back(scope);
-
 }
 void ScopeManager::AddLocalScope()
 {
@@ -28,12 +27,12 @@ void ScopeManager::AddLocalScope()
 	{
 		start = _scopeTbl.back().startLocalIdx + _localIdxOffset;
 	}
-	_localIdxOffset = 0;
 
 	Scope scope;
 	scope.startLocalIdx = start;
 	scope.type = SCOPE_LOCAL;
 	_scopeTbl.push_back(scope);
+	_localIdxOffset = 0;
 }
 void ScopeManager::AddClassScope()
 {
@@ -41,11 +40,12 @@ void ScopeManager::AddClassScope()
 	scope.startLocalIdx = 0;
 	scope.type = SCOPE_CLASS;
 	_scopeTbl.push_back(scope);
+	_localIdxOffset = 0;
 }
 void ScopeManager::PopScope()
 {
-	_localIdxOffset = _scopeTbl.back().symTbl.size();
 	_scopeTbl.pop_back();
+	_localIdxOffset = _scopeTbl.back().symTbl.size();
 }
 
 ScopeManager::ScopeType ScopeManager::GetCurScope() const
@@ -70,13 +70,17 @@ ScopeManager::Idx ScopeManager::AddOrNot(const Symbol& sym)
 
 	case SCOPE_CLASS:
 		if(sym.kind == ESymbol::Fn)
+		{
+			idx.kind = Idx::LOCAL;
 			idx.idx = 0;
+		}
 		else if(sym.kind == ESymbol::Field)
-			_scopeTbl.back().startLocalIdx + _localIdxOffset++;
+		{
+			idx.idx = _scopeTbl.back().startLocalIdx + _localIdxOffset++;
+			idx.kind = Idx::FIELD;
+		}
 		else
 			throw 'n'; //TODO
-
-		idx.kind = Idx::FIELD;
 		break;
 
 	case SCOPE_LOCAL:

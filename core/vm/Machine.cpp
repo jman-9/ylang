@@ -18,10 +18,7 @@ Machine::Machine()
 	_sp = 0;
 	_pc = 0;
 	_retCode = INT_MAX;
-	_spStack.push(0);
 	_rpStack.push(0);
-	_cspStack.push(0);
-	_globals.resize(33);
 	_regs.resize(33);
 	_stack.resize(33);
 
@@ -45,31 +42,25 @@ Variable* Machine::ResolveVar(ERefKind k, int idx)
 
 	case ERefKind::Const:
 		{
-			if(!_prgStack.empty())
+			auto& prgObj = _prgStack.top()->prgObj();
+			auto& consts = prgObj._consts;
+			if(idx >= consts.size())
 			{
-				if(idx >= _prgStack.top()->prgObj()._consts.size())
-				{
-					_prgStack.top()->prgObj()._consts.resize(idx+1);
-				}
-				if(_prgStack.top()->prgObj()._consts[idx] == Variable::NONE)
-				{
-					auto c = _prgStack.top()->prgObj()._prg->_consts[idx];
-					switch(c._type)
-					{
-					case Constant::INT:		_prgStack.top()->prgObj()._consts[idx].SetInt(c._int); break;
-					case Constant::FLOAT:	_prgStack.top()->prgObj()._consts[idx].SetFloat(c._float); break;
-					case Constant::STR:		_prgStack.top()->prgObj()._consts[idx].SetStr(c._str); break;
-					default: //TODO
-						throw 'n';
-					}
-				}
-				return &_prgStack.top()->prgObj()._consts[idx];
+				consts.resize(idx+1);
 			}
-			else
+			if(consts[idx] == Variable::NONE)
 			{
-				return &_consts[idx];
+				auto c = prgObj._prg->_consts[idx];
+				switch(c._type)
+				{
+				case Constant::INT:		consts[idx].SetInt(c._int); break;
+				case Constant::FLOAT:	consts[idx].SetFloat(c._float); break;
+				case Constant::STR:		consts[idx].SetStr(c._str); break;
+				default: //TODO
+					throw 'n';
+				}
 			}
-
+			return &consts[idx];
 		}
 
 	case ERefKind::Reg:
@@ -81,18 +72,18 @@ Variable* Machine::ResolveVar(ERefKind k, int idx)
 		}
 	case ERefKind::GlobalVar:
 		{
-			vector<Variable>* glb = _prgStack.empty() ? &_globals : &_prgStack.top()->prgObj()._globals;
-			if(idx >= glb->size()) glb->resize(idx + 33);
-			return &glb->at(idx);
+			auto& glb = _prgStack.top()->prgObj()._globals;
+			if(idx >= glb.size()) glb.resize(idx + 33);
+			return &glb[idx];
 		}
 	case ERefKind::LocalVar:
 		{
-			if(_sp < _cspStack.top() + idx + 1)
-				_sp = _cspStack.top() + idx + 1;
+			if(_sp < _spStack.top() + idx + 1)
+				_sp = _spStack.top() + idx + 1;
 
-			if(_cspStack.top() + idx >= _regs.size())
-				_stack.resize(_cspStack.top() + idx + 33);
-			return &_stack[_cspStack.top() + idx];
+			if(_spStack.top() + idx >= _stack.size())
+				_stack.resize(_spStack.top() + idx + 33);
+			return &_stack[_spStack.top() + idx];
 		}
 
 	case ERefKind::FieldVar:
@@ -112,13 +103,13 @@ void Machine::PushState()
 	_roffStack.push(_roff);
 	_roff = 0;
 	_retStack.push((uint32_t)_pc);
-	_cspStack.push(_sp);
+	_spStack.push(_sp);
 }
 
 void Machine::PopState()
 {
-	_sp = _cspStack.top();
-	_cspStack.pop();
+	_sp = _spStack.top();
+	_spStack.pop();
 	_rpStack.pop();
 	_roff = _roffStack.top();
 	_roffStack.pop();
@@ -126,7 +117,7 @@ void Machine::PopState()
 	_retStack.pop();
 }
 
-int Machine::Exec(const Bytecode& code, int start /* = 0 */, bool reserveLastSp /* = false */)
+int Machine::Exec(const Bytecode& code, int start /* = 0 */)
 {
 	PushState();
 
@@ -161,14 +152,7 @@ int Machine::Exec(const Bytecode& code, int start /* = 0 */, bool reserveLastSp 
 		}
 	}
 
-	uint16_t lastSp = 0;
-	if(reserveLastSp)
-		lastSp = _sp;
-
 	PopState();
-
-	if(reserveLastSp)
-		_sp = lastSp;
 	return 0;
 }
 
@@ -306,15 +290,15 @@ bool Machine::Assign(const Op::Assign& as)
 }
 
 bool Machine::PushSp()
-{
-	_spStack.push(_sp);
+{//TODO usability?
+	//_spStack.push(_sp);
 	return true;
 }
 
 bool Machine::PopSp()
-{
-	_sp = _spStack.top();
-	_spStack.pop();
+{//TODO usability?
+	//_sp = _spStack.top();
+	//_spStack.pop();
 	return true;
 }
 
@@ -338,10 +322,7 @@ bool Machine::Call(const Op::Call& cal)
 
 	if(cal.seg == 0)
 	{//TODO
-		if(_prgStack.empty())
-			Exec(_prg->_mainCode, cal.pos);
-		else
-			Exec(_prgStack.top()->prgObj()._prg->_mainCode, cal.pos);
+		Exec(_prgStack.top()->prgObj()._prg->_mainCode, cal.pos);
 	}
 	else
 	{//TODO
@@ -598,19 +579,9 @@ bool Machine::Invoke(const Op::Invoke& ivk)
 		}
 
 		_clsStack.push(&owner);
-		if(!owner.clsObj()._prgObj.empty())
-		{
-			_prgStack.push(&owner.clsObj()._prgObj[0]);
-			_cspStack.push(_sp);
-			_sp = owner.clsObj()._prgObj[0].prgObj()._lsp;
-		}
+		_prgStack.push(owner.clsObj()._prgObj);
 		Exec(cls->_funcs[found->second], 1);
-		if(!owner.clsObj()._prgObj.empty())
-		{
-			_sp = _cspStack.top();
-			_cspStack.pop();
-			_prgStack.pop();
-		}
+		_prgStack.pop();
 		_clsStack.pop();
 
 		auto vs = ResolveVar(ERefKind::Reg, ivk.dst + 1);
@@ -633,12 +604,9 @@ bool Machine::Invoke(const Op::Invoke& ivk)
 				_roff = ivk.dst + ivk.numArgs;
 			else
 				_roff = ivk.dst + 1;
+
 			_prgStack.push(&owner);
-			_cspStack.push(_sp);
-			_sp = owner.prgObj()._lsp;
 			CreateClassObj(found->second, ivk.numArgs);
-			_sp = _cspStack.top();
-			_cspStack.pop();
 			_prgStack.pop();
 
 			auto vs = ResolveVar(ERefKind::Reg, ivk.dst + 1);
@@ -657,11 +625,7 @@ bool Machine::Invoke(const Op::Invoke& ivk)
 			{
 				_roff = ivk.dst + 1;
 				_prgStack.push(&owner);
-				_cspStack.push(_sp);
-				_sp = owner.prgObj()._lsp;
 				Exec(prg->_mainCode, found->second.pos);
-				_sp = _cspStack.top();
-				_cspStack.pop();
 				_prgStack.pop();
 
 				auto vs = ResolveVar(ERefKind::Reg, ivk.dst + 1);
@@ -806,21 +770,16 @@ bool Machine::Inc(const Op::Inc& inc)
 	{
 		auto& prg = found->second;
 		//prg._mainCode
-		auto v = ResolveVar(ERefKind::LocalVar, _sp);
+		auto v = ResolveVar((ERefKind)inc.dstKind, inc.dst);
 		v->SetProgram(prg, true);
 
 		_prgStack.push(v);
-		_cspStack.push(_sp);
-		_sp = v->prgObj()._lsp;
 
 		int roffbk = _roff;
 		_roff++;
-		Exec(v->prgObj()._prg->_mainCode, 0, true);
+		Exec(v->prgObj()._prg->_mainCode, 0);
 		_roff = roffbk;
 
-		v->prgObj()._lsp = _sp;
-		_sp = _cspStack.top();
-		_cspStack.pop();
 		_prgStack.pop();
 	}
 	else
@@ -831,7 +790,7 @@ bool Machine::Inc(const Op::Inc& inc)
 			throw 'n';
 		}
 
-		auto v = ResolveVar(ERefKind::LocalVar, _sp);
+		auto v = ResolveVar((ERefKind)inc.dstKind, inc.dst);
 		v->SetModule(modDesc, false);
 	}
 	return true;
@@ -896,15 +855,8 @@ bool Machine::NewCls(const Op::NewCls& nc)
 		throw 'n';
 	}
 
-	const Program* prg;
-	if(!_prgStack.empty())
-	{
-		prg = _prgStack.top()->prgObj()._prg;
-	}
-	else
-	{
-		prg = _prg;
-	}
+	const Program* prg = _prgStack.top()->prgObj()._prg;
+
 
 	auto found = prg->_classTable.find(dst->str());
 	if(found == prg->_classTable.end())
@@ -994,15 +946,10 @@ bool Machine::CallBuiltinFunc(const Op::Call& cal)
 bool Machine::CreateClassObj(const Class& cls, int numArgs)
 {// TODO .. very fragile
 	Variable v;
-	v.SetClass(cls, _prgStack.empty() ? nullptr : _prgStack.top(), true);
+	v.SetClass(cls, true, _prgStack.top());
 
 	_clsStack.push(&v);
-	if(!v.clsObj()._prgObj.empty())
-	{
-		_prgStack.push(&v.clsObj()._prgObj[0]);
-		_cspStack.push(_sp);
-		_sp = v.clsObj()._prgObj[0].prgObj()._lsp;
-	}
+	_prgStack.push(v.clsObj()._prgObj);
 
 	int roffbk = _roff;
 	_roff++;
@@ -1019,12 +966,7 @@ bool Machine::CreateClassObj(const Class& cls, int numArgs)
 		Exec(v.clsObj()._cls->_ctor, 1);
 	}
 
-	if(!v.clsObj()._prgObj.empty())
-	{
-		_sp = _cspStack.top();
-		_cspStack.pop();
-		_prgStack.pop();
-	}
+	_prgStack.pop();
 	_clsStack.pop();
 
 	auto dst = ResolveVar(ERefKind::Reg, _roff);
@@ -1037,22 +979,12 @@ int Machine::Run(const Program& program, int start /* = 0 */)
 	_prg = &program;
 	_retCode = INT_MAX;
 
-	_consts.clear();
-	for(auto& c : _prg->_consts)
-	{
-		switch(c._type)
-		{
-		case Constant::INT:		_consts.push_back({}); _consts.back().SetInt(c._int); break;
-		case Constant::FLOAT:	_consts.push_back({}); _consts.back().SetFloat(c._float); break;
-		case Constant::STR:		_consts.push_back({}); _consts.back().SetStr(c._str); break;
-		default: //TODO
-			throw 'n';
-		}
-	}
-
+	_prgObj.SetProgram(program, true);
+	_prgStack.push(&_prgObj);
 	Exec(_prg->_mainCode, start);
-	if(_retCode == INT_MAX) _retCode = 0;
+	_prgStack.pop();
 
+	if(_retCode == INT_MAX) _retCode = 0;
 	return _retCode;
 }
 

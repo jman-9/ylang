@@ -21,17 +21,15 @@ protected:
 
 	inline void PushState();
 	inline void PopState();
-	inline int Exec(const Bytecode& code, int start = 0, bool reserveLastSp = false);
+	inline int Exec(const Bytecode& code, int start = 0);
 
 	const Program* _prg;
+	Variable _prgObj;
 
 	std::vector<Variable> _literals;
-	std::vector<Variable> _consts;
-	std::vector<Variable> _globals;
 	std::vector<Variable> _regs;
 	std::vector<Variable> _stack;
 	std::stack<uint16_t> _spStack;
-	std::stack<uint16_t> _cspStack;
 	std::stack<uint16_t> _rpStack;
 	std::stack<uint16_t> _roffStack;
 	std::stack<uint32_t> _retStack;

@@ -161,24 +161,24 @@ bool BytecodeBuilder::BuildInclude(Bytecode& retCtx, const TreeNode& stmt)
 		_nsTracker.AddTrackingPath(res.namespacePath);
 
 		//TODO
-		_scopeMgr.AddOrNot({ res.namespacePath, ESymbol::Prg });
+		auto idx = _scopeMgr.AddOrNot({ res.namespacePath, ESymbol::Prg });
 
 		Token tokInc = stmt.childs[0]->self;
 		tokInc.val = res.absPath;
-		int idx = _constTbl.AddOrNot(tokInc);
-		Op::Inc inc { .inc = (uint16_t)idx };
+		int nameIdx = _constTbl.AddOrNot(tokInc);
+		Op::Inc inc { .dstKind = TO_REF_KIND_U8(idx.kind), .dst = (uint16_t)idx.idx, .inc = (uint16_t)nameIdx };
 		retCtx.PushBytecode(inc, stmt.self.line);
 	}
 	else
 	{
 		//TODO qaz
-		_scopeMgr.AddOrNot({ incName.self.val, ESymbol::Mod });
+		auto idx = _scopeMgr.AddOrNot({ incName.self.val, ESymbol::Mod });
 
-		int idx = _constTbl.AddOrNot(incName.self);
-		Op::Inc inc { .inc = (uint16_t)idx };
+		int modNameIdx = _constTbl.AddOrNot(incName.self);
+		Op::Inc inc { .dstKind = TO_REF_KIND_U8(idx.kind), .dst = (uint16_t)idx.idx, .inc = (uint16_t)modNameIdx };
 		retCtx.PushBytecode(inc, stmt.self.line);
 
-		_prg._moduleTable[ incName.self.val ] = idx;
+		_prg._moduleTable[ incName.self.val ] = modNameIdx;
 	}
 
 	return true;

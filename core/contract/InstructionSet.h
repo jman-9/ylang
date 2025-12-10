@@ -134,8 +134,10 @@ struct Invoke
 
 struct Inc
 {
+	uint8_t dstKind = (uint8_t)ERefKind::None;
+	uint8_t rsvd = 0;
+	uint16_t dst = 0;
 	uint16_t inc = 0;
-	uint16_t rsvd = 0;
 };
 
 struct Jnz
