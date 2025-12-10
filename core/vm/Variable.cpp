@@ -86,6 +86,12 @@ void Variable::SetObj(Object* obj)
 
 	t->ReleaseRef();
 }
+
+bool Variable::IsObject() const
+{
+	return _type == OBJ || _type == CLASSOBJ || _type == MODULEOBJ || _type == PROGRAMOBJ;
+}
+
 void Variable::SetVarRef(Variable& var)
 {
 	Clear();
@@ -125,13 +131,14 @@ void Variable::SetDict(const std::unordered_map<std::string, Variable>& dict /*=
 	_u._o->_type = DICT;
 	_type = DICT;
 }
-void Variable::SetClass(const Class& cls, bool makeInstance)
+void Variable::SetClass(const Class& cls, Variable* prg, bool makeInstance)
 {
 	if(makeInstance)
 	{
 		ResetNewObj();
 
 		_u._o->_clso._cls = &cls;
+		if(prg) _u._o->_clso._prgObj.push_back(*prg);
 		_u._o->_type = CLASSOBJ;
 		_type = CLASSOBJ;
 
@@ -176,6 +183,7 @@ void Variable::SetProgram(const Program& prg, bool makeInstance)
 		ResetNewObj();
 
 		_u._o->_prgo._prg = &prg;
+		_u._o->_prgo._lsp = 0;
 		_u._o->_prgo._local.resize(33);
 		_u._o->_type = PROGRAMOBJ;
 		_type = PROGRAMOBJ;
@@ -205,7 +213,7 @@ void Variable::SetVar(Variable& var)
 	case REF: SetVarRef(var); break;
 	case LVREF: SetVarLVRef(var); break;
 	case ATTR: SetAttr(var._u._attr->owner, var._u._attr->name); break;
-	case CLASS: SetClass(*var._u._cls, false); break;
+	case CLASS: SetClass(*var._u._cls, nullptr, false); break;
 	case PROGRAM: SetProgram(*var._u._prg, false); break;
 
 	case OBJ:
@@ -477,6 +485,15 @@ bool Variable::CalcAndAssign(Variable& lhs, EToken calcOp, Variable& rhs)
 		case EToken::RShift:		SetInt(leftInt >> rightInt); break;
 		default:
 			throw 'n';
+		}
+	}
+	else if(lhs.IsObject() && rhs.IsObject())
+	{
+		switch(calcOp)
+		{
+		case EToken::Equal:		SetInt(lhs._u._o == rhs._u._o); break;
+		case EToken::NotEqual:	SetInt(lhs._u._o != rhs._u._o); break;
+		default: throw 'n'; //TODO
 		}
 	}
 	else

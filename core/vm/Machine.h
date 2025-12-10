@@ -21,7 +21,7 @@ protected:
 
 	inline void PushState();
 	inline void PopState();
-	inline int Exec(const Bytecode& code, int start = 0);
+	inline int Exec(const Bytecode& code, int start = 0, bool reserveLastSp = false);
 
 	const Program* _prg;
 

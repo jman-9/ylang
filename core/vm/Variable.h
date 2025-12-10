@@ -15,6 +15,7 @@ struct Variable;
 struct ClassObject
 {
 	std::vector<Variable> _fields;
+	std::vector<Variable> _prgObj;
 	const Class* _cls;
 };
 struct ModuleObject
@@ -24,6 +25,7 @@ struct ModuleObject
 };
 struct ProgramObject
 {
+	int _lsp;
 	std::vector<Variable> _local;
 	std::vector<Variable> _consts;
 	const Program* _prg;
@@ -91,7 +93,7 @@ struct Variable
 	void SetAttr(Attribute& attr);
 	void SetList(const std::vector<Variable>& list = std::vector<Variable>());
 	void SetDict(const std::unordered_map<std::string, Variable>& dict = std::unordered_map<std::string, Variable>());
-	void SetClass(const Class& cls, bool makeInstance);
+	void SetClass(const Class& cls, Variable* prgObj, bool makeInstance);
 	void SetModule(const ymod::ModuleDesc& mod, bool makeInstance);
 	void SetProgram(const Program& prg, bool makeInstance);
 	void SetVar(Variable& var);
@@ -103,6 +105,7 @@ struct Variable
 
 	std::string ToStr() const;
 
+	bool IsObject() const;
 	bool IsNullOrFalse() const;
 	bool operator==(Type cmp) const;
 	bool operator!=(Type cmp) const;
