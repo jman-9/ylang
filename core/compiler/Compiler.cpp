@@ -253,8 +253,6 @@ vector<Error> Compiler::ExtractIncludes(const TreeNode& root, vector<TreeNodeSpt
 		if(stmt->self != EToken::Include)
 			continue;
 
-		//TODO
-		cout << stmt->childs.front()->self.val << endl;
 		retIncludes.push_back(stmt);
 	}
 	return {};

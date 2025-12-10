@@ -15,10 +15,6 @@ class Item {
         _value = value;
     }
 
-    fn name() {
-        return _name;
-    }
-
     fn info() {
         return "{_name}({_kind}, pow={_power}, val={_value})";
     }
@@ -33,9 +29,6 @@ class ResourceStack {
         _name = name;
         _amount = amount;
     }
-
-    fn name() { return _name; }
-    fn amount() { return _amount; }
 
     fn add(v) { _amount += v; }
     fn remove(v) {
@@ -157,8 +150,6 @@ class Building {
         _type = type;
         _inv = Inventory();
     }
-
-    fn name() { return _name; }
 
     fn inv() { return _inv; }
 
@@ -325,7 +316,7 @@ class Colony {
 
             loot = r.explore();
             if (loot != null) {
-                _stock.add(loot.name(), 1);
+                _stock.add(loot._name, 1);
                 println("  Rover {r.info()} found {loot.info()}");
             }
         }

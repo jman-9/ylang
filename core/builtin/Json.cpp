@@ -17,16 +17,25 @@ using namespace std;
 
 YRet Parse(YArgs* args)
 {
-	auto AppendNode = [](Variable& v, const string* k = nullptr) -> Variable* {
+	struct VNode
+	{
+		Variable* parentList = nullptr;
+		Variable* node = nullptr;
+		int pos = 0;
+
+		Variable* get() { return node ? node : &(parentList->list()[pos]); }
+	};
+
+	auto AppendNode = [](Variable& v, const string* k = nullptr) -> VNode {
 		if(v == Variable::LIST)
 		{
 			v.list().push_back({});
-			return &v.list().back();
+			return { .parentList = &v, .pos = (int)v.list().size()-1 };
 		}
 		else if(v == Variable::DICT)
 		{
 			auto inserted = v.dict().insert({ *k, {}});
-			return &inserted.first->second;
+			return { .node = &inserted.first->second };
 		}
 		else
 		{//TODO
@@ -37,20 +46,23 @@ YRet Parse(YArgs* args)
 	Variable* jsonStr = (Variable*)args->args[0].o;
 	auto j = json::parse(jsonStr->str());
 
-
 	Variable* vjson = (Variable*)args->retBuff.o;
 	Variable* vtrav;
-	queue<Variable*> vq;
+	queue<VNode> vq;
 
 	queue<json*> jq;
 	json* jtrav;
 
 	jq.push(&j);
-	vq.push(vjson);
+	vq.push({.node = vjson });
 	for( ; !jq.empty(); )
 	{
 		jtrav = jq.front();
-		vtrav = vq.front();
+		VNode vn = vq.front();
+		if(vn.parentList)
+			vtrav = &vn.parentList->list()[vn.pos];
+		else
+			vtrav = vn.node;
 		jq.pop();
 		vq.pop();
 
@@ -71,18 +83,19 @@ YRet Parse(YArgs* args)
 
 			if(v.is_array() || v.is_object())
 			{
-				Variable* node = AppendNode(*vtrav, &k);
+				vn = AppendNode(*vtrav, &k);
 
 			#ifdef DEBUG_OUT
 				cout << " ";
 			#endif
 
 				jq.push(&v);
-				vq.push(node);
+				vq.push(vn);
 			}
 			else
 			{
-				Variable* newV = AppendNode(*vtrav, &k);
+				Variable* newV = AppendNode(*vtrav, &k).get();
+
 				if(v.is_number_integer())
 					newV->SetInt(v);
 				else if(v.is_number_float())
