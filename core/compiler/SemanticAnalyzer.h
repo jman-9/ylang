@@ -28,13 +28,16 @@ protected:
 	NamespaceUtil::Context _nsCtx;
 	NamespaceUtil::Tracker _nsTracker;
 
+	void OpenCompound();
+	void CloseCompound();
+
 	bool AnalyzeStmt(const TreeNode& stmt);
 	bool AnalyzeExp(const TreeNode& stmt);
 	bool AnalyzeInclude(const TreeNode& stmt);
 	bool AnalyzeFor(const TreeNode& stmt);
 	bool AnalyzeIf(const TreeNode& stmt);
 	bool AnalyzeFn(const TreeNode& stmt);
-	bool AnalyzeCompound(const TreeNode& stmt, const std::vector<Param>& stackVars = std::vector<Param>());
+	bool AnalyzeCompound(const TreeNode& stmt);
 	bool AnalyzeClass(const TreeNode& stmt);
 
 	bool CanBeLValue(const TreeNode& stmt);

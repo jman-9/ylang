@@ -29,6 +29,18 @@ bool SemanticAnalyzer::Analyze(const TreeNode& code)
 	return true;
 }
 
+void SemanticAnalyzer::OpenCompound()
+{
+	_scopeMgr.AddLocalScope();
+	_symTbl.resize(_symTbl.size() + 1);
+	_symTbl.back() = _symTbl[_symTbl.size() - 2];
+}
+void SemanticAnalyzer::CloseCompound()
+{
+	_symTbl.pop_back();
+	_scopeMgr.PopScope();
+}
+
 bool SemanticAnalyzer::AnalyzeStmt(const TreeNode& stmt)
 {
 	switch(stmt.self.kind)
@@ -293,7 +305,7 @@ bool SemanticAnalyzer::AnalyzeFn(const TreeNode& stmt)
 		_errors.push_back(ErrorBuilder::Default(stmt.self.line, "nested function: currently not supported"));
 		return false;
 	}
-	_scopeMgr.AddLocalScope();
+
 
 	auto& name = stmt.self.val;
 	auto& params = stmt.childs[0]->childs;
@@ -327,9 +339,20 @@ bool SemanticAnalyzer::AnalyzeFn(const TreeNode& stmt)
 	}
 	_symTbl.back()[ name ] = sym;
 
+
+	OpenCompound();
+
+	for(auto& v : sym.params)
+	{
+		Symbol sym;
+		sym.name = v.name;
+		sym.kind = ESymbol::Var;
+		_symTbl.back()[ v.name ] = sym;
+	}
+
 	if(block.self == EToken::LBrace)
 	{
-		if(!AnalyzeCompound(block, sym.params))
+		if(!AnalyzeCompound(block))
 		{
 			//todo trace
 			_symTbl.back().erase(name);
@@ -343,27 +366,16 @@ bool SemanticAnalyzer::AnalyzeFn(const TreeNode& stmt)
 		return false;
 	}
 
-	_scopeMgr.PopScope();
-
+	CloseCompound();
 	return true;
 }
 
-bool SemanticAnalyzer::AnalyzeCompound(const TreeNode& stmt, const std::vector<Param>& stackVars /* = std::vector<Param>() */)
+bool SemanticAnalyzer::AnalyzeCompound(const TreeNode& stmt)
 {
 	if(stmt.self != EToken::LBrace)
 		throw 'n';
 
-	_scopeMgr.AddLocalScope();
-	_symTbl.resize(_symTbl.size() + 1);
-	_symTbl.back() = _symTbl[_symTbl.size() - 2];
-
-	for(auto& v : stackVars)
-	{
-		Symbol sym;
-		sym.name = v.name;
-		sym.kind = ESymbol::Var;
-		_symTbl.back()[ v.name ] = sym;
-	}
+	OpenCompound();
 
 	for(auto& itm : stmt.childs)
 	{
@@ -371,9 +383,7 @@ bool SemanticAnalyzer::AnalyzeCompound(const TreeNode& stmt, const std::vector<P
 			return false;
 	}
 
-	_symTbl.pop_back();
-	_scopeMgr.PopScope();
-
+	CloseCompound();
 	return true;
 }
 

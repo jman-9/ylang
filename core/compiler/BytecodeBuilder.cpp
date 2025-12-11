@@ -909,20 +909,14 @@ bool BytecodeBuilder::BuildFn(Bytecode& retCtx, const TreeNode& stmt)
 	auto& params = stmt.childs[0]->childs;
 	auto& block = *stmt.childs[1];
 
-
-	_fnStack.push(FnControl());
-
-	//TODO make scope function
-	retCtx.PushBytecode<EOpcode::PushSp>();
-	_fnStack.top().pushSpCnt++;
-
 	Symbol sym;
 	sym.name = name;
-	sym.pos = retCtx.endOfCode();
+	sym.pos = retCtx.nextCodeSlot();
 	sym.kind = ESymbol::Fn;
 	_scopeMgr.AddOrNot(sym);
 
-	_scopeMgr.AddLocalScope();
+	_fnStack.push(FnControl());
+	BuildBlockOpen(retCtx);
 
 	for(auto& p : params)
 	{
@@ -963,6 +957,7 @@ bool BytecodeBuilder::BuildFn(Bytecode& retCtx, const TreeNode& stmt)
 	_reg = regStack;
 
 	BuildBlockClose(retCtx);
+	_fnStack.pop();
 	retCtx.PushBytecode<EOpcode::Ret>();
 
 	Op::Jmp jmp{ .pos = (uint32_t)retCtx.nextCodeSlot() };
