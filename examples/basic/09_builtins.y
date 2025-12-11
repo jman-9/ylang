@@ -10,6 +10,7 @@ fn main() {
 	println();
 
     println("[1] System Information:");
+	println("Version: " + sys.version);
     println("Executable: " + sys.executable);
     println("Arguments:  {sys.argv}");
 	println();
@@ -21,8 +22,8 @@ fn main() {
 	println();
 
     println("[3] Math Functions:");
-    x = 1.57079632679; // ~ pi/2
-    println("sin(pi/2) = {math.sin(x)}");
+    pi_d2 = 1.57079632679;
+    println("sin(pi/2) = {math.sin(pi_d2)}");
     println("sqrt(2)   = {math.sqrt(2.)}");
 	println();
     println("=== End of Example ===");

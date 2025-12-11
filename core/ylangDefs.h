@@ -1,3 +1,3 @@
 #pragma once
 
-#define YLANG_VER "0.0.5"
+#define YLANG_VER "0.1.0"

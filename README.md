@@ -1,6 +1,6 @@
 <img src="ylang_logo.png" height="100">
 
-# ylang 0.0.5
+# ylang 0.1.0
 
 yet another programming language — retro, C-like, and Pythonic
 
@@ -15,6 +15,14 @@ And beyond these, `ylang` also has its own style.
 
 It implements a complete compilation pipeline — from scanning to bytecode generation — and execution on its own virtual machine, named `yvm` — keeping it small, structured, and clear.
 
+## What's New
+
+* 0.1.0 introduces a stabilized architecture:
+  - module include system with namespaces
+  - restructured VM
+    - redesigned scope system 
+    - refined stack model
+    - memory model based on reference counting
 
 ## Language Characteristics
 
@@ -41,6 +49,7 @@ It implements a complete compilation pipeline — from scanning to bytecode gene
   - Classes with fields and member functions
   - Constructor defined with the class name (C++ style)
   - `this` or `self` keyword not required inside member functions
+* Module include with automatic namespace extraction
 * (more to come)
 
 ## Architecture
@@ -51,8 +60,10 @@ It implements a complete compilation pipeline — from scanning to bytecode gene
 ylang/
 ├─ core/              # ylang core - compiler engine
 │   ├─ builtin/       # Core built-in modules
+│   ├─ compiler/      # compiler core
 │   ├─ contract/      # ABI layer
 │   ├─ module/        # Module loader
+│   ├─ util/          # utility for core
 │   ├─ vm/            # yvm engine
 │   └─ primitives/    # Base types (list, dict, string)
 ├─ doc/               # Documents
@@ -82,13 +93,13 @@ Source (.y)
 
 * CMake ≥ 3.26
 * C++20 compatible compiler
-* Visual Studio 2022 (Windows) or GCC/Clang (Linux, macOS)
+* Visual Studio 2017+ (Windows) or GCC/Clang (Linux, macOS)
 
-### Windows (Visual Studio 2022)
+### Windows (Visual Studio 2017+)
 
 #### Using GUI
 ```
-1. Open the project folder in Visual Studio 2022
+1. Open the project folder in Visual Studio
 2. Select configuration
 3. Build
 4. Run
@@ -109,7 +120,33 @@ cmake ..
 make
 ```
 
+## Module Include & Namespace Rules
 
+ylang supports module include using dot paths, slash paths, relative paths, and absolute paths.
+Namespaces are assigned automatically:
+
+```rust
+include util.math;          // namespace = util.math
+include engine/renderer;    // namespace = renderer
+include ../shared/logger;   // namespace = logger
+include /abs/path/world.ai; // namespace = world.ai
+```
+
+Rules:
+
+* `a.b.c` → namespace = `a.b.c`
+* `a/b/c` → namespace = `c`
+* relative paths allowed (`../x/y.z` → `y.z`)
+* absolute paths allowed (`/p/q/r.s` → `r.s`)
+
+Usage:
+
+```rust
+println(util.math.pi);
+engine.renderer.draw();
+logger.info("start");
+world.ai.run();
+```
 
 ## Usage
 
@@ -158,6 +195,8 @@ ylang 0.0.5
 [Maze generation and A* pathfinding](examples/maze_gen_find.y) — (also animation :)
 
 [Text RPG adventure simulation](examples/rpg_sim.y)
+
+[Grand strategy simulation](examples/grand_strategy/) — (large-scale module / namespace demo)
 
 **➜ [More examples](examples/)**
 
@@ -234,15 +273,15 @@ Alice: 75 HP
 * [x] main() entrypoint
 * [ ] String formatting
 * [x] Class
-* [x] Memory management
+* [x] Memory management (refcnt, dynamic resizing)
 * [x] Module & import system
 * [ ] Optimized VM dispatch
 * [x] Automated tests
 * [ ] Documentation
 * [ ] Unicode
 * [x] Increment and decrement operators
-* [ ] Source code import system
-* [ ] Try-catch
+* [x] Source code import system
+* [ ] Exception
 * [ ] Optimization
 * ...and more
 
@@ -260,3 +299,6 @@ This project is licensed under the **MIT License** — see the [LICENSE](LICENSE
 | **0.0.2** | Dynamic resolution, collections(list/dict), f-string, floating-point, main() entrypoint |
 | **0.0.3** | Module system, built-in modules, escape character, `yvm` refactoring |
 | **0.0.5** | Class system, increment/decrement operators (`++`,`--`), chained assignments (`a=b=0`), basic literals (`null`,`true`,`false`)|
+| **0.1.0** | Namespace rule, source-based include, VM restructuring (scope/stack redesign, refcnt memory model, dynamic resizing)|
+
+---
