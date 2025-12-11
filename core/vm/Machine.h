@@ -15,6 +15,7 @@ public:
 	Machine();
 
 	int Run(const Program& program, int start = 0);
+	int Continue(int start = -1);
 
 protected:
 	Variable* ResolveVar(ERefKind k, int idx);

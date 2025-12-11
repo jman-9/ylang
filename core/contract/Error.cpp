@@ -16,7 +16,7 @@ bool Error::IsIncompleteError() const
 
 bool Error::IsIncompleteError(EErr e)
 {
-	return e == EErr::Missing || e == EErr::UnexpectedEof || e == EErr::ExpectedExpression;
+	return e == EErr::SyntaxError || e == EErr::Missing || e == EErr::UnexpectedEof || e == EErr::ExpectedExpression;
 }
 
 

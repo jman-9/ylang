@@ -67,6 +67,8 @@ bool ylang::StartRepl()
 	ycom::SemanticAnalyzer sa;
 	ycom::BytecodeBuilder bb;
 	yvm::Machine replMachine;
+	Program prg;
+	bool first = true;
 
 	vector<string> lines;
 
@@ -158,9 +160,14 @@ bool ylang::StartRepl()
 				break;
 			}
 
-			Program prg;
 			if(!bb.Build(*ast, prg)) throw 'n';
-			replMachine.Run(prg, pc);
+			if(first)
+			{
+				first = false;
+				replMachine.Run(prg, pc);
+			}
+			else
+				replMachine.Continue(pc);
 			pc = (int)prg._mainCode._code.size();
 			run = true;
 		} while(0);

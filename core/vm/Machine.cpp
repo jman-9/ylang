@@ -988,4 +988,16 @@ int Machine::Run(const Program& program, int start /* = 0 */)
 	return _retCode;
 }
 
+int Machine::Continue(int start /* = -1 */)
+{
+	_retCode = INT_MAX;
+
+	_prgStack.push(&_prgObj);
+	Exec(_prg->_mainCode, start > -1 ? start : _pc);
+	_prgStack.pop();
+
+	if(_retCode == INT_MAX) _retCode = 0;
+	return _retCode;
+}
+
 }
