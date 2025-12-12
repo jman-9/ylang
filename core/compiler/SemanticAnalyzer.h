@@ -29,6 +29,8 @@ protected:
 	NamespaceUtil::Context _nsCtx;
 	NamespaceUtil::Tracker _nsTracker;
 
+	void OpenScope(ScopeManager::ScopeType type);
+	void CloseScope();
 	void OpenCompound();
 	void CloseCompound();
 

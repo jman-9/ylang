@@ -30,16 +30,30 @@ bool SemanticAnalyzer::Analyze(const TreeNode& code)
 	return true;
 }
 
-void SemanticAnalyzer::OpenCompound()
+void SemanticAnalyzer::OpenScope(ScopeManager::ScopeType type)
 {
-	_scopeMgr.AddLocalScope();
+	switch(type)
+	{
+	case ScopeManager::SCOPE_LOCAL:	_scopeMgr.AddLocalScope(); break;
+	case ScopeManager::SCOPE_GLOBAL:_scopeMgr.AddGlobalScope(); break;
+	case ScopeManager::SCOPE_CLASS:	_scopeMgr.AddClassScope(); break;
+	}
+
 	_symTbl.resize(_symTbl.size() + 1);
 	_symTbl.back() = _symTbl[_symTbl.size() - 2];
 }
-void SemanticAnalyzer::CloseCompound()
+void SemanticAnalyzer::CloseScope()
 {
 	_symTbl.pop_back();
 	_scopeMgr.PopScope();
+}
+void SemanticAnalyzer::OpenCompound()
+{
+	OpenScope(ScopeManager::SCOPE_LOCAL);
+}
+void SemanticAnalyzer::CloseCompound()
+{
+	CloseScope();
 }
 
 bool SemanticAnalyzer::AnalyzeStmt(const TreeNode& stmt, const unordered_set<EToken>& inSet)
@@ -207,10 +221,6 @@ bool SemanticAnalyzer::AnalyzeExp(const TreeNode& stmt)
 
 bool SemanticAnalyzer::AnalyzeInclude(const TreeNode& stmt)
 {
-	if(stmt.self != EToken::Include)
-		//todo trace
-		throw 'n';
-
 	if(stmt.childs.size() != 1)
 	{//todo
 		return false;
@@ -239,10 +249,6 @@ bool SemanticAnalyzer::AnalyzeInclude(const TreeNode& stmt)
 
 bool SemanticAnalyzer::AnalyzeFor(const TreeNode& stmt, const unordered_set<EToken>& inSet)
 {
-	if(stmt.self != EToken::For)
-		//todo trace
-		throw 'n';
-
 	auto& init = *stmt.childs[0];
 	auto& cond = *stmt.childs[1];
 	auto& update = *stmt.childs[2];
@@ -287,10 +293,6 @@ bool SemanticAnalyzer::AnalyzeContinue(const TreeNode& stmt, const unordered_set
 
 bool SemanticAnalyzer::AnalyzeIf(const TreeNode& stmt, const unordered_set<EToken>& inSet)
 {
-	if(stmt.self != EToken::If)
-		//todo trace
-		throw 'n';
-
 	auto& test = *stmt.childs[0];
 	auto& _true = *stmt.childs[1];
 
@@ -318,10 +320,6 @@ bool SemanticAnalyzer::AnalyzeIf(const TreeNode& stmt, const unordered_set<EToke
 
 bool SemanticAnalyzer::AnalyzeFn(const TreeNode& stmt)
 {
-	if(stmt.self != EToken::Fn)
-		//todo trace
-		throw 'n';
-
 	if(_scopeMgr.GetCurScope() == ScopeManager::SCOPE_LOCAL)
 	{//TODO
 		_errors.push_back(ErrorBuilder::Default(stmt.self.line, "nested function: currently not supported"));
@@ -362,7 +360,7 @@ bool SemanticAnalyzer::AnalyzeFn(const TreeNode& stmt)
 	_symTbl.back()[ name ] = sym;
 
 
-	OpenCompound();
+	OpenScope(ScopeManager::SCOPE_LOCAL);
 
 	for(auto& v : sym.params)
 	{
@@ -379,7 +377,7 @@ bool SemanticAnalyzer::AnalyzeFn(const TreeNode& stmt)
 		return false;
 	}
 
-	CloseCompound();
+	CloseScope();
 	return true;
 }
 
@@ -428,15 +426,22 @@ bool SemanticAnalyzer::AnalyzeClass(const TreeNode& stmt)
 		_errors.push_back(ErrorBuilder::Default(stmt.self.line, "nested class: currently not supported"));
 		return false;
 	}
-	_scopeMgr.AddClassScope();
+
+	for(auto& itm : stmt.childs)
+	{
+		if(itm->self != EToken::Assign && itm->self != EToken::Fn)
+		{
+			_errors.push_back(ErrorBuilder::Default(stmt.self.line, format("'{}': not allowed in class statement", stmt.self.val)));
+			return false;
+		}
+	}
 
 	auto& name = stmt.self.val;
 
 	auto found = _symTbl.back().find(name);
 	if(found != _symTbl.back().end())
 	{
-		//todo message
-		_errors.push_back(ErrorBuilder::Default(stmt.self.line, format("'{}': already defined", stmt.self.val)));
+		_errors.push_back(ErrorBuilder::AlreadyExists(stmt.self.line, stmt.self.val));
 		return false;
 	}
 
@@ -445,74 +450,65 @@ bool SemanticAnalyzer::AnalyzeClass(const TreeNode& stmt)
 	sym.kind = ESymbol::Cls;
 	_symTbl.back()[ name ] = sym;
 
-	_symTbl.resize(_symTbl.size() + 1);
-	_symTbl.back() = _symTbl[_symTbl.size() - 2];
+	OpenScope(ScopeManager::SCOPE_CLASS);
 
 	for(auto& itm : stmt.childs)
 	{
-		switch(itm->self.kind)
-		{
-		case EToken::Fn:
-			{
-				const auto& fn = itm->self;
-				auto found = _symTbl.back().find(fn.val);
-				if(found == _symTbl.back().end())
-				{
-					Symbol sym;
-					sym.preRegister = true;
-					sym.name = fn.val;
-					sym.kind = ESymbol::Fn;
-					for(auto& p : itm->childs[0]->childs)
-					{
-						Param prm;
-						prm.name = p->self.val;
-						sym.params.push_back(prm);
-					}
-					_symTbl.back()[ sym.name ] = sym;
-				}
-				else if(!found->second.preRegister && found->second.kind != ESymbol::Cls)
-				{
-					_errors.push_back(ErrorBuilder::AlreadyExists(fn.line, fn.val));
-					return false;
-				}
-			}
-			break;
-		case EToken::Assign:
-			{
-				const auto& id = itm->childs.front()->self;
-				auto found = _symTbl.back().find(id.val);
-				if(found == _symTbl.back().end())
-				{
-					Symbol sym;
-					sym.preRegister = true;
-					sym.name = id.val;
-					sym.kind = ESymbol::Var;
-					_symTbl.back()[ sym.name ] = sym;
-				}
-				else if(!found->second.preRegister)
-				{
-					_errors.push_back(ErrorBuilder::AlreadyExists(id.line, id.val));
-					return false;
-				}
-			}
-			break;
+		if(itm->self != EToken::Assign) continue;
 
-		default:
-			throw 'n';//TODO
+		const auto& id = itm->childs.front()->self;
+		auto found = _symTbl.back().find(id.val);
+		if(found == _symTbl.back().end())
+		{
+			Symbol sym;
+			sym.preRegister = true;
+			sym.name = id.val;
+			sym.kind = ESymbol::Var;
+			_symTbl.back()[ sym.name ] = sym;
+		}
+		else if(!found->second.preRegister)
+		{
+			_errors.push_back(ErrorBuilder::AlreadyExists(id.line, id.val));
+			return false;
+		}
+
+		if(!AnalyzeExp(*itm)) return false;
+	}
+
+	for(auto& itm : stmt.childs)
+	{
+		if(itm->self != EToken::Fn) continue;
+
+		const auto& fn = itm->self;
+		auto found = _symTbl.back().find(fn.val);
+		if(found == _symTbl.back().end())
+		{
+			Symbol sym;
+			sym.preRegister = true;
+			sym.name = fn.val;
+			sym.kind = ESymbol::Fn;
+			for(auto& p : itm->childs[0]->childs)
+			{
+				Param prm;
+				prm.name = p->self.val;
+				sym.params.push_back(prm);
+			}
+			_symTbl.back()[ sym.name ] = sym;
+		}
+		else if(!found->second.preRegister && found->second.kind != ESymbol::Cls)
+		{
+			_errors.push_back(ErrorBuilder::AlreadyExists(fn.line, fn.val));
+			return false;
 		}
 	}
 
 	for(auto& itm : stmt.childs)
 	{
-		switch(itm->self.kind)
-		{
-		case EToken::Fn: if(!AnalyzeFn(*itm)) return false; break;
-		case EToken::Assign: if(!AnalyzeExp(*itm)) return false; break;
-		}
+		if(itm->self != EToken::Fn) continue;
+		if(!AnalyzeFn(*itm)) return false;
 	}
 
-	_symTbl.pop_back();
-	_scopeMgr.PopScope();
+	CloseScope();
 	return true;
 }
 

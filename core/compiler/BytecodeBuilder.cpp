@@ -378,7 +378,23 @@ bool BytecodeBuilder::BuildExp(Bytecode& retCtx, const TreeNode& stmt, bool root
 		}
 		else
 		{
-			auto idx = _scopeMgr.AddOrNot({ .name = lhs->self.val, .kind = ESymbol::Var });
+			auto kind = ESymbol::Var;
+			if(_scopeMgr.GetCurScope() == ScopeManager::SCOPE_CLASS)
+			{
+				auto& cls = *_clsStack.top();
+				if(!cls._fieldMap.contains(lhs->self.val))
+				{
+					Symbol sym;
+					sym.name = lhs->self.val;
+					sym.kind = ESymbol::Field;
+					_scopeMgr.AddOrNot(sym);
+
+					cls._fieldMap[ sym.name ] = cls._fields.size();
+					cls._fields.push_back(sym);
+				}
+				kind = ESymbol::Field;
+			}
+			auto idx = _scopeMgr.AddOrNot({ .name = lhs->self.val, .kind = kind });
 
 			inst.src1Kind = TO_REF_KIND_U8(idx.kind);
 			inst.src1 = (uint16_t)idx.idx;
@@ -588,9 +604,6 @@ bool BytecodeBuilder::BuildReturn(Bytecode& retCtx, const TreeNode& stmt)
 
 bool BytecodeBuilder::BuildContinue(Bytecode& retCtx, const TreeNode& stmt)
 {
-	if(stmt.self != EToken::Continue)
-		throw 'n';
-
 	for(int i=0; i<_loopStack.top().pushSpCnt; i++)
 	{
 		retCtx.PushBytecode<EOpcode::PopSp>();
@@ -602,9 +615,6 @@ bool BytecodeBuilder::BuildContinue(Bytecode& retCtx, const TreeNode& stmt)
 
 bool BytecodeBuilder::BuildBreak(Bytecode& retCtx, const TreeNode& stmt)
 {
-	if(stmt.self != EToken::Break)
-		throw 'n';
-
 	for(int i=0; i<_loopStack.top().pushSpCnt; i++)
 	{
 		retCtx.PushBytecode<EOpcode::PopSp>();
@@ -616,9 +626,6 @@ bool BytecodeBuilder::BuildBreak(Bytecode& retCtx, const TreeNode& stmt)
 
 bool BytecodeBuilder::BuildList(Bytecode& retCtx, const TreeNode& stmt)
 {
-	if(stmt.self != EToken::List)
-		throw 'n';
-
 	uint32_t regStack = _reg;
 
 	_reg++;
@@ -645,9 +652,6 @@ bool BytecodeBuilder::BuildList(Bytecode& retCtx, const TreeNode& stmt)
 
 bool BytecodeBuilder::BuildDict(Bytecode& retCtx, const TreeNode& stmt)
 {
-	if(stmt.self != EToken::Dict)
-		throw 'n';
-
 	uint32_t regStack = _reg;
 
 	_reg++;
@@ -684,9 +688,6 @@ bool BytecodeBuilder::BuildDict(Bytecode& retCtx, const TreeNode& stmt)
 
 bool BytecodeBuilder::BuildIndex(Bytecode& retCtx, const TreeNode& stmt)
 {
-	if(stmt.self != EToken::Index && stmt.self != EToken::LValueIndex)
-		throw 'n';
-
 	uint32_t regStack = _reg;
 
 	for(size_t i = 0; i<stmt.childs.size(); i++)
@@ -714,9 +715,6 @@ bool BytecodeBuilder::BuildIndex(Bytecode& retCtx, const TreeNode& stmt)
 
 bool BytecodeBuilder::BuildClass(Bytecode& retCtx, const TreeNode& stmt)
 {
-	if(stmt.self != EToken::Class)
-		throw 'n';
-
 	Class& cls = _prg._classTable[ stmt.self.val ];
 	cls.name = stmt.self.val;
 
@@ -725,30 +723,7 @@ bool BytecodeBuilder::BuildClass(Bytecode& retCtx, const TreeNode& stmt)
 	int idx = _constTbl.AddOrNot(id);
 
 	_clsStack.push(&cls);
-
 	_scopeMgr.AddClassScope();
-
-	for(auto& substmt : stmt.childs)
-	{
-		if(substmt->self == EToken::Assign)
-		{
-			Symbol sym;
-			sym.name = substmt->childs.front()->self.val;
-			sym.kind = ESymbol::Field;
-			_scopeMgr.AddOrNot(sym);
-
-			cls._fieldMap[ sym.name ] = cls._fields.size();
-			cls._fields.push_back(sym);
-		}
-		else if(substmt->self.val == cls.name)
-		{//ctor - noop
-		}
-		else
-		{//fn
-			cls._funcMap[ substmt->self.val ] = cls._funcs.size();
-			cls._funcs.push_back({});
-		}
-	}
 
 	for(auto& substmt : stmt.childs)
 	{
@@ -759,14 +734,30 @@ bool BytecodeBuilder::BuildClass(Bytecode& retCtx, const TreeNode& stmt)
 				return false;
 			}
 		}
-		else if(substmt->self.val == cls.name)
+	}
+
+	for(auto& substmt : stmt.childs)
+	{
+		if(substmt->self.val == cls.name)
+		{//ctor - noop
+		}
+		else if(substmt->self == EToken::Fn)
+		{//fn
+			cls._funcMap[ substmt->self.val ] = cls._funcs.size();
+			cls._funcs.push_back({});
+		}
+	}
+
+	for(auto& substmt : stmt.childs)
+	{
+		if(substmt->self.val == cls.name)
 		{//ctor
 			if(!BuildFn(cls._ctor, *substmt))
 			{//TODO cleanup
 				return false;
 			}
 		}
-		else
+		else if(substmt->self == EToken::Fn)
 		{//fn
 			if(!BuildFn(cls._funcs[cls._funcMap[ substmt->self.val ]], *substmt))
 			{//TODO cleanup
@@ -776,16 +767,12 @@ bool BytecodeBuilder::BuildClass(Bytecode& retCtx, const TreeNode& stmt)
 	}
 
 	_scopeMgr.PopScope();
-
 	_clsStack.pop();
 	return true;
 }
 
 bool BytecodeBuilder::BuildLValueField(Bytecode& retCtx, const TreeNode& stmt)
 {
-	if(stmt.self != EToken::LValueField)
-		throw 'n';
-
 	uint32_t regStack = _reg;
 
 	for(size_t i = 0; i<stmt.childs.size(); i++)
@@ -804,9 +791,6 @@ bool BytecodeBuilder::BuildLValueField(Bytecode& retCtx, const TreeNode& stmt)
 
 bool BytecodeBuilder::BuildFor(Bytecode& retCtx, const TreeNode& stmt)
 {
-	if(stmt.self != EToken::For)
-		throw 'n';
-
 	auto& init = *stmt.childs[0];
 	auto& cond = *stmt.childs[1];
 	auto& update = *stmt.childs[2];
@@ -857,9 +841,6 @@ bool BytecodeBuilder::BuildFor(Bytecode& retCtx, const TreeNode& stmt)
 
 bool BytecodeBuilder::BuildIf(Bytecode& retCtx, const TreeNode& stmt)
 {
-	if(stmt.self != EToken::If)
-		throw 'n';
-
 	auto& test = *stmt.childs[0];
 	auto& _true = *stmt.childs[1];
 
@@ -967,9 +948,6 @@ bool BytecodeBuilder::BuildFn(Bytecode& retCtx, const TreeNode& stmt)
 
 bool BytecodeBuilder::BuildCompound(Bytecode& retCtx, const TreeNode& stmt)
 {
-	if(stmt.self != EToken::LBrace)
-		throw 'n';
-
 	BuildBlockOpen(retCtx);
 
 	for(auto& itm : stmt.childs)
