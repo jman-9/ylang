@@ -308,10 +308,10 @@ bool Variable::Assign(EToken op, Variable& rval)
 
 			switch(op)
 			{
-			case EToken::PlusAssign:	rval._u._f += rfloat; break;
-			case EToken::MinusAssign:	rval._u._f -= rfloat; break;
-			case EToken::MulAssign:		rval._u._f *= rfloat; break;
-			case EToken::DivAssign:		rval._u._f /= rfloat; break;
+			case EToken::PlusAssign:	_u._f += rfloat; break;
+			case EToken::MinusAssign:	_u._f -= rfloat; break;
+			case EToken::MulAssign:		_u._f *= rfloat; break;
+			case EToken::DivAssign:		_u._f /= rfloat; break;
 			default: throw 'n';
 			}
 		}
