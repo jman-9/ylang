@@ -288,7 +288,8 @@ TreeNodeSptr Parser::ParseExp(bool first)
 			if(node = ParsePrimaryExp()) break;
 		}
 
-		if(node = ParsePostfixExp()) break;
+		if(!first)
+			if(node = ParsePostfixExp()) break;
 
 		//TODO modify logic
 		auto& cur = GetCur();

@@ -217,17 +217,16 @@ bool Machine::Assign(const Op::Assign& as)
 		else if(src1)
 		{
 			if(*src1 == Variable::LVREF)
-			{//TODO
-				auto lv = src1->_u._ref;
-				dst->Assign(EToken::Assign, *lv);
-				src1 = lv;
+			{
+				auto t = *src1;
+				dst->Assign(EToken::Assign, src1->lvref());
+				t.CalcIncDec((EToken)as.op);
 			}
 			else
 			{
 				dst->Assign(EToken::Assign, *src1);
+				src1->CalcIncDec((EToken)as.op);
 			}
-			src1->CalcIncDec((EToken)as.op);
-
 		}
 		else if(src2)
 		{
@@ -352,17 +351,16 @@ bool Machine::ListSet(const Op::ListSet& ls)
 {
 	Variable* dst = ResolveVar((ERefKind)ls.dstKind, ls.dst);
 
-	Variable* t = nullptr;
 	if(*dst != Variable::LVREF)
 	{
-		t = dst;
+		dst->SetList();
 	}
 	else
 	{
-		auto t = dst->_u._ref;
-		dst->Clear();
+		auto t = &dst->lvref();
+		t->SetList();
+		dst->SetVar(*t);
 	}
-	t->SetList();
 	return true;
 }
 
@@ -382,17 +380,16 @@ bool Machine::DictSet(const Op::DictSet& ds)
 {
 	Variable* dst = ResolveVar((ERefKind)ds.dstKind, ds.dst);
 
-	Variable* t = nullptr;
 	if(*dst != Variable::LVREF)
 	{
-		t = dst;
+		dst->SetDict();
 	}
 	else
 	{
-		t = dst->_u._ref;
-		dst->Clear();
+		auto t = &dst->lvref();
+		t->SetDict();
+		dst->SetVar(*t);
 	}
-	t->SetDict();
 	return true;
 }
 
@@ -468,11 +465,11 @@ bool Machine::LValueIndex(const Op::LValueIndex& lli)
 		Variable* lst = nullptr;
 		if(*dst == Variable::LVREF)
 		{
-			if(dst->ref() != Variable::LIST)
+			if(dst->lvref() != Variable::LIST)
 			{
 				throw 'n';
 			}
-			lst = &dst->ref();
+			lst = &dst->lvref();
 		}
 		else if(*dst == Variable::LIST)
 		{
@@ -491,11 +488,11 @@ bool Machine::LValueIndex(const Op::LValueIndex& lli)
 		Variable* dict = nullptr;
 		if(*dst == Variable::LVREF)
 		{
-			if(dst->ref() != Variable::DICT)
+			if(dst->lvref() != Variable::DICT)
 			{
 				throw 'n';
 			}
-			dict = &dst->ref();
+			dict = &dst->lvref();
 		}
 		else if(*dst == Variable::DICT)
 		{
@@ -887,7 +884,7 @@ bool Machine::LValueField(const Op::LValueField& lvf)
 	{
 		throw 'n';
 	}
-	dst->SetVarLVRef(dst->clsObj()._fields[found->second]);
+	dst->SetVarLVRef(dst->clsObj()._fields[found->second], *dst);
 	return true;
 }
 

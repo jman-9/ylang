@@ -41,6 +41,7 @@ void Variable::Clear()
 		if(_u._attr) { delete _u._attr; _u._attr = nullptr; }
 		break;
 
+	case LVREF:
 	case OBJ:
 	case LIST:
 	case DICT:
@@ -92,17 +93,19 @@ bool Variable::IsObject() const
 	return _type == OBJ || _type == CLASSOBJ || _type == MODULEOBJ || _type == PROGRAMOBJ;
 }
 
-void Variable::SetVarRef(Variable& var)
+void Variable::SetVarLVRef(Variable& lvref, Variable owner)
 {
-	Clear();
-	_u._ref = &var;
-	_type = REF;
-
+	ResetNewObj();
+	_u._o->_lvro._owner.push_back(owner);
+	_u._o->_lvro._lvref = &lvref;
+	_u._o->_type = LVREF;
+	_type = LVREF;
 }
-void Variable::SetVarLVRef(Variable& var)
+void Variable::SetVarLVRef(Variable& lvref)
 {
-	Clear();
-	_u._ref = &var;
+	ResetNewObj();
+	_u._o->_lvro._lvref = &lvref;
+	_u._o->_type = LVREF;
 	_type = LVREF;
 }
 void Variable::SetAttr(Variable& owner, string name)
@@ -215,12 +218,11 @@ void Variable::SetVar(Variable& var)
 	case INT: SetInt(var._u._i); break;
 	case FLOAT: SetFloat(var._u._f); break;
 	case STR: SetStr(*var._u._s); break;
-	case REF: SetVarRef(var); break;
-	case LVREF: SetVarLVRef(var); break;
 	case ATTR: SetAttr(var._u._attr->owner, var._u._attr->name); break;
 	case CLASS: SetClass(*var._u._cls, false); break;
 	case PROGRAM: SetProgram(*var._u._prg, false); break;
 
+	case LVREF:
 	case OBJ:
 	case LIST:
 	case DICT:
@@ -245,18 +247,19 @@ bool Variable::Assign(EToken op, Variable& rval)
 
 	if(_type == LVREF)
 	{
-		auto t = _u._ref;
-		if(!t->Assign(op, rval))
+		auto& lv = lvref();
+		if(!lv.Assign(op, rval))
 		{
 			throw 'n';
 		}
-		this->SetVar(*t);
+		Variable t = lv;
+		SetVar(t);
 		return true;
 	}
 
 	if(op == EToken::Assign)
 	{
-		this->SetVar(rval);
+		SetVar(rval);
 	}
 	else
 	{
@@ -344,12 +347,13 @@ bool Variable::CalcAndAssign(Variable& lhs, EToken calcOp, Variable& rhs)
 
 	if(_type == LVREF)
 	{
-		auto t = _u._ref;
-		if(!t->CalcAndAssign(lhs, calcOp, rhs))
+		auto& lv = lvref();
+		if(!lv.CalcAndAssign(lhs, calcOp, rhs))
 		{
 			throw 'n';
 		}
-		SetVar(*t);
+		Variable t = lv;
+		SetVar(t);
 		return true;
 	}
 
@@ -514,12 +518,13 @@ bool Variable::CalcUnaryAndAssign(EToken unaryOp, Variable& rhs)
 {
 	if(_type == LVREF)
 	{
-		auto t = _u._ref;
-		if(!t->CalcUnaryAndAssign(unaryOp, rhs))
+		auto& lv = lvref();
+		if(!lv.CalcUnaryAndAssign(unaryOp, rhs))
 		{
 			throw 'n';
 		}
-		SetVar(*t);
+		Variable t = lv;
+		SetVar(t);
 		return true;
 	}
 
@@ -554,7 +559,6 @@ bool Variable::CalcUnaryAndAssign(EToken unaryOp, Variable& rhs)
 		}
 		return true;
 
-	case REF:
 	case LVREF:
 	case ATTR:
 	case CLASS:
@@ -593,12 +597,13 @@ bool Variable::CalcIncDec(EToken op)
 {
 	if(_type == LVREF)
 	{
-		auto t = _u._ref;
-		if(!t->CalcIncDec(op))
+		auto& lv = lvref();
+		if(!lv.CalcIncDec(op))
 		{
 			throw 'n';
 		}
-		SetVar(*t);
+		Variable t = lv;
+		SetVar(t);
 		return true;
 	}
 
@@ -639,9 +644,8 @@ string Variable::ToStr() const
 		return to_string(float_());
 	case STR:
 		return str();
-	case REF:
 	case LVREF:
-		return "ref: " + ref().ToStr();
+		return "ref: " + lvref().ToStr();
 	case ATTR:
 		return "attr: " + attr().name;
 	case CLASS:
@@ -718,8 +722,7 @@ bool Variable::IsNullOrFalse() const
 	case INT:		return !int_();
 	case FLOAT:		return !float_();
 	case STR:		return str().empty();
-	case REF:
-	case LVREF:		return ref().IsNullOrFalse();
+	case LVREF:		return lvref().IsNullOrFalse();
 	case ATTR:		return attr().name.empty();
 	case CLASS:		return !_u._cls || cls().name.empty();
 	case MODULE:	return mod().IsNull(); //TODO qaz !_u._mod ||
@@ -758,15 +761,15 @@ const std::string& Variable::str() const
 	if(_type != STR) throw 'n'; //TODO
 	return *_u._s;
 }
-const Variable& Variable::ref() const
+const Variable& Variable::lvref() const
 {
-	if(_type != REF && _type != LVREF) throw 'n'; //TODO
-	return *_u._ref;
+	if(_type != LVREF) throw 'n'; //TODO
+	return *_u._o->_lvro._lvref;
 }
-Variable& Variable::ref()
+Variable& Variable::lvref()
 {
-	if(_type != REF && _type != LVREF) throw 'n'; //TODO
-	return *_u._ref;
+	if(_type != LVREF) throw 'n'; //TODO
+	return *_u._o->_lvro._lvref;
 }
 const Attribute& Variable::attr() const
 {

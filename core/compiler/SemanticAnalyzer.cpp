@@ -495,7 +495,10 @@ bool SemanticAnalyzer::CanBeLValue(const TreeNode& stmt)
 		{
 			continue;
 		}
-		if(curTok != EToken::Id && curTok != EToken::Dot && curTok != EToken::Index && curTok != EToken::LValueIndex && curTok != EToken::LValueField)
+
+		if(curTok == EToken::LValueField) break;
+
+		if(curTok != EToken::Id && curTok != EToken::Dot && curTok != EToken::Index && curTok != EToken::LValueIndex)
 		{
 			return false;
 		}

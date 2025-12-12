@@ -33,6 +33,13 @@ struct ProgramObject
 	std::vector<Variable> _consts;
 	const Program* _prg;
 };
+struct LVRefObject
+{
+	Variable* _lvref;
+private:
+	friend class Variable;
+	std::vector<Variable> _owner;
+};
 
 
 struct Variable
@@ -44,7 +51,6 @@ struct Variable
 		INT,
 		FLOAT,
 		STR,
-		REF,
 		LVREF,
 		ATTR,
 		CLASS,
@@ -72,7 +78,6 @@ struct Variable
 		double _f;
 		std::string* _s;
 		Object* _o;
-		Variable* _ref;
 		Attribute* _attr;
 		const Class* _cls;
 		const Program* _prg;
@@ -90,7 +95,7 @@ struct Variable
 	void SetInt(int64_t i);
 	void SetFloat(double f);
 	void SetStr(std::string s);
-	void SetVarRef(Variable& ref);
+	void SetVarLVRef(Variable& lvref, Variable owner);
 	void SetVarLVRef(Variable& lvref);
 	void SetAttr(Variable& owner, std::string name);
 	void SetAttr(Attribute& attr);
@@ -118,8 +123,8 @@ struct Variable
 	int64_t int_() const;
 	double float_() const;
 	const std::string& str() const;
-	Variable& ref();
-	const Variable& ref() const;
+	Variable& lvref();
+	const Variable& lvref() const;
 	const Attribute& attr() const;
 	Attribute& attr();
 	const Class& cls() const;
@@ -148,6 +153,7 @@ struct Variable
 		ClassObject _clso;
 		ModuleObject _modo;
 		ProgramObject _prgo;
+		LVRefObject _lvro;
 
 		Object();
 		~Object();
