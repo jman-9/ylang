@@ -6,6 +6,7 @@
 #include "ScopeManager.h"
 #include <string>
 #include <map>
+#include <unordered_set>
 
 
 namespace ycom
@@ -31,13 +32,16 @@ protected:
 	void OpenCompound();
 	void CloseCompound();
 
-	bool AnalyzeStmt(const TreeNode& stmt);
+	bool AnalyzeStmt(const TreeNode& stmt, const std::unordered_set<EToken>& inSet);
 	bool AnalyzeExp(const TreeNode& stmt);
 	bool AnalyzeInclude(const TreeNode& stmt);
-	bool AnalyzeFor(const TreeNode& stmt);
-	bool AnalyzeIf(const TreeNode& stmt);
+	bool AnalyzeIf(const TreeNode& stmt, const std::unordered_set<EToken>& inSet);
+	bool AnalyzeFor(const TreeNode& stmt, const std::unordered_set<EToken>& inSet);
+	bool AnalyzeBreak(const TreeNode& stmt, const std::unordered_set<EToken>& inSet);
+	bool AnalyzeContinue(const TreeNode& stmt, const std::unordered_set<EToken>& inSet);
 	bool AnalyzeFn(const TreeNode& stmt);
-	bool AnalyzeCompound(const TreeNode& stmt);
+	bool AnalyzeReturn(const TreeNode& stmt, const std::unordered_set<EToken>& inSet);
+	bool AnalyzeCompound(const TreeNode& stmt, const std::unordered_set<EToken>& inSet);
 	bool AnalyzeClass(const TreeNode& stmt);
 
 	bool CanBeLValue(const TreeNode& stmt);

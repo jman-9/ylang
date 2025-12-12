@@ -1,6 +1,7 @@
 #include "SemanticAnalyzer.h"
 #include "BuiltinFuncTable.h"
 #include <format>
+using namespace std;
 
 
 namespace ycom
@@ -22,7 +23,7 @@ bool SemanticAnalyzer::Analyze(const TreeNode& code)
 {
 	for(const auto& stmt : code.childs)
 	{
-		if(!AnalyzeStmt(*stmt))
+		if(!AnalyzeStmt(*stmt, {}))
 			return false;
 	}
 
@@ -41,15 +42,18 @@ void SemanticAnalyzer::CloseCompound()
 	_scopeMgr.PopScope();
 }
 
-bool SemanticAnalyzer::AnalyzeStmt(const TreeNode& stmt)
+bool SemanticAnalyzer::AnalyzeStmt(const TreeNode& stmt, const unordered_set<EToken>& inSet)
 {
 	switch(stmt.self.kind)
 	{
 	case EToken::Include : return AnalyzeInclude(stmt);
-	case EToken::For : return AnalyzeFor(stmt);
-	case EToken::If : return AnalyzeIf(stmt);
+	case EToken::If : return AnalyzeIf(stmt, inSet);
+	case EToken::For : return AnalyzeFor(stmt, inSet);
+	case EToken::Break : return AnalyzeBreak(stmt, inSet);
+	case EToken::Continue : return AnalyzeContinue(stmt, inSet);
 	case EToken::Fn : return AnalyzeFn(stmt);
-	case EToken::LBrace : return AnalyzeCompound(stmt);
+	case EToken::Return : return AnalyzeReturn(stmt, inSet);
+	case EToken::LBrace : return AnalyzeCompound(stmt, inSet);
 	case EToken::Class: return AnalyzeClass(stmt);
 	default: ;
 	}
@@ -233,7 +237,7 @@ bool SemanticAnalyzer::AnalyzeInclude(const TreeNode& stmt)
 	return true;
 }
 
-bool SemanticAnalyzer::AnalyzeFor(const TreeNode& stmt)
+bool SemanticAnalyzer::AnalyzeFor(const TreeNode& stmt, const unordered_set<EToken>& inSet)
 {
 	if(stmt.self != EToken::For)
 		//todo trace
@@ -255,15 +259,33 @@ bool SemanticAnalyzer::AnalyzeFor(const TreeNode& stmt)
 	{//todo trace
 		return false;
 	}
-	if(!AnalyzeStmt(block))
+
+	auto inSetLocal = inSet;
+	inSetLocal.insert(EToken::For);
+	if(!AnalyzeStmt(block, inSetLocal))
 	{//todo trace
 		return false;
 	}
-
 	return true;
 }
 
-bool SemanticAnalyzer::AnalyzeIf(const TreeNode& stmt)
+bool SemanticAnalyzer::AnalyzeBreak(const TreeNode& stmt, const unordered_set<EToken>& inSet)
+{
+	if(inSet.contains(EToken::For))
+		return true;
+	_errors.push_back(ErrorBuilder::Default(stmt.self.line, "break statement not within a loop"));
+	return false;
+}
+
+bool SemanticAnalyzer::AnalyzeContinue(const TreeNode& stmt, const unordered_set<EToken>& inSet)
+{
+	if(inSet.contains(EToken::For))
+		return true;
+	_errors.push_back(ErrorBuilder::Default(stmt.self.line, "continue statement not within a loop"));
+	return false;
+}
+
+bool SemanticAnalyzer::AnalyzeIf(const TreeNode& stmt, const unordered_set<EToken>& inSet)
 {
 	if(stmt.self != EToken::If)
 		//todo trace
@@ -276,7 +298,7 @@ bool SemanticAnalyzer::AnalyzeIf(const TreeNode& stmt)
 	{//todo trace
 		return false;
 	}
-	if(!AnalyzeStmt(_true))
+	if(!AnalyzeStmt(_true, inSet))
 	{//todo trace
 		return false;
 	}
@@ -284,7 +306,7 @@ bool SemanticAnalyzer::AnalyzeIf(const TreeNode& stmt)
 	if(stmt.childs.size() > 2)
 	{
 		auto& _false = *stmt.childs[2];
-		if(!AnalyzeStmt(_false))
+		if(!AnalyzeStmt(_false, inSet))
 		{
 			//todo trace
 			return false;
@@ -350,16 +372,7 @@ bool SemanticAnalyzer::AnalyzeFn(const TreeNode& stmt)
 		_symTbl.back()[ v.name ] = sym;
 	}
 
-	if(block.self == EToken::LBrace)
-	{
-		if(!AnalyzeCompound(block))
-		{
-			//todo trace
-			_symTbl.back().erase(name);
-			return false;
-		}
-	}
-	else if(!AnalyzeStmt(block))
+	if(!AnalyzeStmt(block, { EToken::Fn }))
 	{
 		//todo trace
 		_symTbl.back().erase(name);
@@ -370,7 +383,25 @@ bool SemanticAnalyzer::AnalyzeFn(const TreeNode& stmt)
 	return true;
 }
 
-bool SemanticAnalyzer::AnalyzeCompound(const TreeNode& stmt)
+bool SemanticAnalyzer::AnalyzeReturn(const TreeNode& stmt, const unordered_set<EToken>& inSet)
+{
+	if(!inSet.contains(EToken::Fn))
+	{
+		_errors.push_back(ErrorBuilder::Default(stmt.self.line, "return statement not within a function"));
+		return false;
+	}
+
+	for(auto& c : stmt.childs)
+	{
+		if(!AnalyzeExp(*c))
+		{//todo trace
+			return false;
+		}
+	}
+	return true;
+}
+
+bool SemanticAnalyzer::AnalyzeCompound(const TreeNode& stmt, const unordered_set<EToken>& inSet)
 {
 	if(stmt.self != EToken::LBrace)
 		throw 'n';
@@ -379,7 +410,7 @@ bool SemanticAnalyzer::AnalyzeCompound(const TreeNode& stmt)
 
 	for(auto& itm : stmt.childs)
 	{
-		if(!AnalyzeStmt(*itm))
+		if(!AnalyzeStmt(*itm, inSet))
 			return false;
 	}
 
