@@ -20,7 +20,7 @@ class Diplomacy {
     fn add(a, b, delta){
         if(a == b) return;
         k = key(a, b);
-        if(!(k in relations)) relations[k] = 0;
+        if(!relations.contains(k)) relations[k] = 0;
         v = relations[k] + delta;
         if(v > 100) v = 100;
         if(v < -100) v = -100;
