@@ -113,6 +113,14 @@ bool SemanticAnalyzer::AnalyzeExp(const TreeNode& stmt)
 				sym.kind = ESymbol::Var;
 				_symTbl.back()[ sym.name ] = sym;
 			}
+			else
+			{
+				if(found->second.kind != ESymbol::Var)
+				{
+					_errors.push_back(ErrorBuilder::AlreadyExists(stmt.self.line, lhsTok.val));
+					return false;
+				}
+			}
 		}
 		return true;
 	}
