@@ -1,6 +1,6 @@
 <img src="ylang_logo.png" height="100">
 
-# ylang 0.1.0
+# ylang 0.1.1
 
 yet another programming language — retro, C-like, and Pythonic
 
@@ -17,7 +17,7 @@ It implements a complete compilation pipeline — from scanning to bytecode gene
 
 ## What's New
 
-* 0.1.0 introduces a stabilized architecture:
+* 0.1.1 introduces a stabilized architecture:
   - module include system with namespaces
   - restructured VM
     - redesigned scope system 
@@ -300,5 +300,6 @@ This project is licensed under the **MIT License** — see the [LICENSE](LICENSE
 | **0.0.3** | Module system, built-in modules, escape character, `yvm` refactoring |
 | **0.0.5** | Class system, increment/decrement operators (`++`,`--`), chained assignments (`a=b=0`), basic literals (`null`,`true`,`false`)|
 | **0.1.0** | Namespace rule, source-based include, VM restructuring (scope/stack redesign, refcnt memory model, dynamic resizing)|
+| **0.1.1** | Fixed critical bugs, Refactored code, class field declaration using chained assignments, backward declarations in classes |
 
 ---
