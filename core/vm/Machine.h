@@ -2,6 +2,7 @@
 #include "contract/Program.h"
 #include "module/ModuleManager.h"
 #include "Variable.h"
+#include "VariableList.h"
 #include <vector>
 #include <stack>
 
@@ -28,8 +29,8 @@ protected:
 	Variable _prgObj;
 
 	std::vector<Variable> _literals;
-	std::vector<Variable> _regs;
-	std::vector<Variable> _stack;
+	VariableList _regs;
+	VariableList _stack;
 	std::stack<uint16_t> _spStack;
 	std::stack<uint16_t> _rpStack;
 	std::stack<uint16_t> _roffStack;

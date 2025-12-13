@@ -192,7 +192,7 @@ void Variable::SetProgram(const Program& prg, bool makeInstance)
 		ResetNewObj();
 
 		_u._o->_prgo._prg = &prg;
-		_u._o->_prgo._globals.resize(3);
+		_u._o->_prgo._globals;
 		_u._o->_type = PROGRAMOBJ;
 		_type = PROGRAMOBJ;
 	}

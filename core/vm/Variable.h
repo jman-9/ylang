@@ -1,6 +1,7 @@
 #pragma once
 #include "contract/Program.h"
 #include "module/Module.h"
+#include "VariableList.h"
 #include <stdint.h>
 #include <string>
 #include <vector>
@@ -29,8 +30,8 @@ struct ModuleObject
 };
 struct ProgramObject
 {
-	std::vector<Variable> _globals;
-	std::vector<Variable> _consts;
+	VariableList _globals;
+	VariableList _consts;
 	const Program* _prg;
 };
 struct LVRefObject

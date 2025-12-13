@@ -19,8 +19,6 @@ Machine::Machine()
 	_pc = 0;
 	_retCode = INT_MAX;
 	_rpStack.push(0);
-	_regs.resize(33);
-	_stack.resize(33);
 
 	//TODO remove hardcoding
 	_literals.resize(3);
@@ -44,46 +42,40 @@ Variable* Machine::ResolveVar(ERefKind k, int idx)
 		{
 			auto& prgObj = _prgStack.top()->prgObj();
 			auto& consts = prgObj._consts;
-			if(idx >= consts.size())
-			{
-				consts.resize(idx+1);
-			}
-			if(consts[idx] == Variable::NONE)
+
+			auto cv = consts.Get(idx);
+
+			if(*cv == Variable::NONE)
 			{
 				auto c = prgObj._prg->_consts[idx];
 				switch(c._type)
 				{
-				case Constant::INT:		consts[idx].SetInt(c._int); break;
-				case Constant::FLOAT:	consts[idx].SetFloat(c._float); break;
-				case Constant::STR:		consts[idx].SetStr(c._str); break;
+				case Constant::INT:		cv->SetInt(c._int); break;
+				case Constant::FLOAT:	cv->SetFloat(c._float); break;
+				case Constant::STR:		cv->SetStr(c._str); break;
 				default: //TODO
 					throw 'n';
 				}
 			}
-			return &consts[idx];
+			return cv;
 		}
 
 	case ERefKind::Reg:
 		{
 			_roff = idx;
-			if(_rpStack.top() + idx >= _regs.size())
-				_regs.resize(_rpStack.top() + idx + 33);
-			return &_regs[_rpStack.top() + idx];
+			return _regs.Get(_rpStack.top() + idx);
 		}
 	case ERefKind::GlobalVar:
 		{
 			auto& glb = _prgStack.top()->prgObj()._globals;
-			if(idx >= glb.size()) glb.resize(idx + 33);
-			return &glb[idx];
+			return glb.Get(idx);
 		}
 	case ERefKind::LocalVar:
 		{
 			if(_sp < _spStack.top() + idx + 1)
 				_sp = _spStack.top() + idx + 1;
 
-			if(_spStack.top() + idx >= _stack.size())
-				_stack.resize(_spStack.top() + idx + 33);
-			return &_stack[_spStack.top() + idx];
+			return _stack.Get(_spStack.top() + idx);
 		}
 
 	case ERefKind::FieldVar:
@@ -207,7 +199,7 @@ bool Machine::Assign(const Op::Assign& as)
 					{
 						if(found->second.kind == EGlobalSymbol::Var)
 						{
-							dst->SetVar(dst->attr().owner.prgObj()._globals[found->second.idx]);
+							dst->SetVar(*dst->attr().owner.prgObj()._globals.Get(found->second.idx));
 						}
 					}
 				}
