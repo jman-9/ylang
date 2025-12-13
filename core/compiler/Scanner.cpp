@@ -230,6 +230,12 @@ bool Scanner::Scan(const std::string& originCode, int lineStartNum /* = 1 */)
 	return true;
 }
 
+void Scanner::Clear()
+{
+	_errors.clear();
+	_tokens.clear();
+}
+
 
 uint32_t Scanner::AdvanceNewLine(const std::string& code, int pos)
 {

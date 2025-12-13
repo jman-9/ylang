@@ -17,6 +17,7 @@ public:
 	virtual ~Scanner();
 
 	bool Scan(const std::string& code, int lineStartNum = 1);
+	void Clear();
 
 	std::vector<Token> _tokens;
 	std::vector<Error> _errors;
