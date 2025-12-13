@@ -1,10 +1,15 @@
-#pragma once
 #include "VariableList.h"
 #include "Variable.h"
 
 
 namespace yvm
 {
+
+VariableList::~VariableList()
+{
+	for(Variable* e : _list)
+		delete e;
+}
 
 void VariableList::GrowList(uint32_t growSize)
 {

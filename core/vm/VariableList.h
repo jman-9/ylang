@@ -1,4 +1,5 @@
 #pragma once
+#include <stdint.h>
 #include <vector>
 
 namespace yvm
@@ -15,11 +16,7 @@ public:
 	{
 		Get(_initialSize-1);
 	}
-	~VariableList()
-	{
-		for(auto e : _list)
-			delete e;
-	}
+	~VariableList();
 
 	inline Variable* Get(uint32_t idx)
 	{
