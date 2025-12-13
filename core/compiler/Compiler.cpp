@@ -203,12 +203,14 @@ vector<Error> Compiler::ParseCode(const string& src, TreeNodeSptr& retAstRoot)
 			}
 
 			auto interpolated = si.Interpolate(t);
-			if(interpolated.empty())
-			{//todo error
-				throw 'n';
+			if(!interpolated.errs.empty())
+			{
+				errs.insert(errs.end(), interpolated.errs.begin(), interpolated.errs.end());
+				break;
 			}
-			processed.insert(processed.end(), interpolated.begin(), interpolated.end());
+			processed.insert(processed.end(), interpolated.res.begin(), interpolated.res.end());
 		}
+		if(!errs.empty()) break;
 
 	#ifdef TOKEN_DEBUG_OUT
 		for(auto t : s._tokens)

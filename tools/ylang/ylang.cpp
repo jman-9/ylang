@@ -116,13 +116,12 @@ bool ylang::StartRepl()
 		vector<Error> errs;
 
 		bool run = false;
-		do {	//todo memory leak
+		do {
 			ycom::Scanner s;
 			s.Scan(code);
 			if(s._tokens.empty() || !s._errors.empty())
 			{
 				errs.insert(errs.end(), s._errors.begin(), s._errors.end());
-				s._errors.clear();
 				break;
 			}
 
@@ -137,11 +136,12 @@ bool ylang::StartRepl()
 				}
 
 				auto interpolated = si.Interpolate(t);
-				if(interpolated.empty())
-				{//todo error
-					throw 'n';
+				if(!interpolated.errs.empty())
+				{
+					errs.insert(errs.end(), interpolated.errs.begin(), interpolated.errs.end());
+					break;
 				}
-				processed.insert(processed.end(), interpolated.begin(), interpolated.end());
+				processed.insert(processed.end(), interpolated.res.begin(), interpolated.res.end());
 			}
 
 			ycom::Parser p(processed);

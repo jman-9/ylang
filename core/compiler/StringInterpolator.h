@@ -1,6 +1,8 @@
 #pragma once
 #include "Token.h"
+#include "contract/Error.h"
 #include <vector>
+
 
 
 namespace ycom
@@ -9,10 +11,16 @@ namespace ycom
 class StringInterpolator
 {
 public:
-	std::vector<Token> Interpolate(const Token& tokStr);
+	struct Result
+	{
+		std::vector<Error> errs;
+		std::vector<Token> res;
+	};
+
+	Result Interpolate(const Token& tokStr);
 
 protected:
-	bool ReplaceAllEscapeChars(std::string& inoutSrc);
+	Error ReplaceAllEscapeChars(std::string& inoutSrc, int line);
 };
 
 }

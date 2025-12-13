@@ -52,6 +52,8 @@ enum class EToken : uint8_t
 	XorAssign,
 	LShiftAssign,
 	RShiftAssign,
+	DotDot,
+
 	Id,
 	Int,
 	Float,
@@ -86,8 +88,6 @@ enum class EToken : uint8_t
 	Null,
 	True,
 	False,
-
-	DotDot,
 };
 
 

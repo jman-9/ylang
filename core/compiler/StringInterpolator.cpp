@@ -7,7 +7,7 @@ using namespace std;
 namespace ycom
 {
 
-bool StringInterpolator::ReplaceAllEscapeChars(string& inoutSrc)
+Error StringInterpolator::ReplaceAllEscapeChars(std::string& inoutSrc, int line)
 {
 	string after = "";
 	for(int i = 0; i < inoutSrc.size(); )
@@ -17,9 +17,7 @@ bool StringInterpolator::ReplaceAllEscapeChars(string& inoutSrc)
 		{
 			if(++i >= inoutSrc.size())
 			{//TODO error
-				throw 'n';
-				//_errors.push_back(ErrorBuilder::UnexpectedEof(t.line));
-				return false;
+				return ErrorBuilder::UnexpectedEof(line);
 			}
 			c = inoutSrc[i];
 			if(c == '\'' || c == '"' || c == '?' || c == '\\')
@@ -64,8 +62,8 @@ bool StringInterpolator::ReplaceAllEscapeChars(string& inoutSrc)
 					break;
 				}
 				if(i - first == 0)
-				{//TODO error
-					throw 'n';
+				{
+					return ErrorBuilder::Default(line, "integer literals must have at least one digit");
 				}
 				string sub = inoutSrc.substr(first, i - first);
 				c = (char)(stoi(sub, nullptr, 16) & 0xFF);
@@ -80,15 +78,12 @@ bool StringInterpolator::ReplaceAllEscapeChars(string& inoutSrc)
 				i--;
 			}
 			else if(c == 'u' || c == 'U')
-			{//unicode
-			 //TODO error
-				//_errors.push_back(ErrorBuilder::UnsupportedCharacterEscapeSequence(t.line, c));
-				return false;
+			{
+				return ErrorBuilder::Default(line, "\\u, \\U : currently unsupported");
 			}
 			else
-			{//TODO error
-				//_errors.push_back(ErrorBuilder::UnrecognizedCharacterEscapeSequence(t.line, c));
-				return false;
+			{
+				return ErrorBuilder::UnexpectedCharacter(line, c);
 			}
 		}
 
@@ -100,16 +95,16 @@ bool StringInterpolator::ReplaceAllEscapeChars(string& inoutSrc)
 	cout << "after: " << after << endl;
 #endif
 	inoutSrc = after;
-	return true;
+	return {};
 }
 
 
-std::vector<Token> StringInterpolator::Interpolate(const Token& tokStr)
+StringInterpolator::Result StringInterpolator::Interpolate(const Token& tokStr)
 {
 	if(tokStr != EToken::Str)
 		return {};
 
-	std::vector<Token> result;
+	Result result;
 
 	size_t i, j;
 	string s = tokStr.val;
@@ -120,8 +115,9 @@ std::vector<Token> StringInterpolator::Interpolate(const Token& tokStr)
 			if(s[i] == '}')
 			{
 				if(s[i+1] != '}')
-				{//TODO error
-					throw 'n';
+				{
+					result.errs.push_back(ErrorBuilder::UnexpectedCharacter(tokStr.line, s[i+1]));
+					return result;
 				}
 
 				s.erase(i+1, 1);
@@ -142,33 +138,37 @@ std::vector<Token> StringInterpolator::Interpolate(const Token& tokStr)
 				if(s[j] == '}') break;
 			}
 			if(j>=s.size())
-			{//todo error
-				throw 'n';
+			{
+				result.errs.push_back(ErrorBuilder::UnexpectedEof(tokStr.line));
+				return result;
 			}
 
 			string f = s.substr(i+1, j-i-1);
 			Scanner sc;
 			sc.Scan(f, tokStr.line);
 			if(!sc._errors.empty())
-			{//TODO error
-				throw 'n';
+			{
+				result.errs = sc._errors;
+				return result;
 			}
 
 			Token frontStrToken{ EToken::Str, tokStr.line, s.substr(0, i) };
-			if(!ReplaceAllEscapeChars(frontStrToken.val))
-			{//TODO
-				throw 'n';
+			auto err = ReplaceAllEscapeChars(frontStrToken.val, tokStr.line);
+			if(!err.IsNoError())
+			{
+				result.errs.push_back(err);
+				return result;
 			}
 
-			result.push_back(frontStrToken);
+			result.res.push_back(frontStrToken);
 			if(!sc._tokens.empty())
 			{
-				result.push_back({ EToken::Plus, tokStr.line, "+" });
-				result.push_back({ EToken::LParen, tokStr.line, "(" });
-				result.insert(result.end(), sc._tokens.begin(), sc._tokens.end());
-				result.push_back({ EToken::RParen, tokStr.line, ")" });
+				result.res.push_back({ EToken::Plus, tokStr.line, "+" });
+				result.res.push_back({ EToken::LParen, tokStr.line, "(" });
+				result.res.insert(result.res.end(), sc._tokens.begin(), sc._tokens.end());
+				result.res.push_back({ EToken::RParen, tokStr.line, ")" });
 			}
-			result.push_back({ EToken::Plus, tokStr.line, "+" });
+			result.res.push_back({ EToken::Plus, tokStr.line, "+" });
 
 			s = s.substr(j+1);
 			i = 0;
@@ -176,10 +176,12 @@ std::vector<Token> StringInterpolator::Interpolate(const Token& tokStr)
 		}
 		if(i >= s.size())
 		{
-			result.push_back({ EToken::Str, tokStr.line, s });
-			if(!ReplaceAllEscapeChars(result.back().val))
-			{//TODO
-				throw 'n';
+			result.res.push_back({ EToken::Str, tokStr.line, s });
+			auto err = ReplaceAllEscapeChars(result.res.back().val, tokStr.line);
+			if(!err.IsNoError())
+			{
+				result.errs.push_back(err);
+				return result;
 			}
 			break;
 		}
