@@ -102,6 +102,8 @@ bool SemanticAnalyzer::AnalyzeExp(const TreeNode& stmt)
 		{
 			if(!AnalyzeExp(*lhs->childs.front()))
 				return false;
+			if(!AnalyzeExp(*lhs->childs.back()))
+				return false;
 		}
 		else
 		{
@@ -353,6 +355,13 @@ bool SemanticAnalyzer::AnalyzeFn(const TreeNode& stmt)
 	sym.kind = ESymbol::Fn;
 	for(auto& p : params)
 	{
+		NamespaceUtil::Context ctx;
+		if(_nsTracker.IsExistingIfAppend(ctx, p->self.val))
+		{
+			_errors.push_back(ErrorBuilder::Default(stmt.self.line, format("'{}': not allowed parameter name (namespace)", p->self.val)));
+			return false;
+		}
+
 		auto found = _symTbl.back().find(p->self.val);
 		if(found != _symTbl.back().end())
 		{
