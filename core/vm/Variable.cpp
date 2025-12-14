@@ -357,7 +357,41 @@ bool Variable::CalcAndAssign(Variable& lhs, EToken calcOp, Variable& rhs)
 		return true;
 	}
 
-	if(lhs == _NULL_ || rhs == _NULL_ || lhs == NONE || rhs == NONE)
+	if(lhs._type == STR || rhs._type == STR)
+	{//todo refactor
+		switch(calcOp)
+		{
+		case EToken::Plus: SetStr(format("{}{}", lhs.ToStr(), rhs.ToStr())); break;
+		case EToken::Equal:
+		case EToken::NotEqual:
+			if(lhs == STR && rhs == STR)
+			{
+				switch(calcOp)
+				{
+				case EToken::Equal:		SetInt(*lhs._u._s == *rhs._u._s); break;
+				case EToken::NotEqual:	SetInt(*lhs._u._s != *rhs._u._s); break;
+				}
+			}
+			else
+			{
+				SetInt(0);
+			}
+			break;
+		case EToken::Dot:
+			if(rhs != STR)
+			{//TODO
+				throw 'n';
+				return false;
+			}
+			SetAttr(lhs, *rhs._u._s);
+			break;
+		default:
+			//TODO impl
+			throw 'n';
+			return false;
+		}
+	}
+	else if(lhs == _NULL_ || rhs == _NULL_ || lhs == NONE || rhs == NONE)
 	{//todo refactor
 		int lv = lhs == _NULL_ || lhs == NONE;
 		int rv = rhs == _NULL_ || rhs == NONE;
@@ -395,40 +429,6 @@ bool Variable::CalcAndAssign(Variable& lhs, EToken calcOp, Variable& rhs)
 		default: throw 'n'; //TODO
 		}
 		_type = INT;
-	}
-	else if(lhs._type == STR || rhs._type == STR)
-	{//todo refactor
-		switch(calcOp)
-		{
-		case EToken::Plus: SetStr(format("{}{}", lhs.ToStr(), rhs.ToStr())); break;
-		case EToken::Equal:
-		case EToken::NotEqual:
-			if(lhs == STR && rhs == STR)
-			{
-				switch(calcOp)
-				{
-				case EToken::Equal:		SetInt(*lhs._u._s == *rhs._u._s); break;
-				case EToken::NotEqual:	SetInt(*lhs._u._s != *rhs._u._s); break;
-				}
-			}
-			else
-			{
-				SetInt(0);
-			}
-			break;
-		case EToken::Dot:
-			if(rhs != STR)
-			{//TODO
-				throw 'n';
-				return false;
-			}
-			SetAttr(lhs, *rhs._u._s);
-			break;
-		default:
-			//TODO impl
-			throw 'n';
-			return false;
-		}
 	}
 	else if(lhs._type == FLOAT || rhs._type == FLOAT)
 	{
