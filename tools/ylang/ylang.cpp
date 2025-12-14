@@ -160,7 +160,11 @@ bool ylang::StartRepl()
 				break;
 			}
 
-			if(!bb.Build(*ast, prg)) throw 'n';
+			if(!bb.Build(*ast, prg))
+			{
+				errs.push_back(ErrorBuilder::Default(0, "bytecode build error"));
+				break;
+			}
 			if(first)
 			{
 				first = false;

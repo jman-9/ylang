@@ -118,8 +118,9 @@ ErrorTable Compiler::CompileCode(const string& src, Program& retProgram)
 
 			BytecodeBuilder bb;
 			if(!bb.Build(*ast, prg, &prgMap))
-			{//TODO trace
-				throw 'n';
+			{
+				errTbl[ast->self.val].push_back(ErrorBuilder::Default(0, "bytecode build error"));
+				break;
 			}
 
 			prg._name = filesystem::path(ast->self.val).stem().string();

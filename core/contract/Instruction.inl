@@ -1,5 +1,7 @@
 #pragma once
 #include "Instruction.h"
+#include <stdexcept>
+#include <format>
 #include <string.h>
 #include <type_traits>
 
@@ -32,7 +34,7 @@ void Instruction::Fill()
 	}
 	else
 	{
-		throw 'n';
+		throw std::logic_error(std::format("Fill - {}: unknown", (int)Op));
 	}
 
 	code.clear();
@@ -108,7 +110,7 @@ void Instruction::Fill(const OpType& inst)
 	}
 	else
 	{
-		throw 'n';
+		throw std::logic_error(std::format("Fill - unknown op"));
 	}
 
 	code.resize(sizeof(inst));

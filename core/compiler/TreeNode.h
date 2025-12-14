@@ -56,13 +56,8 @@ struct TreeNode
 		}
 	}
 
-	inline void ReplaceChild(TreeNodeSptr oldChild, TreeNodeSptr newChild)
+	inline bool ReplaceChild(TreeNodeSptr oldChild, TreeNodeSptr newChild)
 	{
-		if(childs.empty())
-		{//TODO
-			throw 'n';
-		}
-
 		for(auto it = childs.begin(); it != childs.end(); it++)
 		{
 			if(*it == oldChild)
@@ -70,33 +65,32 @@ struct TreeNode
 				newChild->parent = oldChild->parent;
 				oldChild->parent = nullptr;
 				*it = newChild;
-				break;
+				return true;
 			}
 		}
+		return false;
 	}
 
-	inline void ReplaceFrontChild(TreeNodeSptr node)
+	inline bool ReplaceFrontChild(TreeNodeSptr node)
 	{
 		if(childs.empty())
-		{//TODO
-			throw 'n';
-		}
+			return false;
 
 		childs.front()->parent = nullptr;
 		childs.front() = node;
 		node->parent = this;
+		return true;
 	}
 
-	inline void ReplaceBackChild(TreeNodeSptr node)
+	inline bool ReplaceBackChild(TreeNodeSptr node)
 	{
 		if(childs.empty())
-		{//TODO
-			throw 'n';
-		}
+			return false;
 
 		childs.back()->parent = nullptr;
 		childs.back() = node;
 		node->parent = this;
+		return true;
 	}
 
 	static TreeNodeSptr New(const Token& tok = Token())

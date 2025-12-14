@@ -76,7 +76,7 @@ YRet Write(YArgs* args)
 		wsz = fwrite(s->str().c_str(), 1, s->str().size(), (FILE*)me->modObj()._o);
 	}
 	else
-	{//TODO
+	{//TODO buffer
 		//yet;
 		throw 'n';
 	}

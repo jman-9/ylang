@@ -507,12 +507,12 @@ uint32_t Scanner::AdvanceFloating(const std::string& code, int start, Error& ret
 	if(_type == EFloat::EXP)
 	{
 		if(i >= code.size())
-		{//TODO err
-			throw 'n';
+		{
+			retError = ErrorBuilder::UnexpectedEof(0);
 		}
 		else if(!isdigit(code[i]) && code[i] != '+' && code[i] != '-')
-		{//TODO err
-			throw 'n';
+		{
+			retError = ErrorBuilder::UnexpectedCharacter(0, code[i]);
 		}
 
 		if(code[i] == '+' || code[i] == '-')
@@ -521,12 +521,12 @@ uint32_t Scanner::AdvanceFloating(const std::string& code, int start, Error& ret
 		}
 
 		if(i >= code.size())
-		{//TODO err
-			throw 'n';
+		{
+			retError = ErrorBuilder::UnexpectedEof(0);
 		}
 		else if(!isdigit(code[i]))
-		{//TODO err
-			throw 'n';
+		{
+			retError = ErrorBuilder::UnexpectedCharacter(0, code[i]);
 		}
 
 		for(; i<code.size(); i++)

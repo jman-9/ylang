@@ -80,11 +80,7 @@ bool SemanticAnalyzer::AnalyzeExp(const TreeNode& stmt)
 	{
 		bool rhsOk = AnalyzeExp(*stmt.childs.back());
 		if(!rhsOk)
-		{//todo trace
-			//_errors.push_back(ErrorBuilder::Default(stmt.self.line, "assignment
-			//throw 'n';
 			return false;
-		}
 
 		// TODO
 		// LValue 체크? 구문분석에서?
@@ -418,9 +414,6 @@ bool SemanticAnalyzer::AnalyzeReturn(const TreeNode& stmt, const unordered_set<E
 
 bool SemanticAnalyzer::AnalyzeCompound(const TreeNode& stmt, const unordered_set<EToken>& inSet)
 {
-	if(stmt.self != EToken::LBrace)
-		throw 'n';
-
 	OpenCompound();
 
 	for(auto& itm : stmt.childs)
@@ -435,9 +428,6 @@ bool SemanticAnalyzer::AnalyzeCompound(const TreeNode& stmt, const unordered_set
 
 bool SemanticAnalyzer::AnalyzeClass(const TreeNode& stmt)
 {
-	if(stmt.self != EToken::Class)
-		throw 'n';
-
 	if(_scopeMgr.GetCurScope() == ScopeManager::SCOPE_LOCAL)
 	{//TODO
 		_errors.push_back(ErrorBuilder::Default(stmt.self.line, "nested class: currently not supported"));

@@ -1,5 +1,6 @@
 #pragma once
 #include "Bytecode.h"
+#include <stdexcept>
 #include <format>
 
 
@@ -85,7 +86,7 @@ void Bytecode::FillBytecode(int ln, const OpType& inst, int srcLine /* = -1 */)
 		}
 		else
 		{
-			throw 'n';
+			throw std::logic_error(std::format("FillBytecode - line:{} srcLine:{}, op:Assign", ln, srcLine));
 		}
 	}
 	else if constexpr (std::is_same_v<Op::Jmp, OpType>)
@@ -150,7 +151,7 @@ void Bytecode::FillBytecode(int ln, const OpType& inst, int srcLine /* = -1 */)
 	}
 	else
 	{
-		throw 'n';
+		throw std::logic_error(std::format("FillBytecode - line:{} srcLine:{} op:unknown", ln, srcLine));
 	}
 
 	if(srcLine > -1)

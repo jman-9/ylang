@@ -1,5 +1,6 @@
 #include "Parser.h"
 #include <queue>
+#include <format>
 using namespace std;
 
 
@@ -251,7 +252,7 @@ TreeNodeSptr Parser::ParseExpLoop(EToken endToken /* = EToken::None */, EToken e
 
 			if(curNode->childs.empty())
 			{
-				throw 'a';
+				_errors.push_back(ErrorBuilder::Default(node->self.line, format("{} : parser error", node->self.val)));
 			}
 		}
 	}
