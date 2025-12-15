@@ -1,6 +1,7 @@
 #include "BytecodeBuilder.h"
 #include "BuiltinFuncTable.h"
 #include "NamespaceUtil.h"
+#include <stdexcept>
 using namespace std;
 
 
@@ -197,8 +198,8 @@ bool BytecodeBuilder::BuildReturn(Bytecode& retCtx, const TreeNode& stmt)
 	else
 	{
 		if(!BuildExp(retCtx, *stmt.childs[0], false))
-		{
-			throw 'n';
+		{//TODO log
+			return false;
 		}
 
 		for(int i=0; i<_fnStack.top().pushSpCnt; i++)
@@ -345,7 +346,10 @@ bool BytecodeBuilder::BuildIf(Bytecode& retCtx, const TreeNode& stmt)
 	auto& test = *stmt.childs[0];
 	auto& _true = *stmt.childs[1];
 
-	BuildExp(retCtx, test, false);
+	if(!BuildExp(retCtx, test, false))
+	{//TODO log
+		return false;
+	}
 
 	size_t condLine = retCtx.nextCodeSlot();
 	retCtx.PushBytecode<EOpcode::Noop>();
@@ -354,7 +358,10 @@ bool BytecodeBuilder::BuildIf(Bytecode& retCtx, const TreeNode& stmt)
 	jz.testKind = (uint8_t)ERefKind::Reg;
 	jz.test = _reg;
 
-	BuildStmt(retCtx, _true);
+	if(!BuildStmt(retCtx, _true))
+	{//TODO log
+		return false;
+	}
 
 	size_t skipLine = retCtx.nextCodeSlot();
 	retCtx.PushBytecode<EOpcode::Noop>();
@@ -366,8 +373,8 @@ bool BytecodeBuilder::BuildIf(Bytecode& retCtx, const TreeNode& stmt)
 	{
 		auto& _false = *stmt.childs[2];
 		if(!BuildStmt(retCtx, _false))
-		{
-			throw 'n';
+		{//TODO log
+			return false;
 		}
 	}
 
@@ -380,9 +387,6 @@ bool BytecodeBuilder::BuildFn(Bytecode& retCtx, const TreeNode& stmt)
 {
 	uint32_t regStack = _reg;
 	_reg = 0;
-
-	if(stmt.self != EToken::Fn)
-		throw 'n';
 
 	size_t skipLine = retCtx.nextCodeSlot();
 	retCtx.PushBytecode<EOpcode::Noop>();
@@ -427,13 +431,13 @@ bool BytecodeBuilder::BuildFn(Bytecode& retCtx, const TreeNode& stmt)
 	if(block.self == EToken::LBrace)
 	{
 		if(!BuildCompound(retCtx, block))
-		{
-			throw 'n';
+		{//TODO log
+			return false;
 		}
 	}
 	else if(!BuildStmt(retCtx, block))
-	{
-		throw 'n';
+	{//TODO log
+		return false;
 	}
 
 	_reg = regStack;
@@ -469,21 +473,25 @@ bool BytecodeBuilder::BuildInvokeExp(Bytecode& retCtx, const TreeNode& stmt)
 	if(ivkType == EToken::Dot)
 	{	//TODO generalize
 		if(!BuildExp(retCtx, *stmt.childs[0], false))
-			throw 'n';
+		{//TODO log
+			return false;
+		}
 		_reg++;
 	}
 
 	for(size_t i = 1; i<stmt.childs.size(); i++)
 	{
 		if(!BuildExp(retCtx, *stmt.childs[i], false))
-			throw 'n';
+		{//TODO log
+			return false;
+		}
 		_reg++;
 	}
 	_reg = regStack;
 
 	if (ivkType == EToken::LParen)
 	{//todo dynamic eval
-		throw 'n';
+		throw std::exception("not implemented");
 	}
 
 	if(ivkType == EToken::Dot)
@@ -547,7 +555,9 @@ bool BytecodeBuilder::BuildListExp(Bytecode& retCtx, const TreeNode& stmt)
 	for(size_t i = 0; i<stmt.childs.size(); i++)
 	{
 		if(!BuildExp(retCtx, *stmt.childs[i], false))
-			throw 'n';
+		{//TODO log
+			return false;
+		}
 		_reg++;
 	}
 
@@ -573,10 +583,14 @@ bool BytecodeBuilder::BuildDictExp(Bytecode& retCtx, const TreeNode& stmt)
 	for(size_t i = 0; i<stmt.childs.size(); i++)
 	{
 		if(!BuildExp(retCtx, *stmt.childs[i], false))
-			throw 'n';
+		{//TODO log
+			return false;
+		}
 		_reg++;
 		if(!BuildExp(retCtx, *stmt.childs[i]->childs[0], false))
-			throw 'n';
+		{//TODO log
+			return false;
+		}
 		_reg++;
 	}
 
@@ -608,7 +622,9 @@ bool BytecodeBuilder::BuildIndexExp(Bytecode& retCtx, const TreeNode& stmt)
 	for(size_t i = 0; i<stmt.childs.size(); i++)
 	{
 		if(!BuildExp(retCtx, *stmt.childs[i], false))
-			throw 'n';
+		{//TODO log
+			return false;
+		}
 		_reg++;
 	}
 
@@ -635,7 +651,9 @@ bool BytecodeBuilder::BuildLValueFieldExp(Bytecode& retCtx, const TreeNode& stmt
 	for(size_t i = 0; i<stmt.childs.size(); i++)
 	{
 		if(!BuildExp(retCtx, *stmt.childs[i], false))
-			throw 'n';
+		{//TODO log
+			return false;
+		}
 		_reg++;
 	}
 
@@ -695,15 +713,15 @@ bool BytecodeBuilder::BuildExp(Bytecode& retCtx, const TreeNode& stmt, bool root
 	TreeNode* rhs = stmt.childs.size() > 1 ? stmt.childs.back().get() : nullptr;
 
 	if(!lhs)
-	{
-		throw 'n';
+	{//TODO log
+		return false;
 	}
 
 	if(lhs->self != EToken::Id && !lhs->self.IsLiteral())
 	{
 		if(!BuildExp(retCtx, *lhs, false))
-		{
-			throw 'n';
+		{//TODO log
+			return false;
 		}
 
 		//qaz
@@ -787,8 +805,8 @@ bool BytecodeBuilder::BuildExp(Bytecode& retCtx, const TreeNode& stmt, bool root
 		if(rhs->self != EToken::Id && !rhs->self.IsLiteral())
 		{
 			if(!BuildExp(retCtx, *rhs, false))
-			{
-				throw 'n';
+			{//TODO log
+				return false;
 			}
 			inst.src2Kind = (uint8_t)ERefKind::Reg;
 			inst.src2 = (uint16_t)_reg;
@@ -816,8 +834,8 @@ bool BytecodeBuilder::BuildExp(Bytecode& retCtx, const TreeNode& stmt, bool root
 			{
 				auto idx = _scopeMgr.GetIdx(rhs->self.val);
 				if(idx.kind == ScopeManager::Idx::NONE)
-				{
-					throw 'n';
+				{//TODO log
+					return false;
 				}
 
 				inst.src2Kind = TO_REF_KIND_U8(idx.kind);
@@ -850,8 +868,8 @@ bool BytecodeBuilder::BuildExp(Bytecode& retCtx, const TreeNode& stmt, bool root
 				srcIdx = inst.src1;
 				break;
 
-			default:
-				throw 'n';
+			default://TODO log
+				return false;
 			}
 
 			inst.op = (uint8_t)stmt.self.kind;
@@ -883,8 +901,8 @@ bool BytecodeBuilder::BuildExp(Bytecode& retCtx, const TreeNode& stmt, bool root
 			inst.op = (uint8_t)EToken::None;
 		}
 		else
-		{
-			throw 'n';
+		{//TODO log
+			return false;
 		}
 	}
 
