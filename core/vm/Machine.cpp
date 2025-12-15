@@ -272,8 +272,8 @@ bool Machine::Assign(const Op::Assign& as)
 		{//no-op
 		}
 		else
-		{//TODO func call
-			throw 'n';
+		{//TODO trace
+			// currently no-op
 		}
 	}
 

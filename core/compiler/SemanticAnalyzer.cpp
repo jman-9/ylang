@@ -579,7 +579,7 @@ bool SemanticAnalyzer::AnalyzeExp(const TreeNode& stmt)
 	for(auto& c : stmt.childs)
 	{
 		if(!AnalyzeExp(*c))
-		{//todo trace
+		{
 			return false;
 		}
 	}

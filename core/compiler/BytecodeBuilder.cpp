@@ -800,6 +800,7 @@ bool BytecodeBuilder::BuildExp(Bytecode& retCtx, const TreeNode& stmt, bool root
 	{
 		logicalOpLine = retCtx.nextCodeSlot();
 		retCtx.PushBytecode<EOpcode::Noop>();
+		retCtx.PushBytecode<EOpcode::Noop>();
 	}
 
 	if(rhs)
@@ -925,7 +926,6 @@ bool BytecodeBuilder::BuildExp(Bytecode& retCtx, const TreeNode& stmt, bool root
 		}
 	}
 
-
 	if(!root)
 	{
 		inst.dstKind = (uint8_t)ERefKind::Reg;
@@ -939,12 +939,23 @@ bool BytecodeBuilder::BuildExp(Bytecode& retCtx, const TreeNode& stmt, bool root
 
 	if(stmt.self == EToken::And || stmt.self == EToken::Or)
 	{
-		Op::Assign as;
-		as.dstKind = inst.dstKind;
-		as.dst = inst.dst;
-		as.src1Kind = inst.src2Kind;
-		as.src1 = inst.src2;
-		retCtx.PushBytecode(as, stmt.self.line);
+		int logopln = logicalOpLine;
+		if((EToken)inst.dstKind != EToken::None)
+		{
+			Op::Assign as;
+			as.dstKind = inst.dstKind;
+			as.dst = inst.dst;
+			as.src1Kind = inst.src2Kind;
+			as.src1 = inst.src2;
+			retCtx.PushBytecode(as, stmt.self.line);
+
+			as.dstKind = inst.dstKind;
+			as.dst = inst.dst;
+			as.src1Kind = inst.src1Kind;
+			as.src1 = inst.src1;
+			retCtx.FillBytecode(logicalOpLine, as, stmt.self.line);
+			logopln = logicalOpLine+1;
+		}
 
 		if(stmt.self == EToken::And)
 		{
@@ -952,7 +963,7 @@ bool BytecodeBuilder::BuildExp(Bytecode& retCtx, const TreeNode& stmt, bool root
 			jz.testKind = (uint8_t)inst.src1Kind;
 			jz.test = inst.src1;
 			jz.pos = retCtx.nextCodeSlot();
-			retCtx.FillBytecode(logicalOpLine, jz, stmt.self.line);
+			retCtx.FillBytecode(logopln, jz, stmt.self.line);
 		}
 		else
 		{
@@ -960,7 +971,7 @@ bool BytecodeBuilder::BuildExp(Bytecode& retCtx, const TreeNode& stmt, bool root
 			jnz.testKind = (uint8_t)inst.src1Kind;
 			jnz.test = inst.src1;
 			jnz.pos = retCtx.nextCodeSlot();
-			retCtx.FillBytecode(logicalOpLine, jnz, stmt.self.line);
+			retCtx.FillBytecode(logopln, jnz, stmt.self.line);
 		}
 	}
 	else
