@@ -56,6 +56,39 @@ void SemanticAnalyzer::CloseCompound()
 	CloseScope();
 }
 
+bool SemanticAnalyzer::CanBeLValue(const TreeNode& stmt)
+{
+	const TreeNode* cur = &stmt;
+	for( ; cur; cur = cur->childs.front().get())
+	{
+		auto& curTok = cur->self;
+		if(curTok == EToken::LParen)
+		{
+			continue;
+		}
+
+		if(curTok == EToken::LValueField) break;
+
+		if(curTok != EToken::Id && curTok != EToken::Dot && curTok != EToken::Index && curTok != EToken::LValueIndex)
+		{
+			return false;
+		}
+		if(curTok == EToken::Id)
+		{
+			auto found = _symTbl.back().find(curTok.val);
+			if(found != _symTbl.back().end())
+			{
+				if(found->second.kind != ESymbol::Var && found->second.kind != ESymbol::Field)
+					return false;
+			}
+		}
+
+		if(cur->childs.empty()) break;
+	}
+
+	return true;
+}
+
 bool SemanticAnalyzer::AnalyzeStmt(const TreeNode& stmt, const unordered_set<EToken>& inSet)
 {
 	switch(stmt.self.kind)
@@ -72,157 +105,6 @@ bool SemanticAnalyzer::AnalyzeStmt(const TreeNode& stmt, const unordered_set<ETo
 	default: ;
 	}
 	return AnalyzeExp(stmt);
-}
-
-bool SemanticAnalyzer::AnalyzeExp(const TreeNode& stmt)
-{
-	if(stmt.self == EToken::Assign)
-	{
-		bool rhsOk = AnalyzeExp(*stmt.childs.back());
-		if(!rhsOk)
-			return false;
-
-		// TODO
-		// LValue 체크? 구문분석에서?
-		// postfix LValue 체크 필요
-		auto& lhs = stmt.childs.front();
-		auto& lhsTok = lhs->self;
-		if(lhsTok == EToken::LValueIndex)
-		{//TODO
-			if(!AnalyzeExp(*lhs->childs.front()))
-				return false;
-			if(!AnalyzeExp(*lhs->childs.back()))
-				return false;
-		}
-		else if(lhsTok == EToken::LValueField)
-		{
-			if(!AnalyzeExp(*lhs->childs.front()))
-				return false;
-			if(!AnalyzeExp(*lhs->childs.back()))
-				return false;
-		}
-		else
-		{
-			auto found = _symTbl.back().find(lhsTok.val);
-			if(found == _symTbl.back().end() || found->second.preRegister)
-			{
-				Symbol sym;
-				sym.name = lhsTok.val;
-				sym.kind = ESymbol::Var;
-				_symTbl.back()[ sym.name ] = sym;
-			}
-			else
-			{
-				if(found->second.kind != ESymbol::Var)
-				{
-					_errors.push_back(ErrorBuilder::AlreadyExists(stmt.self.line, lhsTok.val));
-					return false;
-				}
-			}
-		}
-		return true;
-	}
-
-	if(stmt.self == EToken::Invoke)
-	{//TODO 괄호 이용할 경우 처리
-		auto& name = stmt.childs[0];
-		if(name->self == EToken::Id)
-		{
-			auto builtinFuncId = _builtinFuncTbl.GetFuncId(name->self.val);
-			if(!builtinFuncId)
-			{
-				auto found = _symTbl.back().find(name->self.val);
-				if(found == _symTbl.back().end())
-				{
-					_errors.push_back(ErrorBuilder::NotFound(name->self.line, name->self.val));
-					return false;
-				}
-
-				if(found->second.kind == ESymbol::Fn)
-				{
-					//TODO 가변인자
-					if(stmt.childs.size() - 1 != found->second.params.size())
-					{//todo message
-						_errors.push_back(ErrorBuilder::Default(stmt.self.line, format("'{}': no matched arguments", name->self.val)));
-						return false;
-					}
-				}
-			}
-		}
-		else
-		{
-			if(!AnalyzeExp(*stmt.childs[0]))
-			{//todo trace
-				return false;
-			}
-		}
-
-		for(size_t i=1; i<stmt.childs.size(); i++)
-		{
-			if(!AnalyzeExp(*stmt.childs[i]))
-			{//todo trace
-				return false;
-			}
-		}
-		return true;
-	}
-
-	if(stmt.self == EToken::Id || stmt.self == EToken::Str)
-	{
-		if((!_nsCtx.IsEmpty() || stmt.self == EToken::Id) && _nsTracker.IsExistingIfAppend(_nsCtx, stmt.self.val))
-		{
-			_nsCtx.Append(stmt.self.val);
-		}
-		else
-		{
-			if(_nsTracker.IsTerminal(_nsCtx))
-			{//TODO module member field check
-				_nsCtx.Clear();
-			}
-			else
-			{
-				_errors.push_back(ErrorBuilder::NotFound(stmt.self.line, stmt.self.val));
-				return false;
-			}
-
-			if(stmt.self == EToken::Id)
-			{
-				auto found = _symTbl.back().find(stmt.self.val);
-				if(found == _symTbl.back().end())
-				{//todo message
-					_errors.push_back(ErrorBuilder::NotInitialized(stmt.self.line, stmt.self.val));
-					return false;
-				}
-			}
-		}
-		return true;
-	}
-
-	if(!_nsTracker.IsTerminal(_nsCtx))
-	{
-		_errors.push_back(ErrorBuilder::NotFound(stmt.self.line, stmt.self.val));
-		_nsCtx.Clear();
-		return false;
-	}
-
-	if(stmt.self.IsIncDecOp())
-	{
-		if(!CanBeLValue(*stmt.childs.front()))
-		{
-			_errors.push_back(ErrorBuilder::LValueError(stmt.self.line, stmt.self.val));
-			return false;
-		}
-	}
-
-	for(auto& c : stmt.childs)
-	{
-		if(!AnalyzeExp(*c))
-		{//todo trace
-			return false;
-		}
-	}
-
-	return true;
 }
 
 bool SemanticAnalyzer::AnalyzeInclude(const TreeNode& stmt)
@@ -519,37 +401,161 @@ bool SemanticAnalyzer::AnalyzeClass(const TreeNode& stmt)
 	return true;
 }
 
-bool SemanticAnalyzer::CanBeLValue(const TreeNode& stmt)
-{
-	const TreeNode* cur = &stmt;
-	for( ; cur; cur = cur->childs.front().get())
+bool SemanticAnalyzer::AnalyzeInvokeExp(const TreeNode& stmt)
+{	//TODO 괄호 이용할 경우 처리
+	auto& name = stmt.childs[0];
+	if(name->self == EToken::Id)
 	{
-		auto& curTok = cur->self;
-		if(curTok == EToken::LParen)
+		auto builtinFuncId = _builtinFuncTbl.GetFuncId(name->self.val);
+		if(!builtinFuncId)
 		{
-			continue;
-		}
-
-		if(curTok == EToken::LValueField) break;
-
-		if(curTok != EToken::Id && curTok != EToken::Dot && curTok != EToken::Index && curTok != EToken::LValueIndex)
-		{
-			return false;
-		}
-		if(curTok == EToken::Id)
-		{
-			auto found = _symTbl.back().find(curTok.val);
-			if(found != _symTbl.back().end())
+			auto found = _symTbl.back().find(name->self.val);
+			if(found == _symTbl.back().end())
 			{
-				if(found->second.kind != ESymbol::Var && found->second.kind != ESymbol::Field)
+				_errors.push_back(ErrorBuilder::NotFound(name->self.line, name->self.val));
+				return false;
+			}
+
+			if(found->second.kind == ESymbol::Fn)
+			{
+				//TODO 가변인자
+				if(stmt.childs.size() - 1 != found->second.params.size())
+				{//todo message
+					_errors.push_back(ErrorBuilder::Default(stmt.self.line, format("'{}': no matched arguments", name->self.val)));
 					return false;
+				}
 			}
 		}
+	}
+	else
+	{
+		if(!AnalyzeExp(*stmt.childs[0]))
+		{//todo trace
+			return false;
+		}
+	}
 
-		if(cur->childs.empty()) break;
+	for(size_t i=1; i<stmt.childs.size(); i++)
+	{
+		if(!AnalyzeExp(*stmt.childs[i]))
+		{//todo trace
+			return false;
+		}
+	}
+	return true;
+}
+
+bool SemanticAnalyzer::AnalyzeExp(const TreeNode& stmt)
+{
+	if(stmt.self == EToken::Assign)
+	{
+		bool rhsOk = AnalyzeExp(*stmt.childs.back());
+		if(!rhsOk)
+			return false;
+
+		// TODO
+		// LValue 체크? 구문분석에서?
+		// postfix LValue 체크 필요
+		auto& lhs = stmt.childs.front();
+		auto& lhsTok = lhs->self;
+		if(lhsTok == EToken::LValueIndex)
+		{//TODO
+			if(!AnalyzeExp(*lhs->childs.front()))
+				return false;
+			if(!AnalyzeExp(*lhs->childs.back()))
+				return false;
+		}
+		else if(lhsTok == EToken::LValueField)
+		{
+			if(!AnalyzeExp(*lhs->childs.front()))
+				return false;
+			if(!AnalyzeExp(*lhs->childs.back()))
+				return false;
+		}
+		else
+		{
+			auto found = _symTbl.back().find(lhsTok.val);
+			if(found == _symTbl.back().end() || found->second.preRegister)
+			{
+				Symbol sym;
+				sym.name = lhsTok.val;
+				sym.kind = ESymbol::Var;
+				_symTbl.back()[ sym.name ] = sym;
+			}
+			else
+			{
+				if(found->second.kind != ESymbol::Var)
+				{
+					_errors.push_back(ErrorBuilder::AlreadyExists(stmt.self.line, lhsTok.val));
+					return false;
+				}
+			}
+		}
+		return true;
+	}
+
+	if(stmt.self == EToken::Invoke)
+	{
+		return AnalyzeInvokeExp(stmt);
+	}
+
+	if(stmt.self == EToken::Id || stmt.self == EToken::Str)
+	{
+		if((!_nsCtx.IsEmpty() || stmt.self == EToken::Id) && _nsTracker.IsExistingIfAppend(_nsCtx, stmt.self.val))
+		{
+			_nsCtx.Append(stmt.self.val);
+		}
+		else
+		{
+			if(_nsTracker.IsTerminal(_nsCtx))
+			{//TODO module member field check
+				_nsCtx.Clear();
+			}
+			else
+			{
+				_errors.push_back(ErrorBuilder::NotFound(stmt.self.line, stmt.self.val));
+				return false;
+			}
+
+			if(stmt.self == EToken::Id)
+			{
+				auto found = _symTbl.back().find(stmt.self.val);
+				if(found == _symTbl.back().end())
+				{//todo message
+					_errors.push_back(ErrorBuilder::NotInitialized(stmt.self.line, stmt.self.val));
+					return false;
+				}
+			}
+		}
+		return true;
+	}
+
+	if(!_nsTracker.IsTerminal(_nsCtx))
+	{
+		_errors.push_back(ErrorBuilder::NotFound(stmt.self.line, stmt.self.val));
+		_nsCtx.Clear();
+		return false;
+	}
+
+	if(stmt.self.IsIncDecOp())
+	{
+		if(!CanBeLValue(*stmt.childs.front()))
+		{
+			_errors.push_back(ErrorBuilder::LValueError(stmt.self.line, stmt.self.val));
+			return false;
+		}
+	}
+
+	for(auto& c : stmt.childs)
+	{
+		if(!AnalyzeExp(*c))
+		{//todo trace
+			return false;
+		}
 	}
 
 	return true;
 }
+
 
 }

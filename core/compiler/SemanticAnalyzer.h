@@ -34,8 +34,9 @@ protected:
 	void OpenCompound();
 	void CloseCompound();
 
+	bool CanBeLValue(const TreeNode& stmt);
+
 	bool AnalyzeStmt(const TreeNode& stmt, const std::unordered_set<EToken>& inSet);
-	bool AnalyzeExp(const TreeNode& stmt);
 	bool AnalyzeInclude(const TreeNode& stmt);
 	bool AnalyzeIf(const TreeNode& stmt, const std::unordered_set<EToken>& inSet);
 	bool AnalyzeFor(const TreeNode& stmt, const std::unordered_set<EToken>& inSet);
@@ -46,7 +47,8 @@ protected:
 	bool AnalyzeCompound(const TreeNode& stmt, const std::unordered_set<EToken>& inSet);
 	bool AnalyzeClass(const TreeNode& stmt);
 
-	bool CanBeLValue(const TreeNode& stmt);
+	bool AnalyzeInvokeExp(const TreeNode& stmt);
+	bool AnalyzeExp(const TreeNode& stmt);
 };
 
 }

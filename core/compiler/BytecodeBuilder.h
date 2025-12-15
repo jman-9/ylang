@@ -82,15 +82,17 @@ protected:
 	bool BuildIf(Bytecode& retCtx, const TreeNode& stmt);
 	bool BuildFn(Bytecode& retCtx, const TreeNode& stmt);
 	bool BuildCompound(Bytecode& retCtx, const TreeNode& stmt);
-	bool BuildExp(Bytecode& retCtx, const TreeNode& stmt, bool root);
 	bool BuildReturn(Bytecode& retCtx, const TreeNode& stmt);
 	bool BuildContinue(Bytecode& retCtx, const TreeNode& stmt);
 	bool BuildBreak(Bytecode& retCtx, const TreeNode& stmt);
-	bool BuildList(Bytecode& retCtx, const TreeNode& stmt);
-	bool BuildDict(Bytecode& retCtx, const TreeNode& stmt);
-	bool BuildIndex(Bytecode& retCtx, const TreeNode& stmt);
 	bool BuildClass(Bytecode& retCtx, const TreeNode& stmt);
-	bool BuildLValueField(Bytecode& retCtx, const TreeNode& stmt);
+
+	bool BuildInvokeExp(Bytecode& retCtx, const TreeNode& stmt);
+	bool BuildListExp(Bytecode& retCtx, const TreeNode& stmt);
+	bool BuildDictExp(Bytecode& retCtx, const TreeNode& stmt);
+	bool BuildIndexExp(Bytecode& retCtx, const TreeNode& stmt);
+	bool BuildLValueFieldExp(Bytecode& retCtx, const TreeNode& stmt);
+	bool BuildExp(Bytecode& retCtx, const TreeNode& stmt, bool root);
 };
 
 }
