@@ -253,6 +253,7 @@ TreeNodeSptr Parser::ParseExpLoop(EToken endToken /* = EToken::None */, EToken e
 			if(curNode->childs.empty())
 			{
 				_errors.push_back(ErrorBuilder::Default(node->self.line, format("{} : parser error", node->self.val)));
+				return nullptr;
 			}
 		}
 	}
