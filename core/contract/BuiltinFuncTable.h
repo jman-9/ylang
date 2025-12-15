@@ -5,12 +5,13 @@
 struct BuiltinFuncTable
 {
 	BuiltinFuncTable()
-	{
+	{//TODO refactor
 		uint32_t off = 0xFFFF0000;
 
 		_tbl.insert({"print", off++});
 		_tbl.insert({"println", off++});
 		_tbl.insert({"exit", off++});
+		_tbl.insert({"readln", off++});
 	}
 
 	uint32_t GetFuncId(const std::string& funcName) const

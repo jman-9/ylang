@@ -882,7 +882,7 @@ bool Machine::LValueField(const Op::LValueField& lvf)
 
 
 bool Machine::CallBuiltinFunc(const Op::Call& cal)
-{
+{//TODO refactor
 	if(cal.numPrms)
 	{
 		_roff -= (int)cal.numPrms - 1;
@@ -922,6 +922,14 @@ bool Machine::CallBuiltinFunc(const Op::Call& cal)
 		{
 			auto v = ResolveVar(ERefKind::Reg, _roff);
 			_retCode = (int)v->int_();
+		}
+		break;
+
+	case 0xFFFF0000 + 3:
+		{
+			auto v = ResolveVar(ERefKind::Reg, _roff);
+			v->SetStr("");
+			getline(cin, *v->_u._s);
 		}
 		break;
 
