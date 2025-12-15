@@ -60,7 +60,11 @@ ScopeManager::Idx ScopeManager::AddOrNot(const Symbol& sym)
 	{
 		return idx;
 	}
-
+	return AddForce(sym);
+}
+ScopeManager::Idx ScopeManager::AddForce(const Symbol& sym)
+{
+	Idx idx;
 	switch(_scopeTbl.back().type)
 	{
 	case SCOPE_GLOBAL:
@@ -80,7 +84,7 @@ ScopeManager::Idx ScopeManager::AddOrNot(const Symbol& sym)
 			idx.kind = Idx::FIELD;
 		}
 		else
-			throw 'n'; //TODO
+			return {};
 		break;
 
 	case SCOPE_LOCAL:
@@ -89,9 +93,32 @@ ScopeManager::Idx ScopeManager::AddOrNot(const Symbol& sym)
 		break;
 	}
 
-	_scopeTbl.back().symTbl[sym] = idx;
+	SymbolKey sk = { sym.name };
+	_scopeTbl.back().symTbl[sk] = SymbolData{ sym, idx };
 	//TODO nested func proc
 	return idx;
+}
+ScopeManager::Idx ScopeManager::AddOrReplace(const Symbol& sym)
+{
+	auto r = (SymbolData*)GetSymbolDataRef(sym.name);
+	if(!r) return AddForce(sym);
+	r->sym = sym;
+	return r->idx;
+}
+
+ScopeManager::SymbolData ScopeManager::Erase(const string& name)
+{
+	for(int i=(int)_scopeTbl.size()-1; i>=0; i--)
+	{
+		auto found = _scopeTbl[i].symTbl.find( { .name = name } );
+		if(found != _scopeTbl[i].symTbl.end())
+		{
+			SymbolData t = found->second;
+			_scopeTbl[i].symTbl.erase(found);
+			return t;
+		}
+	}
+	return {};
 }
 
 ScopeManager::Idx ScopeManager::GetIdx(const string& name) const
@@ -106,16 +133,21 @@ Symbol ScopeManager::GetSymbol(const string& name) const
 
 ScopeManager::SymbolData ScopeManager::GetSymbolData(const string& name) const
 {
+	auto r = GetSymbolDataRef(name);
+	return r ? *r : SymbolData{};
+}
+
+const ScopeManager::SymbolData* ScopeManager::GetSymbolDataRef(const string& name) const
+{
 	for(int i=(int)_scopeTbl.size()-1; i>=0; i--)
 	{
 		auto found = _scopeTbl[i].symTbl.find( { .name = name } );
 		if(found != _scopeTbl[i].symTbl.end())
 		{
-			return { found->second, found->first };
+			return &found->second;
 		}
 	}
-
-	return SymbolData();
+	return nullptr;
 }
 
 }

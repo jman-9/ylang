@@ -23,7 +23,6 @@ public:
 	std::vector<Error> _errors;
 
 protected:
-	std::vector<std::map<std::string, Symbol>> _symTbl;
 	ScopeManager _scopeMgr;
 
 	NamespaceUtil::Context _nsCtx;

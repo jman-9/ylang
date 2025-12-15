@@ -90,12 +90,14 @@ bool BytecodeBuilder::Build(const TreeNode& code, Program& retProgram, const uno
 		_prg._consts[idx] = c;
 	}
 
-	for(auto& [k, v] : _scopeMgr._scopeTbl.front().symTbl)
+	for(auto& [_, v] : _scopeMgr._scopeTbl.front().symTbl)
 	{//global
-		switch(k.kind)
+		auto& s = v.sym;
+		auto& i = v.idx;
+		switch(v.sym.kind)
 		{
-		case ESymbol::Var: _prg._globalTable[k.name] = GlobalSymbol{ .kind = EGlobalSymbol::Var, .name = k.name, .idx = (uint32_t)v.idx }; break;
-		case ESymbol::Fn: _prg._globalTable[k.name] = GlobalSymbol{ .kind = EGlobalSymbol::Fn, .name = k.name, .pos = (uint32_t)k.pos, .prms = (uint32_t)k.params.size() }; break;
+		case ESymbol::Var: _prg._globalTable[s.name] = GlobalSymbol{ .kind = EGlobalSymbol::Var, .name = s.name, .idx = (uint32_t)i.idx }; break;
+		case ESymbol::Fn: _prg._globalTable[s.name] = GlobalSymbol{ .kind = EGlobalSymbol::Fn, .name = s.name, .pos = (uint32_t)s.pos, .prms = (uint32_t)s.params.size() }; break;
 		}
 	}
 	for(auto& [k, v] : _prg._classTable)

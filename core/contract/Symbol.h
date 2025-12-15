@@ -31,4 +31,8 @@ struct Symbol
 	std::vector<Param> params;
 
 	bool preRegister = false;
+
+	bool IsNone() const { return kind == ESymbol::None; }
+	bool operator== (ESymbol rhs) const { return kind == rhs; }
+	bool operator!= (ESymbol rhs) const { return kind != rhs; }
 };

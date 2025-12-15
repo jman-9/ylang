@@ -12,7 +12,6 @@ static const BuiltinFuncTable _builtinFuncTbl;
 
 SemanticAnalyzer::SemanticAnalyzer()
 {
-	_symTbl.resize(1);
 }
 
 SemanticAnalyzer::~SemanticAnalyzer()
@@ -38,13 +37,9 @@ void SemanticAnalyzer::OpenScope(ScopeManager::ScopeType type)
 	case ScopeManager::SCOPE_GLOBAL:_scopeMgr.AddGlobalScope(); break;
 	case ScopeManager::SCOPE_CLASS:	_scopeMgr.AddClassScope(); break;
 	}
-
-	_symTbl.resize(_symTbl.size() + 1);
-	_symTbl.back() = _symTbl[_symTbl.size() - 2];
 }
 void SemanticAnalyzer::CloseScope()
 {
-	_symTbl.pop_back();
 	_scopeMgr.PopScope();
 }
 void SemanticAnalyzer::OpenCompound()
@@ -75,10 +70,10 @@ bool SemanticAnalyzer::CanBeLValue(const TreeNode& stmt)
 		}
 		if(curTok == EToken::Id)
 		{
-			auto found = _symTbl.back().find(curTok.val);
-			if(found != _symTbl.back().end())
+			auto found = _scopeMgr.GetSymbol(curTok.val);
+			if(!found.IsNone())
 			{
-				if(found->second.kind != ESymbol::Var && found->second.kind != ESymbol::Field)
+				if(found != ESymbol::Var && found != ESymbol::Field)
 					return false;
 			}
 		}
@@ -123,15 +118,18 @@ bool SemanticAnalyzer::AnalyzeInclude(const TreeNode& stmt)
 
 	auto res = NamespaceUtil::ResolveInclude(modPath.val);
 
-	auto found = _symTbl.back().find(res.namespacePath);
-	if(found != _symTbl.back().end())
+	auto idx = _scopeMgr.GetIdx(res.namespacePath);
+	if(!idx.IsNone())
 	{
 		_errors.push_back(ErrorBuilder::AlreadyExists(modPath.line, modPath.val));
 		return false;
 	}
 
 	_nsTracker.AddTrackingPath(res.namespacePath);
-	_symTbl.back()[res.namespacePath] = Symbol{ .name = res.namespacePath, .kind = ESymbol::Mod };
+	if(_scopeMgr.AddForce({ .name = res.namespacePath, .kind = ESymbol::Mod }).IsNone())
+	{//TODO log
+		return false;
+	}
 	return true;
 }
 
@@ -219,9 +217,9 @@ bool SemanticAnalyzer::AnalyzeFn(const TreeNode& stmt)
 	auto& params = stmt.childs[0]->childs;
 	auto& block = *stmt.childs[1];
 
-	auto found = _symTbl.back().find(name);
 	//TODO ctor redundancy
-	if(found != _symTbl.back().end() && !found->second.preRegister && found->second.kind != ESymbol::Cls)
+	auto found = _scopeMgr.GetSymbol(name);
+	if(!found.IsNone() && !found.preRegister && found != ESymbol::Cls)
 	{
 		//todo message
 		_errors.push_back(ErrorBuilder::AlreadyExists(stmt.self.line, stmt.self.val));
@@ -231,6 +229,14 @@ bool SemanticAnalyzer::AnalyzeFn(const TreeNode& stmt)
 	Symbol sym;
 	sym.name = name;
 	sym.kind = ESymbol::Fn;
+	if(found == ESymbol::Cls)
+	{
+		if(_scopeMgr.AddForce(sym).IsNone())
+		{//TODO log
+			return false;
+		}
+	}
+
 	for(auto& p : params)
 	{
 		NamespaceUtil::Context ctx;
@@ -240,8 +246,8 @@ bool SemanticAnalyzer::AnalyzeFn(const TreeNode& stmt)
 			return false;
 		}
 
-		auto found = _symTbl.back().find(p->self.val);
-		if(found != _symTbl.back().end())
+		auto idx = _scopeMgr.GetIdx(p->self.val);
+		if(!idx.IsNone())
 		{
 			//todo message
 			_errors.push_back(ErrorBuilder::AlreadyExists(stmt.self.line, p->self.val));
@@ -252,8 +258,10 @@ bool SemanticAnalyzer::AnalyzeFn(const TreeNode& stmt)
 		prm.name = p->self.val;
 		sym.params.push_back(prm);
 	}
-	_symTbl.back()[ name ] = sym;
-
+	if(_scopeMgr.AddOrReplace(sym).IsNone())
+	{//TODO log
+		return false;
+	}
 
 	OpenScope(ScopeManager::SCOPE_LOCAL);
 
@@ -262,13 +270,15 @@ bool SemanticAnalyzer::AnalyzeFn(const TreeNode& stmt)
 		Symbol sym;
 		sym.name = v.name;
 		sym.kind = ESymbol::Var;
-		_symTbl.back()[ v.name ] = sym;
+		if(_scopeMgr.AddForce(sym).IsNone())
+		{//TODO log
+			return false;
+		}
 	}
 
 	if(!AnalyzeStmt(block, { EToken::Fn }))
 	{
-		//todo trace
-		_symTbl.back().erase(name);
+		_scopeMgr.Erase(name);
 		return false;
 	}
 
@@ -327,8 +337,8 @@ bool SemanticAnalyzer::AnalyzeClass(const TreeNode& stmt)
 
 	auto& name = stmt.self.val;
 
-	auto found = _symTbl.back().find(name);
-	if(found != _symTbl.back().end())
+	auto idx = _scopeMgr.GetIdx(name);
+	if(!idx.IsNone())
 	{
 		_errors.push_back(ErrorBuilder::AlreadyExists(stmt.self.line, stmt.self.val));
 		return false;
@@ -337,7 +347,10 @@ bool SemanticAnalyzer::AnalyzeClass(const TreeNode& stmt)
 	Symbol sym;
 	sym.name = name;
 	sym.kind = ESymbol::Cls;
-	_symTbl.back()[ name ] = sym;
+	if(_scopeMgr.AddForce(sym).IsNone())
+	{//TODO log
+		return false;
+	}
 
 	OpenScope(ScopeManager::SCOPE_CLASS);
 
@@ -346,16 +359,19 @@ bool SemanticAnalyzer::AnalyzeClass(const TreeNode& stmt)
 		if(itm->self != EToken::Assign) continue;
 
 		const auto& id = itm->childs.front()->self;
-		auto found = _symTbl.back().find(id.val);
-		if(found == _symTbl.back().end())
+		auto found = _scopeMgr.GetSymbol(id.val);
+		if(found.IsNone())
 		{
 			Symbol sym;
 			sym.preRegister = true;
 			sym.name = id.val;
-			sym.kind = ESymbol::Var;
-			_symTbl.back()[ sym.name ] = sym;
+			sym.kind = ESymbol::Field;
+			if(_scopeMgr.AddForce(sym).IsNone())
+			{//TODO log
+				return false;
+			}
 		}
-		else if(!found->second.preRegister)
+		else if(!found.preRegister)
 		{
 			_errors.push_back(ErrorBuilder::AlreadyExists(id.line, id.val));
 			return false;
@@ -369,8 +385,8 @@ bool SemanticAnalyzer::AnalyzeClass(const TreeNode& stmt)
 		if(itm->self != EToken::Fn) continue;
 
 		const auto& fn = itm->self;
-		auto found = _symTbl.back().find(fn.val);
-		if(found == _symTbl.back().end())
+		auto found = _scopeMgr.GetSymbol(fn.val);
+		if(found.IsNone())
 		{
 			Symbol sym;
 			sym.preRegister = true;
@@ -382,9 +398,12 @@ bool SemanticAnalyzer::AnalyzeClass(const TreeNode& stmt)
 				prm.name = p->self.val;
 				sym.params.push_back(prm);
 			}
-			_symTbl.back()[ sym.name ] = sym;
+			if(_scopeMgr.AddForce(sym).IsNone())
+			{//TODO log
+				return false;
+			}
 		}
-		else if(!found->second.preRegister && found->second.kind != ESymbol::Cls)
+		else if(!found.preRegister && found != ESymbol::Cls)
 		{
 			_errors.push_back(ErrorBuilder::AlreadyExists(fn.line, fn.val));
 			return false;
@@ -409,19 +428,19 @@ bool SemanticAnalyzer::AnalyzeInvokeExp(const TreeNode& stmt)
 		auto builtinFuncId = _builtinFuncTbl.GetFuncId(name->self.val);
 		if(!builtinFuncId)
 		{
-			auto found = _symTbl.back().find(name->self.val);
-			if(found == _symTbl.back().end())
+			auto found = _scopeMgr.GetSymbol(name->self.val);
+			if(found.IsNone())
 			{
 				_errors.push_back(ErrorBuilder::NotFound(name->self.line, name->self.val));
 				return false;
 			}
 
-			if(found->second.kind == ESymbol::Fn)
-			{
-				//TODO 가변인자
-				if(stmt.childs.size() - 1 != found->second.params.size())
-				{//todo message
-					_errors.push_back(ErrorBuilder::Default(stmt.self.line, format("'{}': no matched arguments", name->self.val)));
+			if(found == ESymbol::Fn)
+			{	//TODO 가변인자
+				if(stmt.childs.size() - 1 != found.params.size())
+				{
+					string msg = stmt.childs.size() - 1 > found.params.size() ? "many" : "few";
+					_errors.push_back(ErrorBuilder::Default(stmt.self.line, format("too {} arguments to function '{}'", msg, name->self.val)));
 					return false;
 				}
 			}
@@ -430,7 +449,7 @@ bool SemanticAnalyzer::AnalyzeInvokeExp(const TreeNode& stmt)
 	else
 	{
 		if(!AnalyzeExp(*stmt.childs[0]))
-		{//todo trace
+		{
 			return false;
 		}
 	}
@@ -438,7 +457,7 @@ bool SemanticAnalyzer::AnalyzeInvokeExp(const TreeNode& stmt)
 	for(size_t i=1; i<stmt.childs.size(); i++)
 	{
 		if(!AnalyzeExp(*stmt.childs[i]))
-		{//todo trace
+		{
 			return false;
 		}
 	}
@@ -474,17 +493,28 @@ bool SemanticAnalyzer::AnalyzeExp(const TreeNode& stmt)
 		}
 		else
 		{
-			auto found = _symTbl.back().find(lhsTok.val);
-			if(found == _symTbl.back().end() || found->second.preRegister)
+			auto found = _scopeMgr.GetSymbol(lhsTok.val);
+			if(found.IsNone())
 			{
 				Symbol sym;
 				sym.name = lhsTok.val;
 				sym.kind = ESymbol::Var;
-				_symTbl.back()[ sym.name ] = sym;
+				if(_scopeMgr.AddForce(sym).IsNone())
+				{//TODO log
+					return false;
+				}
+			}
+			else if(found.preRegister)
+			{
+				found.preRegister = false;
+				if(_scopeMgr.AddOrReplace(found).IsNone())
+				{//TODO log
+					return false;
+				}
 			}
 			else
 			{
-				if(found->second.kind != ESymbol::Var)
+				if(found != ESymbol::Var && found != ESymbol::Field)
 				{
 					_errors.push_back(ErrorBuilder::AlreadyExists(stmt.self.line, lhsTok.val));
 					return false;
@@ -519,9 +549,9 @@ bool SemanticAnalyzer::AnalyzeExp(const TreeNode& stmt)
 
 			if(stmt.self == EToken::Id)
 			{
-				auto found = _symTbl.back().find(stmt.self.val);
-				if(found == _symTbl.back().end())
-				{//todo message
+				auto idx = _scopeMgr.GetIdx(stmt.self.val);
+				if(idx.IsNone())
+				{
 					_errors.push_back(ErrorBuilder::NotInitialized(stmt.self.line, stmt.self.val));
 					return false;
 				}
