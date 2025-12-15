@@ -63,7 +63,12 @@ bool BytecodeBuilder::Build(const TreeNode& code, Program& retProgram, const uno
 	auto main = _scopeMgr.GetSymbol("main");
 	if(main.kind == ESymbol::Fn)
 	{
-		Op::Call cal{ (uint16_t)main.params.size(), 0, (uint32_t)main.pos,  };
+		Op::Call cal;
+		cal.numPrms = (uint8_t)main.params.size();
+		cal.dstKind = (uint8_t)ERefKind::Reg;
+		cal.dst = _reg;
+		cal.seg = 0;
+		cal.pos = (uint32_t)main.pos;
 		_prg._mainCode.PushBytecode(cal, code.self.line);
 	}
 
@@ -506,7 +511,12 @@ bool BytecodeBuilder::BuildInvokeExp(Bytecode& retCtx, const TreeNode& stmt)
 	auto builtinFuncId = _builtinFuncTbl.GetFuncId(ivkType.val);
 	if(builtinFuncId)
 	{
-		Op::Call cal{ (uint16_t)(stmt.childs.size()-1), 0, builtinFuncId };
+		Op::Call cal;
+		cal.numPrms = (uint8_t)(stmt.childs.size()-1);
+		cal.dstKind = (uint8_t)ERefKind::Reg;
+		cal.dst = _reg;
+		cal.seg = 0;
+		cal.pos = builtinFuncId;
 		retCtx.PushBytecode(cal, stmt.self.line);
 		return true;
 	}
@@ -542,7 +552,12 @@ bool BytecodeBuilder::BuildInvokeExp(Bytecode& retCtx, const TreeNode& stmt)
 		}
 		else
 		{
-			Op::Call cal{ (uint16_t)(stmt.childs.size()-1), 0, (uint32_t)_scopeMgr.GetSymbol(stmt.childs[0]->self.val).pos  };
+			Op::Call cal;
+			cal.numPrms = (uint8_t)(stmt.childs.size()-1);
+			cal.dstKind = (uint8_t)ERefKind::Reg;
+			cal.dst = _reg;
+			cal.seg = 0;
+			cal.pos = (uint32_t)_scopeMgr.GetSymbol(stmt.childs[0]->self.val).pos;
 			retCtx.PushBytecode(cal, stmt.self.line);
 		}
 	}

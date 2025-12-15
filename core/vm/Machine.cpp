@@ -306,10 +306,17 @@ bool Machine::Call(const Op::Call& cal)
 		return CallBuiltinFunc(cal);
 	}
 
-	if(cal.numPrms)
+	//TODO check
+	/*if(cal.numPrms)
 	{
 		_roff -= (int)cal.numPrms - 1;
+	}*/
+	//TODO check
+	if((ERefKind)cal.dstKind != ERefKind::Reg)
+	{//TODO
+		throw 'n';
 	}
+	_roff = cal.dst;
 
 	if(cal.seg == 0)
 	{//TODO
@@ -902,10 +909,15 @@ bool Machine::LValueField(const Op::LValueField& lvf)
 
 bool Machine::CallBuiltinFunc(const Op::Call& cal)
 {//TODO refactor
-	if(cal.numPrms)
+	/*if(cal.numPrms)
 	{
 		_roff -= (int)cal.numPrms - 1;
+	}*/
+	if((ERefKind)cal.dstKind != ERefKind::Reg)
+	{//TODO check
+		throw 'n';
 	}
+	_roff = cal.dst;
 
 	switch(cal.pos)
 	{

@@ -62,8 +62,11 @@ struct Jmp
 
 struct Call
 {
-	uint16_t numPrms = 0;
+	uint8_t numPrms = 0;
+	uint8_t dstKind = (uint8_t)ERefKind::None;
+	uint16_t dst = 0;
 	uint16_t seg = 0;
+	uint16_t rsvd = 0;
 	uint32_t pos = 0;
 };
 
