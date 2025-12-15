@@ -866,17 +866,36 @@ bool Machine::LValueField(const Op::LValueField& lvf)
 	{//TODO
 		throw 'n';
 	}
-	if(*dst != Variable::CLASSOBJ)
+
+	if(*dst == Variable::PROGRAMOBJ)
+	{
+		auto found = dst->prgObj()._prg->_globalTable.find(fld->str());
+		if(found == dst->prgObj()._prg->_globalTable.end())
+		{//TODO
+			throw 'n';
+		}
+		if(found->second.kind != EGlobalSymbol::Var)
+		{//TODO
+			throw 'n';
+		}
+
+		dst->SetVarLVRef(*dst->prgObj()._globals.Get(found->second.idx));
+	}
+	else if(*dst == Variable::CLASSOBJ)
+	{
+		auto found = dst->clsObj()._cls->_fieldMap.find(fld->str());
+		if(found == dst->clsObj()._cls->_fieldMap.end())
+		{//TODO
+			throw 'n';
+		}
+
+		dst->SetVarLVRef(dst->clsObj()._fields[found->second], *dst);
+	}
+	else
 	{//TODO
 		throw 'n';
 	}
 
-	auto found = dst->clsObj()._cls->_fieldMap.find(fld->str());
-	if(found == dst->clsObj()._cls->_fieldMap.end())
-	{
-		throw 'n';
-	}
-	dst->SetVarLVRef(dst->clsObj()._fields[found->second], *dst);
 	return true;
 }
 
