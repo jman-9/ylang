@@ -4,7 +4,7 @@ add_library(ycore STATIC
   "vm/Machine.cpp" "vm/yvm.h"  "vm/Machine.h" "vm/primitives/Str.h" "vm/Variable.h" "vm/Variable.cpp" "vm/primitives/List.h" "vm/primitives/Dict.h" "vm/primitives/Primitives.h" "vm/primitives/Primitives.inl"
   "module/Module.h" "module/Module.cpp" "module/ModuleManager.h" "module/ModuleManager.cpp"
   "builtin/BuiltinGarage.h" "builtin/BuiltinGarage.cpp"  "builtin/Math.h" "builtin/Math.cpp" "builtin/InstTest.h"  "builtin/InstTest.cpp" "builtin/Rand.h" "builtin/Rand.cpp" "builtin/Sys.h"  "builtin/Sys.cpp" "builtin/File.cpp" "builtin/File.h" "builtin/Json.cpp" "builtin/Json.h"
-  "util/Args.h" "util/Args.cpp" "util/StrUtil.h" "util/StrUtil.inl"  "compiler/NamespaceUtil.h" "compiler/NamespaceUtil.cpp" "ylangDefs.h" "compiler/ScopeManager.h" "compiler/ScopeManager.cpp" "vm/VariableList.h"  "vm/VariableList.cpp")
+  "util/Args.h" "util/Args.cpp" "util/StrUtil.h" "util/StrUtil.inl"  "compiler/NamespaceUtil.h" "compiler/NamespaceUtil.cpp" "ylangDefs.h" "compiler/ScopeManager.h" "compiler/ScopeManager.cpp" "vm/VariableList.h"  "vm/VariableList.cpp" "vm/RuntimeError.h" "vm/RuntimeError.cpp")
 
 target_include_directories(ycore
 	PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include

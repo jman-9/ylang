@@ -19,7 +19,7 @@ namespace ycom
 {
 
 #if _DEBUG || DEBUG
-#define TOKEN_DEBUG_OUT
+//#define TOKEN_DEBUG_OUT
 #define BYTECODE_DEBUG_OUT
 #define ERROR_DEBUG_OUT
 #endif
@@ -123,14 +123,28 @@ ErrorTable Compiler::CompileCode(const string& src, Program& retProgram)
 				break;
 			}
 
+			prg._path = ast->self.val;
 			prg._name = filesystem::path(ast->self.val).stem().string();
 			prgMap[ ast->self.val ] = prg;
 
 		#ifdef BYTECODE_DEBUG_OUT
-			cout << prg._name << endl;
-			for(int i=0; i<prg._mainCode._codeStr.size(); i++)
+			for(auto& c : prg._classTable)
 			{
-				cout << format("{:4} {}\n", i, prg._mainCode._codeStr[i]);
+				cout << c.first << endl;
+				for(auto& [k, v] : c.second._funcMap)
+				{
+					cout << k << endl;
+					for(int i=0; i<c.second._funcs[v]._codeStrs.size(); i++)
+					{
+						cout << format("{:4} {}\n", i, c.second._funcs[v]._codeStrs[i]);
+					}
+				}
+			}
+
+			cout << prg._name << endl;
+			for(int i=0; i<prg._mainCode._codeStrs.size(); i++)
+			{
+				cout << format("{:4} {}\n", i, prg._mainCode._codeStrs[i]);
 			}
 			cout << endl;
 		#endif
@@ -231,13 +245,6 @@ vector<Error> Compiler::ParseCode(const string& src, TreeNodeSptr& retAstRoot)
 		retAstRoot = ast;
 	} while(0);
 
-#ifdef ERROR_DEBUG_OUT
-	for(auto e : errs)
-	{
-		string errStr = format("{}({}): error E{}: {}", "some file", e.line, (int)e.code, e.msg);
-		cout << errStr << endl;
-	}
-#endif
 	return errs;
 }
 

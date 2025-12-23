@@ -66,6 +66,7 @@ struct GlobalSymbol
 struct Program
 {
 	std::string _name;
+	std::string _path;
 
 	std::unordered_map<std::string, Class> _classTable;
 	std::unordered_map<std::string, int> _moduleTable;

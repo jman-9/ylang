@@ -4,8 +4,9 @@
 
 struct Bytecode
 {
-	std::vector<std::string> _codeStr;
+	std::vector<std::string> _codeStrs;
 	std::vector<Instruction> _code;
+	std::vector<int> _srcLines;
 
 	template<EOpcode Op>
 	void FillBytecode(int ln, int srcLine = -1);

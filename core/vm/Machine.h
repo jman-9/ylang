@@ -23,6 +23,7 @@ protected:
 
 	inline void PushState();
 	inline void PopState();
+	inline bool ExecInst(const Instruction& inst);
 	inline int Exec(const Bytecode& code, int start = 0);
 
 	const Program* _prg;

@@ -15,11 +15,17 @@ int main(int argc, const char** argv)
 	//auto errs = cmplr.CompileFile("../../examples/rpg_sim.y", prg);
 	//auto errs = cmplr.CompileFile("../../examples/langton_ant.y", prg);
 	//auto errs = cmplr.CompileFile("app.y", prg);
-	auto errs = cmplr.CompileFile("s.y", prg);
+	//auto errs = cmplr.CompileFile("s.y", prg);
+	//auto errs = cmplr.CompileFile("xdef_stage19_partial_19-4/xdef.y", prg);
+	//auto errs = cmplr.CompileFile("ai_dungeon_fixed/main.y", prg);
+	auto errs = cmplr.CompileFile("vm_runtime_game_ops_extra/main.y", prg);
 
 	if(!errs.empty())
 		return 1;
 
-	yvm::Machine m;
-	return m.Run(prg);
+	while(1)
+	{
+		yvm::Machine m;
+		m.Run(prg);
+	}
 }

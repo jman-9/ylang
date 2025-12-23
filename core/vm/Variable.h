@@ -145,6 +145,8 @@ struct Variable
 	void SetValueFromContract(YArg o);
 	YArg ToContract() const;
 
+	static std::string_view TypeStr(Type t);
+
 	class Object
 	{
 		friend struct Variable;

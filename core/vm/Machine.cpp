@@ -1,6 +1,7 @@
 #include "Machine.h"
 #include "primitives/Primitives.h"
 #include "builtin/BuiltinGarage.h"
+#include "RuntimeError.h"
 #include <limits.h>
 #include <format>
 #include <string>
@@ -109,6 +110,36 @@ void Machine::PopState()
 	_retStack.pop();
 }
 
+bool Machine::ExecInst(const Instruction& inst)
+{
+	switch((EOpcode)inst.kind)
+	{
+	case EOpcode::Noop: break;
+	case EOpcode::Assign: Assign(*(Op::Assign*)inst.code.data()); break;
+	case EOpcode::PushSp: PushSp(); break;
+	case EOpcode::PopSp: PopSp(); break;
+	case EOpcode::Jmp:	Jmp(*(Op::Jmp*)inst.code.data()); break;
+	case EOpcode::Call: Call(*(Op::Call*)inst.code.data()); break;
+	case EOpcode::Ret: Ret(); return true;
+	case EOpcode::Jz: Jz(*(Op::Jz*)inst.code.data()); break;
+	case EOpcode::ListSet: ListSet(*(Op::ListSet*)inst.code.data()); break;
+	case EOpcode::ListAdd: ListAdd(*(Op::ListAdd*)inst.code.data()); break;
+	case EOpcode::DictSet: DictSet(*(Op::DictSet*)inst.code.data()); break;
+	case EOpcode::DictAdd: DictAdd(*(Op::DictAdd*)inst.code.data()); break;
+	case EOpcode::Index: Index(*(Op::Index*)inst.code.data()); break;
+	case EOpcode::LValueIndex: LValueIndex(*(Op::LValueIndex*)inst.code.data()); break;
+	case EOpcode::Invoke: Invoke(*(Op::Invoke*)inst.code.data()); break;
+	case EOpcode::Inc: Inc(*(Op::Inc*)inst.code.data()); break;
+	case EOpcode::Jnz: Jnz(*(Op::Jnz*)inst.code.data()); break;
+	case EOpcode::NewMod: NewMod(*(Op::NewMod*)inst.code.data()); break;
+	case EOpcode::NewCls: NewCls(*(Op::NewCls*)inst.code.data()); break;
+	case EOpcode::LValueField: LValueField(*(Op::LValueField*)inst.code.data()); break;
+	default:
+		throw 'n';//TODO
+	}
+	return false;
+}
+
 int Machine::Exec(const Bytecode& code, int start /* = 0 */)
 {
 	PushState();
@@ -116,31 +147,15 @@ int Machine::Exec(const Bytecode& code, int start /* = 0 */)
 	for(_pc = start; _pc < code._code.size() && _retCode == INT_MAX; _pc++)
 	{
 		int pc = _pc;
-		auto& inst = code._code[_pc];
-		switch((EOpcode)inst.kind)
+		try
 		{
-		case EOpcode::Noop: break;
-		case EOpcode::Assign: Assign(*(Op::Assign*)inst.code.data()); break;
-		case EOpcode::PushSp: PushSp(); break;
-		case EOpcode::PopSp: PopSp(); break;
-		case EOpcode::Jmp:	Jmp(*(Op::Jmp*)inst.code.data()); break;
-		case EOpcode::Call: Call(*(Op::Call*)inst.code.data()); break;
-		case EOpcode::Ret: Ret(); return 0;
-		case EOpcode::Jz: Jz(*(Op::Jz*)inst.code.data()); break;
-		case EOpcode::ListSet: ListSet(*(Op::ListSet*)inst.code.data()); break;
-		case EOpcode::ListAdd: ListAdd(*(Op::ListAdd*)inst.code.data()); break;
-		case EOpcode::DictSet: DictSet(*(Op::DictSet*)inst.code.data()); break;
-		case EOpcode::DictAdd: DictAdd(*(Op::DictAdd*)inst.code.data()); break;
-		case EOpcode::Index: Index(*(Op::Index*)inst.code.data()); break;
-		case EOpcode::LValueIndex: LValueIndex(*(Op::LValueIndex*)inst.code.data()); break;
-		case EOpcode::Invoke: Invoke(*(Op::Invoke*)inst.code.data()); break;
-		case EOpcode::Inc: Inc(*(Op::Inc*)inst.code.data()); break;
-		case EOpcode::Jnz: Jnz(*(Op::Jnz*)inst.code.data()); break;
-		case EOpcode::NewMod: NewMod(*(Op::NewMod*)inst.code.data()); break;
-		case EOpcode::NewCls: NewCls(*(Op::NewCls*)inst.code.data()); break;
-		case EOpcode::LValueField: LValueField(*(Op::LValueField*)inst.code.data()); break;
-		default:
-			throw 'n';//TODO
+			if(ExecInst(code._code[_pc])) break;
+		}
+		catch(ErrorBase e)
+		{
+			if(e.srcLine < 0)
+				e.srcLine = code._srcLines[pc];
+			throw e;
 		}
 	}
 
@@ -183,6 +198,14 @@ bool Machine::Assign(const Op::Assign& as)
 					{
 						dst->SetValueFromContract(found->second);
 					}
+					else
+					{//TODO optimize
+						auto& o = dst->attr().owner;
+						if(!o.modObj()._mod.modDesc->memberTbl.contains(dst->attr().name))
+						{
+							throw MemberError::NoMember(o._type, o.modObj()._mod.modDesc->name, dst->attr().name);
+						}
+					}
 				}
 				else if(dst->attr().owner == Variable::CLASSOBJ)
 				{
@@ -190,6 +213,14 @@ bool Machine::Assign(const Op::Assign& as)
 					if(found != dst->attr().owner.clsObj()._cls->_fieldMap.end())
 					{
 						dst->SetVar(dst->attr().owner.clsObj()._fields[found->second]);
+					}
+					else
+					{	//TODO optimize
+						auto& o = dst->attr().owner;
+						if(!o.clsObj()._cls->_funcMap.contains(dst->attr().name))
+						{
+							throw MemberError::NoMember(o._type, o.clsObj()._cls->name, dst->attr().name);
+						}
 					}
 				}
 				else if(dst->attr().owner == Variable::PROGRAMOBJ)
@@ -201,6 +232,9 @@ bool Machine::Assign(const Op::Assign& as)
 						{
 							dst->SetVar(*dst->attr().owner.prgObj()._globals.Get(found->second.idx));
 						}
+					}
+					else
+					{//TODO qaz
 					}
 				}
 				//TODO static class field
@@ -331,7 +365,7 @@ bool Machine::Call(const Op::Call& cal)
 
 bool Machine::Ret()
 {
-	PopState();
+	//PopState();
 	return true;
 }
 
@@ -419,15 +453,24 @@ bool Machine::Index(const Op::Index& li)
 	{
 		if(*dst == Variable::STR)
 		{
+			if(idx->int_() < 0 || idx->int_() >= dst->str().size())
+			{//qaz TODO
+				throw IndexError::OutOfRange(dst->_type, "str", idx->int_(), dst->str().size());
+			}
 			dst->SetStr(string() + dst->str()[idx->int_()]);
 		}
 		else if(*dst == Variable::LIST)
 		{
+			if(idx->int_() < 0 || idx->int_() >= dst->list().size())
+			{//qaz TODO
+				throw IndexError::OutOfRange(dst->_type, "list", idx->int_(), dst->list().size());
+			}
 			dst->SetVar(dst->list()[idx->int_()]);
 		}
 		else
 		{
-			throw 'n';
+			throw IndexError::Unsupported(dst->_type, "", to_string(idx->int_()));
+			//TODO qaz
 		}
 
 
@@ -436,20 +479,23 @@ bool Machine::Index(const Op::Index& li)
 	{
 		if(*dst != Variable::DICT)
 		{
-			throw 'n';
+			throw IndexError::Unsupported(dst->_type, "", idx->str());
+			//TODO qaz
 		}
 
 		auto found = dst->dict().find(idx->str());
 		if(found == dst->dict().end())
 		{
-			throw 'n';
+			throw IndexError::NotFound(dst->_type, "dict", idx->str());
+			//TODO qaz
 		}
 
 		dst->SetVar(found->second);
 	}
 	else
 	{
-		throw 'n';
+		throw IndexError::Unsupported(dst->_type, "", idx->ToStr());
+		//TODO qaz
 	}
 	return true;
 }
@@ -476,7 +522,8 @@ bool Machine::LValueIndex(const Op::LValueIndex& lli)
 		}
 		else
 		{
-			throw 'n';
+			throw IndexError::Unsupported(dst->_type, "", to_string(idx->int_()));
+			//qaz TODO
 		}
 
 		auto& t = lst->list()[idx->int_()];
@@ -499,7 +546,8 @@ bool Machine::LValueIndex(const Op::LValueIndex& lli)
 		}
 		else
 		{
-			throw 'n';
+			throw IndexError::Unsupported(dst->_type, "", idx->str());
+			//TODO qaz
 		}
 
 		Variable* t = nullptr;
@@ -522,7 +570,8 @@ bool Machine::LValueIndex(const Op::LValueIndex& lli)
 	}
 	else
 	{
-		throw 'n';
+		throw IndexError::Unsupported(dst->_type, "", to_string(idx->float_()));
+		//qaz TODO
 	}
 	return true;
 }
@@ -571,7 +620,8 @@ bool Machine::Invoke(const Op::Invoke& ivk)
 		auto found = cls->_funcMap.find(dst->attr().name);
 		if(found == cls->_funcMap.end())
 		{//TODO
-			throw 'n';
+			//qaz
+			throw MemberError::NoMember(owner._type, cls->name, dst->attr().name);
 		}
 
 		_clsStack.push(&owner);
@@ -587,7 +637,6 @@ bool Machine::Invoke(const Op::Invoke& ivk)
 	}
 	else if(owner == Variable::CLASS)
 	{//TODO
-		int a = 1;
 		throw 'n';
 	}
 	else if(owner == Variable::PROGRAMOBJ)
@@ -614,7 +663,8 @@ bool Machine::Invoke(const Op::Invoke& ivk)
 			auto found = prg->_globalTable.find(dst->attr().name);
 			if(found == prg->_globalTable.end())
 			{//TODO
-				throw 'n';
+				//qaz;
+				throw MemberError::NoMember(owner._type, prg->_name, dst->attr().name);
 			}
 
 			if(found->second.kind == EGlobalSymbol::Fn)
@@ -637,7 +687,6 @@ bool Machine::Invoke(const Op::Invoke& ivk)
 	}
 	else if(owner == Variable::PROGRAM)
 	{//TODO
-		int a = 1;
 		throw 'n';
 	}
 
@@ -646,7 +695,8 @@ bool Machine::Invoke(const Op::Invoke& ivk)
 	{
 		if(owner != Variable::MODULE && owner != Variable::MODULEOBJ)
 		{//TODO
-			throw 'n';
+			// qaz
+			throw MemberError::NoMember(owner._type, "", dst->attr().name);
 		}
 		modDesc = owner.modObj()._mod.modDesc;
 	}
@@ -654,12 +704,13 @@ bool Machine::Invoke(const Op::Invoke& ivk)
 	auto found = modDesc->memberTbl.find(dst->attr().name);
 	if(found == modDesc->memberTbl.end())
 	{//TODO
-		throw 'n';
+		//qaz
+		throw MemberError::NoMember(owner._type, modDesc->name, dst->attr().name);
 	}
 
 	if(ivk.numArgs < found->second.numPrms)
-	{//TODO
-		throw 'n';
+	{//TODO qaz
+		throw MemberError::NotMatchedParams(owner._type, modDesc->name, dst->attr().name, found->second.numPrms, ivk.numArgs);
 	}
 
 	YArgs ya;
@@ -893,7 +944,8 @@ bool Machine::LValueField(const Op::LValueField& lvf)
 		auto found = dst->clsObj()._cls->_fieldMap.find(fld->str());
 		if(found == dst->clsObj()._cls->_fieldMap.end())
 		{//TODO
-			throw 'n';
+			//qaz
+			throw MemberError::NoMember(dst->_type, dst->clsObj()._cls->name, fld->str());
 		}
 
 		dst->SetVarLVRef(dst->clsObj()._fields[found->second], *dst);
@@ -1009,7 +1061,21 @@ int Machine::Run(const Program& program, int start /* = 0 */)
 
 	_prgObj.SetProgram(program, true);
 	_prgStack.push(&_prgObj);
-	Exec(_prg->_mainCode, start);
+	try
+	{
+		Exec(_prg->_mainCode, start);
+	}
+	catch(MemberError e)
+	{
+		cout << format("\nFile: {}\nLine: {}\nMemberError: {}\n", _prgStack.top()->prgObj()._prg->_path, e.srcLine, e.what);
+		_retCode = -1;
+	}
+	catch(ErrorBase e)
+	{
+		cout << format("\nFile: {}\nLine: {}\nError: {}\n", _prgStack.top()->prgObj()._prg->_path, e.srcLine, e.what);
+		_retCode = -1;
+
+	}
 	_prgStack.pop();
 
 	if(_retCode == INT_MAX) _retCode = 0;

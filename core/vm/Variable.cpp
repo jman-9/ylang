@@ -1,4 +1,5 @@
 #include "Variable.h"
+#include "RuntimeError.h"
 
 
 namespace yvm
@@ -250,7 +251,7 @@ bool Variable::Assign(EToken op, Variable& rval)
 		auto& lv = lvref();
 		if(!lv.Assign(op, rval))
 		{
-			throw 'n';
+			return false;
 		}
 		Variable t = lv;
 		SetVar(t);
@@ -267,11 +268,9 @@ bool Variable::Assign(EToken op, Variable& rval)
 		{
 			if(_type != LIST || rval._type != LIST)
 			{
-				throw 'n';
-				return false;
+				throw TypeError::UnsupportedOperands(op, _type, "", rval._type, "");
+				//qaz //TODO throw 'n';
 			}
-			//TODO
-			int a = 1;
 		}
 		else if(_type == STR || rval._type == STR)
 		{
@@ -280,9 +279,9 @@ bool Variable::Assign(EToken op, Variable& rval)
 				SetStr(format("{}{}", ToStr(), *rval._u._s));
 			}
 			else
-			{//TODO impl
-				throw 'n';
-				return false;
+			{//TODO impl *=, -=, /=
+				throw TypeError::UnsupportedOperands(op, _type, "", rval._type, "");
+				//qaz //TODO throw 'n';
 			}
 		}
 		else if(_type == FLOAT || rval._type == FLOAT)
@@ -293,15 +292,15 @@ bool Variable::Assign(EToken op, Variable& rval)
 			}
 
 			if(_type != FLOAT)
-			{//TODO
-				throw 'n';
-				return false;
+			{
+				throw TypeError::UnsupportedOperands(op, _type, "", rval._type, "");
+				//qaz //TODO throw 'n';
 			}
 
 			if(rval._type != FLOAT && rval._type != INT)
-			{//TODO
-				throw 'n';
-				return false;
+			{
+				throw TypeError::UnsupportedOperands(op, _type, "", rval._type, "");
+				//qaz //TODO throw 'n';
 			}
 
 			double rfloat = rval._type == FLOAT ? rval._u._f : (double)rval._u._i;
@@ -312,11 +311,19 @@ bool Variable::Assign(EToken op, Variable& rval)
 			case EToken::MinusAssign:	_u._f -= rfloat; break;
 			case EToken::MulAssign:		_u._f *= rfloat; break;
 			case EToken::DivAssign:		_u._f /= rfloat; break;
-			default: throw 'n';
+			default:
+				throw TypeError::UnsupportedOperands(op, _type, "", rval._type, "");
+				//qaz //TODO throw 'n';
 			}
 		}
 		else if(_type == INT && rval._type == INT)
 		{
+			if((op == EToken::DivAssign || op == EToken::ModAssign) && rval.int_() == 0)
+			{//TODO div 0
+				throw ErrorBase{-1, "divide by zero"};
+				//qaz			throw 'n'; //TODO
+			}
+
 			switch(op)
 			{
 			case EToken::PlusAssign:	_u._i += rval._u._i; break;
@@ -332,9 +339,9 @@ bool Variable::Assign(EToken op, Variable& rval)
 			}
 		}
 		else
-		{//TODO
-			throw 'n';
-			return false;
+		{
+			throw TypeError::UnsupportedOperands(op, _type, "", rval._type, "");
+			//qaz //TODO throw 'n';
 		}
 	}
 
@@ -357,7 +364,23 @@ bool Variable::CalcAndAssign(Variable& lhs, EToken calcOp, Variable& rhs)
 		return true;
 	}
 
-	if(lhs._type == STR || rhs._type == STR)
+	if(lhs == _NULL_ || rhs == _NULL_ || lhs == NONE || rhs == NONE)
+	{//todo refactor
+		int lv = lhs == _NULL_ || lhs == NONE;
+		int rv = rhs == _NULL_ || rhs == NONE;
+
+		switch(calcOp)
+		{
+		case EToken::Equal:		SetInt(lv && rv); break;
+		case EToken::NotEqual:	SetInt(!lv || !rv); break;
+		case EToken::Plus:
+			if(lhs == STR || rhs == STR) { SetStr(format("{}{}", lhs.ToStr(), rhs.ToStr())); break; }
+		default:
+			throw TypeError::UnsupportedOperands(calcOp, lhs._type, "", rhs._type, "");
+			//qaz //TODO
+		}
+	}
+	else if(lhs._type == STR || rhs._type == STR)
 	{//todo refactor
 		switch(calcOp)
 		{
@@ -374,35 +397,21 @@ bool Variable::CalcAndAssign(Variable& lhs, EToken calcOp, Variable& rhs)
 			}
 			else
 			{
-				SetInt(0);
+				throw TypeError::UnsupportedOperands(calcOp, lhs._type, "", rhs._type, "");
+				//qazSetInt(0);
 			}
 			break;
 		case EToken::Dot:
 			if(rhs != STR)
-			{//TODO
-				throw 'n';
-				return false;
+			{
+				throw TypeError::UnsupportedOperands(calcOp, lhs._type, "", rhs._type, "");
+				//qaz			throw 'n'; //TODO
 			}
 			SetAttr(lhs, *rhs._u._s);
 			break;
 		default:
-			//TODO impl
-			throw 'n';
-			return false;
-		}
-	}
-	else if(lhs == _NULL_ || rhs == _NULL_ || lhs == NONE || rhs == NONE)
-	{//todo refactor
-		int lv = lhs == _NULL_ || lhs == NONE;
-		int rv = rhs == _NULL_ || rhs == NONE;
-
-		switch(calcOp)
-		{
-		case EToken::Equal:		SetInt(lv && rv); break;
-		case EToken::NotEqual:	SetInt(!lv || !rv); break;
-		case EToken::Plus:
-			if(lhs == STR) { SetStr(format("{}{}", *lhs._u._s, rhs.ToStr())); break; }
-		default: throw 'n'; //TODO
+			throw TypeError::UnsupportedOperands(calcOp, lhs._type, "", rhs._type, "");
+			//qaz			throw 'n'; //TODO
 		}
 	}
 	else if(lhs == _TRUE_ || rhs == _TRUE_)
@@ -414,7 +423,9 @@ bool Variable::CalcAndAssign(Variable& lhs, EToken calcOp, Variable& rhs)
 		{
 		case EToken::Equal:		SetInt(lv && rv); break;
 		case EToken::NotEqual:	SetInt(!lv || !rv); break;
-		default: throw 'n'; //TODO
+		default:
+			throw TypeError::UnsupportedOperands(calcOp, lhs._type, "", rhs._type, "");
+			//qaz			throw 'n'; //TODO
 		}
 	}
 	else if(lhs == _FALSE_ || rhs == _FALSE_)
@@ -426,7 +437,9 @@ bool Variable::CalcAndAssign(Variable& lhs, EToken calcOp, Variable& rhs)
 		{
 		case EToken::Equal:		SetInt(lv && rv); break;
 		case EToken::NotEqual:	SetInt(!lv || !rv); break;
-		default: throw 'n'; //TODO
+		default:
+			throw TypeError::UnsupportedOperands(calcOp, lhs._type, "", rhs._type, "");
+			//qaz			throw 'n'; //TODO
 		}
 		_type = INT;
 	}
@@ -434,11 +447,6 @@ bool Variable::CalcAndAssign(Variable& lhs, EToken calcOp, Variable& rhs)
 	{
 		double lfloat = lhs._type == FLOAT ? lhs._u._f : (double)lhs._u._i;
 		double rfloat = rhs._type == FLOAT ? rhs._u._f : (double)rhs._u._i;
-
-		if(calcOp == EToken::Slash && rfloat == 0.0)
-		{//TODO div 0
-			throw 'n';
-		}
 
 		switch(calcOp)
 		{
@@ -458,7 +466,8 @@ bool Variable::CalcAndAssign(Variable& lhs, EToken calcOp, Variable& rhs)
 			case EToken::Equal:			SetInt(abs(lfloat - rfloat) < EPSILON); break;
 			case EToken::NotEqual:		SetInt(abs(lfloat - rfloat) >= EPSILON); break;
 			default:
-				throw 'n';
+				throw TypeError::UnsupportedOperands(calcOp, lhs._type, "", rhs._type, "");
+				//qaz			throw 'n'; //TODO
 			}
 		}
 	}
@@ -467,9 +476,10 @@ bool Variable::CalcAndAssign(Variable& lhs, EToken calcOp, Variable& rhs)
 		int64_t leftInt = lhs._u._i;
 		int64_t rightInt = rhs._u._i;
 
-		if(calcOp == EToken::Slash && rightInt == 0)
+		if((calcOp == EToken::Slash || calcOp == EToken::Percent) && rightInt == 0)
 		{//TODO div 0
-			throw 'n';
+			throw ErrorBase{-1, "divide by zero"};
+			//qaz			throw 'n'; //TODO
 		}
 
 		switch(calcOp)
@@ -493,7 +503,8 @@ bool Variable::CalcAndAssign(Variable& lhs, EToken calcOp, Variable& rhs)
 		case EToken::LShift:		SetInt(leftInt << rightInt); break;
 		case EToken::RShift:		SetInt(leftInt >> rightInt); break;
 		default:
-			throw 'n';
+			throw TypeError::UnsupportedOperands(calcOp, lhs._type, "", rhs._type, "");
+			//qaz			throw 'n'; //TODO
 		}
 	}
 	else if(lhs.IsObject() && rhs.IsObject())
@@ -502,13 +513,15 @@ bool Variable::CalcAndAssign(Variable& lhs, EToken calcOp, Variable& rhs)
 		{
 		case EToken::Equal:		SetInt(lhs._u._o == rhs._u._o); break;
 		case EToken::NotEqual:	SetInt(lhs._u._o != rhs._u._o); break;
-		default: throw 'n'; //TODO
+		default:
+			throw TypeError::UnsupportedOperands(calcOp, lhs._type, "", rhs._type, "");
+			//qaz			throw 'n'; //TODO
 		}
 	}
 	else
 	{//TODO
-		throw 'n';
-		return false;
+		throw TypeError::UnsupportedOperands(calcOp, lhs._type, "", rhs._type, "");
+		//qaz
 	}
 
 	return true;
@@ -520,8 +533,8 @@ bool Variable::CalcUnaryAndAssign(EToken unaryOp, Variable& rhs)
 	{
 		auto& lv = lvref();
 		if(!lv.CalcUnaryAndAssign(unaryOp, rhs))
-		{
-			throw 'n';
+		{//TODO
+			return false;
 		}
 		Variable t = lv;
 		SetVar(t);
@@ -530,8 +543,8 @@ bool Variable::CalcUnaryAndAssign(EToken unaryOp, Variable& rhs)
 
 	if(rhs._type == STR)
 	{//TODO
-		throw 'n';
-		return false;
+		throw TypeError::UnsupportedOperand(unaryOp, rhs._type, "");
+		//qaz TODO throw 'n';
 	}
 
 	switch(rhs._type)
@@ -544,7 +557,8 @@ bool Variable::CalcUnaryAndAssign(EToken unaryOp, Variable& rhs)
 		case EToken::Not: SetInt((int64_t)(!rhs._u._i)); break;
 		case EToken::Tilde: SetInt(~rhs._u._i); break;
 		default:
-			throw 'n';
+			throw TypeError::UnsupportedOperand(unaryOp, rhs._type, "");
+			//qaz TODO throw 'n';
 		}
 		return true;
 	case FLOAT:
@@ -555,7 +569,8 @@ bool Variable::CalcUnaryAndAssign(EToken unaryOp, Variable& rhs)
 		case EToken::Not: SetFloat(!rhs._u._f); break;
 		case EToken::Tilde: SetFloat(0); throw 'n'; break; //TODO
 		default:
-			throw 'n';
+			throw TypeError::UnsupportedOperand(unaryOp, rhs._type, "");
+			//qaz TODO throw 'n';
 		}
 		return true;
 
@@ -572,7 +587,8 @@ bool Variable::CalcUnaryAndAssign(EToken unaryOp, Variable& rhs)
 		{
 		case EToken::Not: SetInt(0); break;
 		default:
-			throw 'n';
+			throw TypeError::UnsupportedOperand(unaryOp, rhs._type, "");
+			//qaz TODO throw 'n';
 		}
 		return true;
 
@@ -584,7 +600,8 @@ bool Variable::CalcUnaryAndAssign(EToken unaryOp, Variable& rhs)
 		{
 		case EToken::Not: SetInt(1); break;
 		default:
-			throw 'n';
+			throw TypeError::UnsupportedOperand(unaryOp, rhs._type, "");
+			//qaz TODO throw 'n';
 		}
 		return true;
 	}
@@ -599,8 +616,8 @@ bool Variable::CalcIncDec(EToken op)
 	{
 		auto& lv = lvref();
 		if(!lv.CalcIncDec(op))
-		{
-			throw 'n';
+		{//TODO
+			return false;
 		}
 		Variable t = lv;
 		SetVar(t);
@@ -615,7 +632,9 @@ bool Variable::CalcIncDec(EToken op)
 		{
 		case INT: _u._i++; break;
 		case FLOAT: _u._f++; break;
-		default: throw 'n';
+		default:
+			throw TypeError::UnsupportedOperand(op, _type, "");
+			//qaz TODO throw 'n';
 		}
 		break;
 	case EToken::PreDec:
@@ -624,7 +643,9 @@ bool Variable::CalcIncDec(EToken op)
 		{
 		case INT: _u._i--; break;
 		case FLOAT: _u._f--; break;
-		default: throw 'n';
+		default:
+			throw TypeError::UnsupportedOperand(op, _type, "");
+			//qaz TODO throw 'n';
 		}
 		break;
 	}
@@ -921,6 +942,32 @@ YArg Variable::ToContract() const
 	default: throw 'n';
 	}
 	return YArg();
+}
+
+std::string_view Variable::TypeStr(Type t)
+{
+	switch(t)
+	{
+	case NONE: return "none";
+	case INT: return "int";
+	case FLOAT: return "float";
+	case STR: return "string";
+	case LVREF: return "lvalue_reference";
+	case ATTR: return "attribute";
+	case CLASS: return "class";
+	case MODULE: return "module";
+	case PROGRAM: return "program";
+	case OBJ: return "object";
+	case LIST: return "list";
+	case DICT: return "dict";
+	case CLASSOBJ: return "class_instance";
+	case MODULEOBJ: return "module_instance";
+	case PROGRAMOBJ: return "program_instance";
+	case _NULL_: return "null";
+	case _TRUE_: return "boolean_true";
+	case _FALSE_: return "boolean_false";
+	}
+	return "";
 }
 
 
