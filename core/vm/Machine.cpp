@@ -6,7 +6,11 @@
 #include <format>
 #include <string>
 #include <iostream>
+#include <filesystem>
 using namespace std;
+
+
+#define INTERNALERR(__msg__) do { auto e = RuntimeError::Internal(__msg__); e._internalPath = filesystem::path(__FILE__).filename().string(); e._internalLine = __LINE__; throw e; } while(0)
 
 
 namespace yvm
@@ -55,7 +59,7 @@ Variable* Machine::ResolveVar(ERefKind k, int idx)
 				case Constant::FLOAT:	cv->SetFloat(c._float); break;
 				case Constant::STR:		cv->SetStr(c._str); break;
 				default: //TODO
-					throw 'n';
+					INTERNALERR(format("{}: unsupported constant type", (int)c._type));
 				}
 			}
 			return cv;
@@ -81,7 +85,8 @@ Variable* Machine::ResolveVar(ERefKind k, int idx)
 
 	case ERefKind::FieldVar:
 		{
-			if(_clsStack.empty()) throw 'n';
+			if(_clsStack.empty())
+				INTERNALERR("no class object for field variable");
 
 			return &_clsStack.top()->clsObj()._fields[idx];
 		}
@@ -135,7 +140,7 @@ bool Machine::ExecInst(const Instruction& inst)
 	case EOpcode::NewCls: NewCls(*(Op::NewCls*)inst.code.data()); break;
 	case EOpcode::LValueField: LValueField(*(Op::LValueField*)inst.code.data()); break;
 	default:
-		throw 'n';//TODO
+		INTERNALERR(format("'{}': unknown opcode", inst.kind));//TODO
 	}
 	return false;
 }
@@ -151,10 +156,13 @@ int Machine::Exec(const Bytecode& code, int start /* = 0 */)
 		{
 			if(ExecInst(code._code[_pc])) break;
 		}
-		catch(ErrorBase e)
+		catch(RuntimeError e)
 		{
-			if(e.srcLine < 0)
-				e.srcLine = code._srcLines[pc];
+			if(e._srcLine < 0)
+			{
+				e._srcLine = code._srcLines[pc];
+				e._bytecodeLine = pc;
+			}
 			throw e;
 		}
 	}
@@ -167,8 +175,10 @@ bool Machine::Assign(const Op::Assign& as)
 {
 	if((ERefKind)as.dstKind == ERefKind::Const)
 	{
-		throw 'n';
+		INTERNALERR(format("cannot assign to const"));
 	}
+
+	auto op = (EToken)as.op;
 
 	if((ERefKind)as.dstKind != ERefKind::None)
 	{
@@ -177,7 +187,7 @@ bool Machine::Assign(const Op::Assign& as)
 		Variable* dst = ResolveVar((ERefKind)as.dstKind, as.dst);
 		if(src1 && src2)
 		{
-			auto op = (EToken)as.op;
+
 			if(Token::IsAssign(op))
 			{
 				src1->Assign(op, *src2);
@@ -203,7 +213,7 @@ bool Machine::Assign(const Op::Assign& as)
 						auto& o = dst->attr().owner;
 						if(!o.modObj()._mod.modDesc->memberTbl.contains(dst->attr().name))
 						{
-							throw MemberError::NoMember(o._type, o.modObj()._mod.modDesc->name, dst->attr().name);
+							throw RuntimeError::NoMember(o._type, o.modObj()._mod.modDesc->name, dst->attr().name);
 						}
 					}
 				}
@@ -219,7 +229,7 @@ bool Machine::Assign(const Op::Assign& as)
 						auto& o = dst->attr().owner;
 						if(!o.clsObj()._cls->_funcMap.contains(dst->attr().name))
 						{
-							throw MemberError::NoMember(o._type, o.clsObj()._cls->name, dst->attr().name);
+							throw RuntimeError::NoMember(o._type, o.clsObj()._cls->name, dst->attr().name);
 						}
 					}
 				}
@@ -246,63 +256,63 @@ bool Machine::Assign(const Op::Assign& as)
 			{
 				auto t = *src1;
 				dst->Assign(EToken::Assign, src1->lvref());
-				t.CalcIncDec((EToken)as.op);
+				t.CalcIncDec(op);
 			}
 			else
 			{
 				dst->Assign(EToken::Assign, *src1);
-				src1->CalcIncDec((EToken)as.op);
+				src1->CalcIncDec(op);
 			}
 		}
 		else if(src2)
 		{
-			if(Token::IsIncDecOp((EToken)as.op))
+			if(Token::IsIncDecOp(op))
 			{
-				src2->CalcIncDec((EToken)as.op);
+				src2->CalcIncDec(op);
 				dst->Assign(EToken::Assign, *src2);
 			}
 			else
 			{
-				dst->CalcUnaryAndAssign((EToken)as.op, *src2);
+				dst->CalcUnaryAndAssign(op, *src2);
 			}
 		}
 		else
-		{
-			throw 'n';
+		{//TODO
+			INTERNALERR(format("no source variable for '{}'", Token::TokenString(op)));
 		}
 	}
 	else
 	{
-		if(Token::IsAssign((EToken)as.op))
+		if(Token::IsAssign(op))
 		{
 			if((ERefKind)as.src1Kind == ERefKind::Const || (ERefKind)as.src1Kind == ERefKind::Literal)
 			{
-				throw 'n';
+				INTERNALERR(format("cannot assign to const"));
 			}
 
 			Variable* src2 = ResolveVar((ERefKind)as.src2Kind, as.src2);
 			Variable* src1 = ResolveVar((ERefKind)as.src1Kind, as.src1);
-			src1->Assign((EToken)as.op, *src2);
+			src1->Assign(op, *src2);
 		}
-		else if(Token::IsIncDecOp((EToken)as.op))
+		else if(Token::IsIncDecOp(op))
 		{
 			Variable* src2 = ResolveVar((ERefKind)as.src2Kind, as.src2);
 			Variable* src1 = ResolveVar((ERefKind)as.src1Kind, as.src1);
 			if(src1)
 			{
-				src1->CalcIncDec((EToken)as.op);
+				src1->CalcIncDec(op);
 			}
 			else if(src2)
 			{
-				src2->CalcIncDec((EToken)as.op);
+				src2->CalcIncDec(op);
 			}
 			else
 			{
-				throw 'n';
+				INTERNALERR(format("no operand for '{}'", Token::TokenString(op)));
 			}
 
 		}
-		else if(Token::IsPrefixUnary((EToken)as.op))
+		else if(Token::IsPrefixUnary(op))
 		{//no-op
 		}
 		else
@@ -348,7 +358,7 @@ bool Machine::Call(const Op::Call& cal)
 	//TODO check
 	if((ERefKind)cal.dstKind != ERefKind::Reg)
 	{//TODO
-		throw 'n';
+		INTERNALERR(format("'{}': A return value must be assigned to a register({})", cal.dstKind, (int)ERefKind::Reg));
 	}
 	_roff = cal.dst;
 
@@ -358,7 +368,7 @@ bool Machine::Call(const Op::Call& cal)
 	}
 	else
 	{//TODO
-		throw 'n';
+		INTERNALERR(format("'{}': unsupported call segment", cal.seg));
 	}
 	return true;
 }
@@ -403,7 +413,7 @@ bool Machine::ListAdd(const Op::ListAdd& la)
 	Variable* dst = ResolveVar((ERefKind)la.dstKind, la.dst);
 	if(*dst != Variable::LIST)
 	{
-		throw 'n';
+		INTERNALERR(format("'{}': unsupported for ListAdd", dst->TypeStr()));
 	}
 	dst->list().push_back(*src);
 	return true;
@@ -433,11 +443,11 @@ bool Machine::DictAdd(const Op::DictAdd& da)
 	Variable* dst = ResolveVar((ERefKind)da.dstKind, da.dst);
 	if(*dst != Variable::DICT)
 	{
-		throw 'n';
+		INTERNALERR(format("'{}': unsupported for DictAdd", dst->TypeStr()));
 	}
 	if(*key != Variable::STR)
 	{
-		throw 'n';
+		INTERNALERR(format("'{}': unsupported key for DictAdd", key->TypeStr()));
 	}
 
 	dst->dict()[*key->_u._s].SetVar(*val);
@@ -455,7 +465,7 @@ bool Machine::Index(const Op::Index& li)
 		{
 			if(idx->int_() < 0 || idx->int_() >= dst->str().size())
 			{//qaz TODO
-				throw IndexError::OutOfRange(dst->_type, "str", idx->int_(), dst->str().size());
+				throw RuntimeError::OutOfRange(dst->_type, "str", idx->int_(), dst->str().size());
 			}
 			dst->SetStr(string() + dst->str()[idx->int_()]);
 		}
@@ -463,13 +473,13 @@ bool Machine::Index(const Op::Index& li)
 		{
 			if(idx->int_() < 0 || idx->int_() >= dst->list().size())
 			{//qaz TODO
-				throw IndexError::OutOfRange(dst->_type, "list", idx->int_(), dst->list().size());
+				throw RuntimeError::OutOfRange(dst->_type, "list", idx->int_(), dst->list().size());
 			}
 			dst->SetVar(dst->list()[idx->int_()]);
 		}
 		else
 		{
-			throw IndexError::Unsupported(dst->_type, "", to_string(idx->int_()));
+			throw RuntimeError::UnsupportedType(dst->_type, "", to_string(idx->int_()));
 			//TODO qaz
 		}
 
@@ -479,14 +489,14 @@ bool Machine::Index(const Op::Index& li)
 	{
 		if(*dst != Variable::DICT)
 		{
-			throw IndexError::Unsupported(dst->_type, "", idx->str());
+			throw RuntimeError::UnsupportedType(dst->_type, "", idx->str());
 			//TODO qaz
 		}
 
 		auto found = dst->dict().find(idx->str());
 		if(found == dst->dict().end())
 		{
-			throw IndexError::NotFound(dst->_type, "dict", idx->str());
+			throw RuntimeError::NotFound(dst->_type, "dict", idx->str());
 			//TODO qaz
 		}
 
@@ -494,7 +504,7 @@ bool Machine::Index(const Op::Index& li)
 	}
 	else
 	{
-		throw IndexError::Unsupported(dst->_type, "", idx->ToStr());
+		throw RuntimeError::UnsupportedType(dst->_type, "", idx->ToStr());
 		//TODO qaz
 	}
 	return true;
@@ -511,8 +521,8 @@ bool Machine::LValueIndex(const Op::LValueIndex& lli)
 		if(*dst == Variable::LVREF)
 		{
 			if(dst->lvref() != Variable::LIST)
-			{
-				throw 'n';
+			{//qaz todo
+				throw RuntimeError::UnsupportedType(dst->lvref()._type, "", to_string(idx->int_()));
 			}
 			lst = &dst->lvref();
 		}
@@ -522,7 +532,7 @@ bool Machine::LValueIndex(const Op::LValueIndex& lli)
 		}
 		else
 		{
-			throw IndexError::Unsupported(dst->_type, "", to_string(idx->int_()));
+			throw RuntimeError::UnsupportedType(dst->_type, "", to_string(idx->int_()));
 			//qaz TODO
 		}
 
@@ -535,8 +545,8 @@ bool Machine::LValueIndex(const Op::LValueIndex& lli)
 		if(*dst == Variable::LVREF)
 		{
 			if(dst->lvref() != Variable::DICT)
-			{
-				throw 'n';
+			{// qaz todo
+				throw RuntimeError::UnsupportedType(dst->lvref()._type, "", idx->str());
 			}
 			dict = &dst->lvref();
 		}
@@ -546,7 +556,7 @@ bool Machine::LValueIndex(const Op::LValueIndex& lli)
 		}
 		else
 		{
-			throw IndexError::Unsupported(dst->_type, "", idx->str());
+			throw RuntimeError::UnsupportedType(dst->_type, "", idx->str());
 			//TODO qaz
 		}
 
@@ -557,7 +567,7 @@ bool Machine::LValueIndex(const Op::LValueIndex& lli)
 			auto inserted = dict->dict().insert({idx->str(), Variable()});
 			if(!inserted.second)
 			{
-				throw 'n';
+				INTERNALERR(format("'{}': internal error at dict().insert()", idx->str()));
 			}
 			t = &inserted.first->second;
 		}
@@ -570,7 +580,7 @@ bool Machine::LValueIndex(const Op::LValueIndex& lli)
 	}
 	else
 	{
-		throw IndexError::Unsupported(dst->_type, "", to_string(idx->float_()));
+		throw RuntimeError::UnsupportedType(dst->_type, "", to_string(idx->float_()));
 		//qaz TODO
 	}
 	return true;
@@ -582,7 +592,7 @@ bool Machine::Invoke(const Op::Invoke& ivk)
 	{
 		if(_clsStack.empty())
 		{//TODO
-			throw 'n';
+			INTERNALERR("no class object for member function");
 		}
 
 		if(ivk.numArgs)
@@ -597,18 +607,18 @@ bool Machine::Invoke(const Op::Invoke& ivk)
 
 	if((ERefKind)ivk.dstKind != ERefKind::Reg)
 	{//TODO
-		throw 'n';
+		INTERNALERR(format("'{}': A return value must be assigned to a register({})", ivk.dstKind, (int)ERefKind::Reg));
 	}
 
 	Variable* dst = ResolveVar((ERefKind)ivk.dstKind, ivk.dst);
 	if(*dst == Variable::STR)
 	{//TODO dynamic resolution
 		//TBD
-		throw 'n';
+		INTERNALERR(format("'{}': not implemented", dst->str()));
 	}
 	if(*dst != Variable::ATTR)
 	{
-		throw 'n';
+		INTERNALERR(format("'{}': requires ATTR({}) for invocation target resolution", dst->TypeStr(), (int)Variable::ATTR));
 	}
 
 	_roff = ivk.dst + 1;
@@ -621,7 +631,7 @@ bool Machine::Invoke(const Op::Invoke& ivk)
 		if(found == cls->_funcMap.end())
 		{//TODO
 			//qaz
-			throw MemberError::NoMember(owner._type, cls->name, dst->attr().name);
+			throw RuntimeError::NoMember(owner._type, cls->name, dst->attr().name);
 		}
 
 		_clsStack.push(&owner);
@@ -637,7 +647,7 @@ bool Machine::Invoke(const Op::Invoke& ivk)
 	}
 	else if(owner == Variable::CLASS)
 	{//TODO
-		throw 'n';
+		INTERNALERR(format("'{}': not implemented", owner.TypeStr()));
 	}
 	else if(owner == Variable::PROGRAMOBJ)
 	{
@@ -664,7 +674,7 @@ bool Machine::Invoke(const Op::Invoke& ivk)
 			if(found == prg->_globalTable.end())
 			{//TODO
 				//qaz;
-				throw MemberError::NoMember(owner._type, prg->_name, dst->attr().name);
+				throw RuntimeError::NoMember(owner._type, prg->_name, dst->attr().name);
 			}
 
 			if(found->second.kind == EGlobalSymbol::Fn)
@@ -680,14 +690,14 @@ bool Machine::Invoke(const Op::Invoke& ivk)
 			}
 			else
 			{//TODO
-				throw 'n';
+				INTERNALERR(format("'{}': incorrect kind", (int)found->second.kind));
 			}
 		}
 		return true;
 	}
 	else if(owner == Variable::PROGRAM)
 	{//TODO
-		throw 'n';
+		INTERNALERR(format("'{}': not implemented", owner.TypeStr()));
 	}
 
 	const ymod::ModuleDesc* modDesc = primitive::GetModuleDesc(owner._type);
@@ -696,7 +706,7 @@ bool Machine::Invoke(const Op::Invoke& ivk)
 		if(owner != Variable::MODULE && owner != Variable::MODULEOBJ)
 		{//TODO
 			// qaz
-			throw MemberError::NoMember(owner._type, "", dst->attr().name);
+			throw RuntimeError::NoMember(owner._type, "", dst->attr().name);
 		}
 		modDesc = owner.modObj()._mod.modDesc;
 	}
@@ -705,12 +715,12 @@ bool Machine::Invoke(const Op::Invoke& ivk)
 	if(found == modDesc->memberTbl.end())
 	{//TODO
 		//qaz
-		throw MemberError::NoMember(owner._type, modDesc->name, dst->attr().name);
+		throw RuntimeError::NoMember(owner._type, modDesc->name, dst->attr().name);
 	}
 
 	if(ivk.numArgs < found->second.numPrms)
 	{//TODO qaz
-		throw MemberError::NotMatchedParams(owner._type, modDesc->name, dst->attr().name, found->second.numPrms, ivk.numArgs);
+		throw RuntimeError::NotMatchedParams(owner._type, modDesc->name, dst->attr().name, found->second.numPrms, ivk.numArgs);
 	}
 
 	YArgs ya;
@@ -719,7 +729,7 @@ bool Machine::Invoke(const Op::Invoke& ivk)
 	{
 		if(owner == Variable::MODULE)
 		{//TODO
-			throw 'n';
+			INTERNALERR(format("'{}': not implemented", owner.TypeStr()));
 		}
 
 		off = 1;
@@ -766,7 +776,7 @@ bool Machine::Invoke(const Op::Invoke& ivk)
 	auto yr = found->second.func(&ya);
 	if(yr.code)
 	{//TODO
-		throw 'n';
+		INTERNALERR(format("'{}::{}()': module logic error", modDesc->name, dst->attr().name));
 	}
 	if(modDesc->builtin)
 	{
@@ -780,12 +790,9 @@ bool Machine::Invoke(const Op::Invoke& ivk)
 				ret->modObj()._o = yo->obj;
 				delete yo;
 			}
-			else if(yr.single.tp == YEArg::YVar)
-			{//TODO no-op
-			}
-			else
-			{
-				throw 'n';
+			else if(yr.single.tp != YEArg::YVar)
+			{//TODO
+				INTERNALERR(format("'{}': not implemented", (int)yr.single.tp));
 			}
 		}
 		else if(yr.vals.sz != 0)
@@ -807,10 +814,11 @@ bool Machine::Inc(const Op::Inc& inc)
 {
 	Variable* name = ResolveVar(ERefKind::Const, inc.inc);
 
-	if(!name || *name != Variable::STR)
-	{
-		throw 'n';
-	}
+	if(!name)
+		INTERNALERR(format("'constIdx:{}': include name not found", inc.inc));
+
+	if(*name != Variable::STR)
+		INTERNALERR(format("'constIdx:{}': incorrect include name type({})", inc.inc, name->TypeStr()));
 
 	auto found = _prg->_programTable.find(name->str());
 	if(found != _prg->_programTable.end())
@@ -834,7 +842,7 @@ bool Machine::Inc(const Op::Inc& inc)
 		const ymod::ModuleDesc& modDesc = _modMgr.GetModuleDesc(name->str());
 		if(modDesc.IsNull())
 		{//TODO
-			throw 'n';
+			INTERNALERR(format("'{}': module not found", name->str()));
 		}
 
 		auto v = ResolveVar((ERefKind)inc.dstKind, inc.dst);
@@ -854,43 +862,7 @@ bool Machine::Jnz(const Op::Jnz& jnz)
 }
 
 bool Machine::NewMod(const Op::NewMod& nm)
-{//TODO qaz
-	/*
-	Variable* dst = ResolveVar((ERefKind)nm.dstKind, nm.dst);
-	if(*dst != Variable::STR)
-	{//TODO
-		throw 'n';
-	}
-
-	const auto& modDesc = _modMgr.GetModuleDesc(dst->_str);
-	if(modDesc.IsNull())
-	{//TODO
-		throw 'n';
-	}
-
-	if(!modDesc.newer)
-	{//TODO
-		throw 'n';
-	}
-
-	YRet yr = modDesc.newer(nullptr);
-	if(yr.single.tp != YEArg::Object)
-	{
-		throw 'n';
-	}
-
-	ymod::Module mod { .modDesc = &modDesc };
-	if(modDesc.initer)
-	{
-		mod = modDesc.initer();
-	}
-
-	auto v = ResolveVar(ERefKind::Reg, _roff);
-	v->Clear();
-	v->_type = Variable::OBJECT;
-	v->_obj = yr.single.o;
-	v->_mod = mod;
-	return true;*/
+{
 	return false;
 }
 
@@ -899,7 +871,7 @@ bool Machine::NewCls(const Op::NewCls& nc)
 	Variable* dst = ResolveVar((ERefKind)nc.dstKind, nc.dst);
 	if(*dst != Variable::STR)
 	{//TODO
-		throw 'n';
+		INTERNALERR(format("'{}': incorrect class name type", dst->TypeStr()));
 	}
 
 	const Program* prg = _prgStack.top()->prgObj()._prg;
@@ -908,7 +880,7 @@ bool Machine::NewCls(const Op::NewCls& nc)
 	auto found = prg->_classTable.find(dst->str());
 	if(found == prg->_classTable.end())
 	{//TODO
-		throw 'n';
+		INTERNALERR(format("'{}': class not found", dst->str()));
 	}
 
 	CreateClassObj(found->second, nc.numArgs);
@@ -922,19 +894,20 @@ bool Machine::LValueField(const Op::LValueField& lvf)
 
 	if(*fld != Variable::STR)
 	{//TODO
-		throw 'n';
+		INTERNALERR(format("'{}': incorrect field name type", fld->TypeStr()));
 	}
 
 	if(*dst == Variable::PROGRAMOBJ)
 	{
-		auto found = dst->prgObj()._prg->_globalTable.find(fld->str());
-		if(found == dst->prgObj()._prg->_globalTable.end())
+		auto& prg = *dst->prgObj()._prg;
+		auto found = prg._globalTable.find(fld->str());
+		if(found == prg._globalTable.end())
 		{//TODO
-			throw 'n';
+			INTERNALERR(format("'{}': field not found in program({})", fld->str(), prg._name));
 		}
 		if(found->second.kind != EGlobalSymbol::Var)
 		{//TODO
-			throw 'n';
+			INTERNALERR(format("'{}({})': incorrect field type", fld->str(), (int)found->second.kind));
 		}
 
 		dst->SetVarLVRef(*dst->prgObj()._globals.Get(found->second.idx));
@@ -945,14 +918,14 @@ bool Machine::LValueField(const Op::LValueField& lvf)
 		if(found == dst->clsObj()._cls->_fieldMap.end())
 		{//TODO
 			//qaz
-			throw MemberError::NoMember(dst->_type, dst->clsObj()._cls->name, fld->str());
+			throw RuntimeError::NoMember(dst->_type, dst->clsObj()._cls->name, fld->str());
 		}
 
 		dst->SetVarLVRef(dst->clsObj()._fields[found->second], *dst);
 	}
 	else
 	{//TODO
-		throw 'n';
+		INTERNALERR(format("'{}': unsupported owner type for '{}'", dst->TypeStr(), fld->str()));
 	}
 
 	return true;
@@ -967,7 +940,7 @@ bool Machine::CallBuiltinFunc(const Op::Call& cal)
 	}*/
 	if((ERefKind)cal.dstKind != ERefKind::Reg)
 	{//TODO check
-		throw 'n';
+		INTERNALERR(format("'{}': A return value must be assigned to a register({})", cal.dstKind, (int)ERefKind::Reg));
 	}
 	_roff = cal.dst;
 
@@ -1016,7 +989,8 @@ bool Machine::CallBuiltinFunc(const Op::Call& cal)
 		}
 		break;
 
-	default: throw 'n';
+	default:
+		INTERNALERR(format("'{:X}': not registered builtin function", cal.pos));
 	}
 
 	return true;
@@ -1065,17 +1039,13 @@ int Machine::Run(const Program& program, int start /* = 0 */)
 	{
 		Exec(_prg->_mainCode, start);
 	}
-	catch(MemberError e)
+	catch(RuntimeError e)
 	{
-		cout << format("\nFile: {}\nLine: {}\nMemberError: {}\n", _prgStack.top()->prgObj()._prg->_path, e.srcLine, e.what);
+		e._srcPath = _prgStack.top()->prgObj()._prg->_path;
+		cout << "\n" << e.ToStr() << "\n";
 		_retCode = -1;
 	}
-	catch(ErrorBase e)
-	{
-		cout << format("\nFile: {}\nLine: {}\nError: {}\n", _prgStack.top()->prgObj()._prg->_path, e.srcLine, e.what);
-		_retCode = -1;
 
-	}
 	_prgStack.pop();
 
 	if(_retCode == INT_MAX) _retCode = 0;

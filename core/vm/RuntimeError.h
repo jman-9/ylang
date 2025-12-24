@@ -7,72 +7,57 @@
 namespace yvm
 {
 
-struct ErrorBase
-{
-	int srcLine = -1;
-	std::string what;
-};
-
-struct IndexError : public ErrorBase
+struct RuntimeError
 {
 	enum Type
 	{
-		NONE,
+		CLASS_NONE,
+		LOGIC,
+		INDEX,
+		TYPE,
+		MEMBER,
+	};
+
+	enum Code
+	{
+		CODE_NONE,
+		INTERNAL,
 		NOT_FOUND,
 		OUT_OF_RANGE,
-		UNSUPPORTED,
-	};
-
-	Type type = NONE;
-	Variable::Type varType = Variable::NONE;
-	std::string varName;
-	std::string index;
-	int len = 0;
-
-	static IndexError NotFound(Variable::Type varType, std::string varName, std::string index);
-	static IndexError OutOfRange(Variable::Type varType, std::string varName, int index, int len);
-	static IndexError Unsupported(Variable::Type varType, std::string varName, std::string index);
-};
-
-
-struct TypeError : public ErrorBase
-{
-	enum Type
-	{
-		NONE,
+		UNSUPPORTED_TYPE,
 		UNSUPPORTED_OPERAND,
 		UNSUPPORTED_OPERANDS,
-	};
-
-	Type type = NONE;
-	EToken tokType = EToken::None;
-	Variable::Type lhsType = Variable::NONE;
-	Variable::Type rhsType = Variable::NONE;
-	std::string lhsName;
-	std::string rhsName;
-
-	static TypeError UnsupportedOperand(EToken tokType, Variable::Type unaryType, std::string unaryName);
-	static TypeError UnsupportedOperands(EToken tokType, Variable::Type lhsType, std::string lhsName, Variable::Type rhsType, std::string rhsName);
-};
-
-struct MemberError : public ErrorBase
-{
-	enum Type
-	{
-		NONE,
+		DIVIDE_BY_ZERO,
 		NO_MEMBER,
 		NOT_MATCHED_PARAMS,
 	};
 
-	Type type = NONE;
-	Variable::Type ownerType = Variable::NONE;
-	std::string ownerName;
-	std::string memberName;
-	int numPrms = 0;
-	int numArgs = 0;
+	Type _type;
+	Code _code;
 
-	static MemberError NoMember(Variable::Type ownerType, std::string ownerName, std::string memberName);
-	static MemberError NotMatchedParams(Variable::Type ownerType, std::string ownerName, std::string memberName, int numPrms, int numArgs);
+	std::string _msg;
+
+	std::string _srcPath;
+	int _srcLine = -1;
+	int _bytecodeLine = -1;
+
+	std::string _internalPath;
+	int _internalLine = -1;
+
+	std::string ToStr() const;
+
+	//void SetSrcInfo(std::string srcPath, int srcLine, int bytecodeLine);
+	//void SetDebugInfo(std::string internalPath, int Line);
+
+	static RuntimeError Internal(std::string msg);
+	static RuntimeError NotFound(Variable::Type varType, std::string varName, std::string index);
+	static RuntimeError OutOfRange(Variable::Type varType, std::string varName, int index, int len);
+	static RuntimeError UnsupportedType(Variable::Type varType, std::string varName, std::string index);
+	static RuntimeError UnsupportedOperand(EToken tokType, Variable::Type unaryType, std::string unaryName);
+	static RuntimeError UnsupportedOperands(EToken tokType, Variable::Type lhsType, std::string lhsName, Variable::Type rhsType, std::string rhsName);
+	static RuntimeError DivideByZero();
+	static RuntimeError NoMember(Variable::Type ownerType, std::string ownerName, std::string memberName);
+	static RuntimeError NotMatchedParams(Variable::Type ownerType, std::string ownerName, std::string memberName, int numPrms, int numArgs);
 };
 
 }

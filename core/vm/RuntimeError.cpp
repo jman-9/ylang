@@ -7,96 +7,105 @@ namespace yvm
 {
 using namespace std;
 
-
-IndexError IndexError::NotFound(Variable::Type varType, std::string varName, std::string index)
+/*
+void RuntimeError::SetSrcInfo(std::string srcPath, int srcLine, int bytecodeLine)
 {
-	IndexError e;
-	e.type = NOT_FOUND;
-	e.varType = varType;
-	e.varName = varName;
-	e.index = index;
-
-	e.what = format("'{}': not found in '{}'", index, varName);
-	return e;
+	_srcPath = srcPath;
+	_srcLine = srcLine;
+	_bytecodeLine = bytecodeLine;
 }
-IndexError IndexError::OutOfRange(Variable::Type varType, std::string varName, int index, int len)
+void RuntimeError::SetDebugInfo(string file, int fileLine)
 {
-	IndexError e;
-	e.type = OUT_OF_RANGE;
-	e.varType = varType;
-	e.varName = varName;
-	e.index = to_string(index);
-	e.len = len;
+	_file = file;
+	_bytecodeLine =
+	_srcLine = srcLine;
+	_bytecodeLine = bytecodeLine;
+}*/
 
-	e.what = format("'{}': index out of range in '{}(len:{})'", index, varName, len);
-	return e;
-}
-IndexError IndexError::Unsupported(Variable::Type varType, std::string varName, std::string index)
+RuntimeError RuntimeError::Internal(std::string msg)
 {
-	IndexError e;
-	e.type = UNSUPPORTED;
-	e.varType = varType;
-	e.varName = varName;
-	e.index = index;
-
-	e.what = format("'{}': index unsupported for '{}'", index, Variable::TypeStr(varType));
+	RuntimeError e;
+	e._type = LOGIC;
+	e._msg = msg;
 	return e;
 }
 
-TypeError TypeError::UnsupportedOperand(EToken tokType, Variable::Type unaryType, std::string unaryName)
+RuntimeError RuntimeError::NotFound(Variable::Type varType, std::string varName, std::string index)
 {
-	TypeError e;
-	e.type = UNSUPPORTED_OPERAND;
-	e.tokType = tokType;
-	e.lhsType = unaryType;
-	e.lhsName = unaryName;
-
-	e.what = format("'{}': unsupported for '{}'", Variable::TypeStr(unaryType), Token::TokenString(e.tokType));
+	RuntimeError e;
+	e._type = INDEX;
+	e._code = NOT_FOUND;
+	e._msg = format("'{}': not found in '{}({})'", index, varName, Variable::TypeStr(varType));
 	return e;
 }
 
-TypeError TypeError::UnsupportedOperands(EToken tokType, Variable::Type lhsType, std::string lhsName, Variable::Type rhsType, std::string rhsName)
+RuntimeError RuntimeError::OutOfRange(Variable::Type varType, std::string varName, int index, int len)
 {
-	TypeError e;
-	e.type = UNSUPPORTED_OPERANDS;
-	e.tokType = tokType;
-	e.lhsType = lhsType;
-	e.lhsName = lhsName;
-	e.rhsType = rhsType;
-	e.rhsName = rhsName;
-
-	e.what = format("'{}','{}': unsupported for '{}'", Variable::TypeStr(e.lhsType), Variable::TypeStr(e.rhsType), Token::TokenString(e.tokType));
+	RuntimeError e;
+	e._type = INDEX;
+	e._code = OUT_OF_RANGE;
+	e._msg = format("'{}': index out of range in '{}(type:{}, len:{})'", index, varName, Variable::TypeStr(varType), len);
 	return e;
 }
 
-
-MemberError MemberError::NoMember(Variable::Type ownerType, std::string ownerName, std::string memberName)
+RuntimeError RuntimeError::UnsupportedType(Variable::Type varType, std::string varName, std::string index)
 {
-	MemberError e;
-	e.type = NO_MEMBER;
-	e.ownerType = ownerType;
-	e.ownerName = ownerName;
-	e.memberName = memberName;
+	RuntimeError e;
+	e._type = INDEX;
+	e._code = UNSUPPORTED_TYPE;
+	e._msg = format("'{}': index unsupported for '{}'", index, Variable::TypeStr(varType));
+	return e;
+}
+
+RuntimeError RuntimeError::UnsupportedOperand(EToken tokType, Variable::Type unaryType, std::string unaryName)
+{
+	RuntimeError e;
+	e._type = TYPE;
+	e._code = UNSUPPORTED_OPERAND;
+	e._msg = format("'{}': unsupported for '{}'", Variable::TypeStr(unaryType), Token::TokenString(tokType));
+	return e;
+}
+
+RuntimeError RuntimeError::UnsupportedOperands(EToken tokType, Variable::Type lhsType, std::string lhsName, Variable::Type rhsType, std::string rhsName)
+{
+	RuntimeError e;
+	e._type = TYPE;
+	e._code = UNSUPPORTED_OPERANDS;
+	e._msg = format("'{}','{}': unsupported for '{}'", Variable::TypeStr(lhsType), Variable::TypeStr(rhsType), Token::TokenString(tokType));
+	return e;
+}
+
+yvm::RuntimeError RuntimeError::DivideByZero()
+{
+	RuntimeError e;
+	e._type = TYPE;
+	e._code = DIVIDE_BY_ZERO;
+	e._msg = format("divide by zero");
+	return e;
+}
+
+RuntimeError RuntimeError::NoMember(Variable::Type ownerType, std::string ownerName, std::string memberName)
+{
+	RuntimeError e;
+	e._type = TYPE;
+	e._code = NO_MEMBER;
 	if(ownerName.empty())
 	{
-		e.what = format("'{}' type has no member '{}'", Variable::TypeStr(e.ownerType), e.memberName);
+		e._msg = format("'{}' type has no member '{}'", Variable::TypeStr(ownerType), memberName);
 	}
 	else
 	{
-		e.what = format("'{}' object has no member '{}'", e.ownerName, e.memberName);
+		e._msg = format("'{}' object has no member '{}'", ownerName, memberName);
 	}
 	return e;
 }
 
-MemberError MemberError::NotMatchedParams(Variable::Type ownerType, std::string ownerName, std::string memberName, int numPrms, int numArgs)
+RuntimeError RuntimeError::NotMatchedParams(Variable::Type ownerType, std::string ownerName, std::string memberName, int numPrms, int numArgs)
 {
-	MemberError e;
-	e.type = NOT_MATCHED_PARAMS;
-	e.ownerType = ownerType;
-	e.ownerName = ownerName;
-	e.memberName = memberName;
-
-	/*
+	RuntimeError e;
+	e._type = TYPE;
+	e._code = NOT_MATCHED_PARAMS;
+	/*TODO
 	e.what = format("'{}' type has no member '{}'", (int)e.ownerType, e.memberName);
 	}
 	else
@@ -104,6 +113,28 @@ MemberError MemberError::NotMatchedParams(Variable::Type ownerType, std::string 
 		e.what = format("'{}' object has no member '{}'", e.ownerName, e.memberName);
 	}*/
 	return e;
+}
+
+string RuntimeError::ToStr() const
+{
+	string stp = "UnknownError";
+	switch(_type)
+	{
+	case CLASS_NONE: break;
+	case LOGIC: stp = "LogicError"; break;
+	case INDEX: stp = "IndexError"; break;
+	case TYPE: stp = "TypeError"; break;
+	case MEMBER: stp = "MemberError"; break;
+	}
+
+	if(_type == LOGIC)
+	{
+		return format("File: {}\nLine: {}\nInternalFile: {}\nInternalLine: {}\n{}: {}", _srcPath, _srcLine, _internalPath, _internalLine, stp, _msg);
+	}
+	else
+	{
+		return format("File: {}\nLine: {}\n{}: {}", _srcPath, _srcLine, stp, _msg);
+	}
 }
 
 }

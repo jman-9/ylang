@@ -20,7 +20,7 @@ struct ClassObject
 	const Class* _cls;
 
 private:
-	friend class Variable;
+	friend struct Variable;
 	std::vector<Variable> _prgObjP;
 };
 struct ModuleObject
@@ -38,7 +38,7 @@ struct LVRefObject
 {
 	Variable* _lvref;
 private:
-	friend class Variable;
+	friend struct Variable;
 	std::vector<Variable> _owner;
 };
 
@@ -72,7 +72,7 @@ struct Variable
 
 	Type _type;
 
-	struct Object;
+	class Object;
 	union u
 	{
 		int64_t _i;
@@ -145,6 +145,7 @@ struct Variable
 	void SetValueFromContract(YArg o);
 	YArg ToContract() const;
 
+	std::string_view TypeStr() const;
 	static std::string_view TypeStr(Type t);
 
 	class Object
