@@ -6,11 +6,7 @@
 #include <format>
 #include <string>
 #include <iostream>
-#include <filesystem>
 using namespace std;
-
-
-#define INTERNALERR(__msg__) do { auto e = RuntimeError::Internal(__msg__); e._internalPath = filesystem::path(__FILE__).filename().string(); e._internalLine = __LINE__; throw e; } while(0)
 
 
 namespace yvm

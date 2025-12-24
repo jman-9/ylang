@@ -1,5 +1,6 @@
 #include "Json.h"
 #include "vm/Variable.h"
+#include "vm/RuntimeError.h"
 #include "ext/nlohmann/json.hpp"
 #include <queue>
 #include <iostream>
@@ -38,8 +39,8 @@ YRet Parse(YArgs* args)
 			return { .node = &inserted.first->second };
 		}
 		else
-		{//TODO exception system
-			throw 'n';
+		{
+			INTERNALERR(format("{} :incorrect type", v.TypeStr()));
 		}
 	};
 

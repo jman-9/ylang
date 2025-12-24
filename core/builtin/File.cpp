@@ -1,5 +1,6 @@
 #include "File.h"
 #include "vm/Variable.h"
+#include "vm/RuntimeError.h"
 #include <stdio.h>
 
 
@@ -78,7 +79,7 @@ YRet Write(YArgs* args)
 	else
 	{//TODO buffer
 		//yet;
-		throw 'n';
+		INTERNALERR(format("{} :not implemented", s->TypeStr()));
 	}
 
 	int code = 0;

@@ -1,6 +1,7 @@
 #pragma once
 #include "Dict.h"
 #include "vm/Variable.h"
+#include "vm/RuntimeError.h"
 
 
 namespace yvm::primitive::Dict
@@ -24,7 +25,7 @@ inline YRet Len(YArgs* args)
 inline YRet Contains(YArgs* args)
 {
 	if(args->numArgs < 2)
-		throw 'n';//TODO
+		INTERNALERR_NUMARGS(2, args->numArgs);
 
 	auto self = (Variable*)args->args[0].o;
 	auto k = (Variable*)args->args[1].o;
@@ -95,7 +96,7 @@ inline YRet Items(YArgs* args)
 inline YRet Pop(YArgs* args)
 {
 	if(args->numArgs < 2)
-		throw 'n';//TODO
+		INTERNALERR_NUMARGS(2, args->numArgs);
 
 	auto self = *(Variable*)args->args[0].o;
 	auto k = (Variable*)args->args[1].o;

@@ -1,11 +1,19 @@
 #pragma once
 #include "Variable.h"
 #include "Token.h"
+#include <format>
+#include <filesystem>
 #include <string>
 
 
 namespace yvm
 {
+
+#define INTERNALERR(__msg__) do { auto e = RuntimeError::Internal(__msg__); e._internalPath = std::filesystem::path(__FILE__).filename().string(); e._internalLine = __LINE__; throw e; } while(0)
+
+#define INTERNALERR_NUMARGS(__prms__, __args__) INTERNALERR(std::format("not matched numbers of params- prms(min):{}, args:{}", __prms__, __args__))
+
+#define INTERNALERR_TYPE(__need__, __cur__) INTERNALERR(std::format("'{}': unmatched type to '{}'", __cur__, __need__))
 
 struct RuntimeError
 {
@@ -45,9 +53,6 @@ struct RuntimeError
 	int _internalLine = -1;
 
 	std::string ToStr() const;
-
-	//void SetSrcInfo(std::string srcPath, int srcLine, int bytecodeLine);
-	//void SetDebugInfo(std::string internalPath, int Line);
 
 	static RuntimeError Internal(std::string msg);
 	static RuntimeError NotFound(Variable::Type varType, std::string varName, std::string index);

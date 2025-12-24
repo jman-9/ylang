@@ -1,6 +1,7 @@
 #pragma once
 #include "Str.h"
 #include "vm/Variable.h"
+#include "vm/RuntimeError.h"
 #include <string>
 
 
@@ -36,7 +37,7 @@ inline YRet Find(YArgs* args)
 {
 	auto self = (Variable*)args->args[0].o;
 	if(args->numArgs == 1)
-		throw 'n';//TODO
+		INTERNALERR_NUMARGS(2, args->numArgs);
 
 	YRet yr;
 	yr.single.tp = YEArg::YVar;
@@ -56,11 +57,11 @@ inline YRet Find(YArgs* args)
 		auto s =(Variable*)args->args[2].o;
 		if(*s != Variable::STR)
 		{
-			throw 'n';
+			INTERNALERR_TYPE(s->TypeStr(), Variable::TypeStr(Variable::STR));
 		}
 		if(*i != Variable::INT)
 		{
-			throw 'n';
+			INTERNALERR_TYPE(i->TypeStr(), Variable::TypeStr(Variable::INT));
 		}
 
 		size_t pos = self->str().find(s->str(), i->int_());
@@ -77,7 +78,7 @@ inline YRet Substr(YArgs* args)
 {
 	auto self = (Variable*)args->args[0].o;
 	if(args->numArgs == 1)
-		throw 'n';//TODO
+		INTERNALERR_NUMARGS(2, args->numArgs);
 
 	YRet yr;
 	yr.single.tp = YEArg::YVar;
@@ -86,7 +87,7 @@ inline YRet Substr(YArgs* args)
 		auto s = (Variable*)args->args[1].o;
 		if(*s != Variable::INT)
 		{
-			throw 'n';
+			INTERNALERR_TYPE(s->TypeStr(), Variable::TypeStr(Variable::INT));
 		}
 
 		auto rv = (Variable*)args->retBuff.o;
@@ -99,11 +100,11 @@ inline YRet Substr(YArgs* args)
 		auto l =(Variable*)args->args[2].o;
 		if(*s != Variable::INT)
 		{
-			throw 'n';
+			INTERNALERR_TYPE(s->TypeStr(), Variable::TypeStr(Variable::INT));
 		}
 		if(*l != Variable::INT)
 		{
-			throw 'n';
+			INTERNALERR_TYPE(l->TypeStr(), Variable::TypeStr(Variable::INT));
 		}
 
 		auto rv = (Variable*)args->retBuff.o;
@@ -118,17 +119,17 @@ inline YRet Replace(YArgs* args)
 {
 	auto self = (Variable*)args->args[0].o;
 	if(args->numArgs < 3)
-		throw 'n';//TODO
+		INTERNALERR_NUMARGS(3, args->numArgs);
 
 	auto o = (Variable*)args->args[1].o;
 	auto n =(Variable*)args->args[2].o;
 	if(*o != Variable::STR)
 	{
-		throw 'n';
+		INTERNALERR_TYPE(o->TypeStr(), Variable::TypeStr(Variable::STR));
 	}
 	if(*n != Variable::STR)
 	{
-		throw 'n';
+		INTERNALERR_TYPE(n->TypeStr(), Variable::TypeStr(Variable::STR));
 	}
 
 	string r = self->str();
@@ -175,7 +176,7 @@ inline YRet Split(YArgs* args)
 		auto d = (Variable*)args->args[1].o;
 		if(*d != Variable::STR)
 		{
-			throw 'n';
+			INTERNALERR_TYPE(d->TypeStr(), Variable::TypeStr(Variable::STR));
 		}
 
 		if(d->str().empty())
@@ -258,7 +259,7 @@ inline YRet Join(YArgs* args)
 {
 	auto self = (Variable*)args->args[0].o;
 	if(args->numArgs < 2)
-		throw 'n';//TODO
+		INTERNALERR_NUMARGS(2, args->numArgs);
 
 	auto list = (Variable*)args->args[1].o;
 

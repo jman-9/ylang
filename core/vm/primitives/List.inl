@@ -1,6 +1,7 @@
 #pragma once
 #include "List.h"
 #include "vm/Variable.h"
+#include "vm/RuntimeError.h"
 
 
 namespace yvm::primitive::List
@@ -42,7 +43,7 @@ inline YRet Append(YArgs* args)
 inline YRet Insert(YArgs* args)
 {
 	if(args->numArgs < 3)
-		throw 'n';//TODO
+		INTERNALERR_NUMARGS(3, args->numArgs);
 
 	auto self = (Variable*)args->args[0].o;
 	auto i = (Variable*)args->args[1].o;
@@ -55,7 +56,7 @@ inline YRet Insert(YArgs* args)
 inline YRet Pop(YArgs* args)
 {
 	if(args->numArgs < 2)
-		throw 'n';//TODO
+		INTERNALERR_NUMARGS(2, args->numArgs);
 
 	auto self = (Variable*)args->args[0].o;
 	auto i = (Variable*)args->args[1].o;
