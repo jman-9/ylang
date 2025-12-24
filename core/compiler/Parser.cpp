@@ -303,6 +303,11 @@ TreeNodeSptr Parser::ParseExp(bool first)
 			if(!IsPrimaryPostfix(GetPrev()))
 				if(node = ParsePrimaryExp()) break;
 		}
+		else if(GetCur() == EToken::LBrace)
+		{
+			if(!IsPrimaryPostfix(GetPrev()))
+				if(node = ParsePrimaryExp()) break;
+		}
 		else
 		{
 			if(node = ParsePrimaryExp()) break;
@@ -726,7 +731,7 @@ TreeNodeSptr Parser::ParseStmt()
 		if(GetCur().kind == EToken::Semicolon)
 		{
 			MoveNext();
-			return ParseStmt();
+			return nullptr;
 		}
 	}
 

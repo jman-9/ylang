@@ -275,7 +275,7 @@ Alice: 75 HP
 * [x] Class
 * [x] Memory management (refcnt, dynamic resizing)
 * [x] Module & import system
-* [ ] Optimized VM dispatch
+* [x] Optimized VM dispatch
 * [x] Automated tests
 * [ ] Documentation
 * [ ] Unicode
