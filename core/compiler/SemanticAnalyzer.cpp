@@ -529,6 +529,14 @@ bool SemanticAnalyzer::AnalyzeExp(const TreeNode& stmt)
 		return AnalyzeInvokeExp(stmt);
 	}
 
+	if(stmt.self == EToken::This)
+	{
+		if(_scopeMgr.IsUnderClassScope())
+			return true;
+		_errors.push_back(ErrorBuilder::Default(stmt.self.line, "'this' not within a class"));
+		return false;
+	}
+
 	if(stmt.self == EToken::Id || stmt.self == EToken::Str)
 	{
 		if((!_nsCtx.IsEmpty() || stmt.self == EToken::Id) && _nsTracker.IsExistingIfAppend(_nsCtx, stmt.self.val))

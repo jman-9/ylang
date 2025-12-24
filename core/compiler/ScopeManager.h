@@ -56,6 +56,7 @@ public:
 	void PopScope();
 
 	ScopeType GetCurScope() const;
+	bool IsUnderClassScope() const;
 
 	Idx AddOrNot(const Symbol& sym);
 	Idx AddOrReplace(const Symbol& sym);

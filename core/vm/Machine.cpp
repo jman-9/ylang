@@ -44,6 +44,10 @@ Variable* Machine::ResolveVar(ERefKind k, int idx)
 	{
 	case ERefKind::Literal:
 		{
+			if(idx == 3)
+			{//TODO remove hardcoding
+				return _clsStack.top();
+			}
 			return &_literals[idx];
 		}
 

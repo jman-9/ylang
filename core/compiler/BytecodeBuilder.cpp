@@ -699,6 +699,7 @@ bool BytecodeBuilder::BuildExp(Bytecode& retCtx, const TreeNode& stmt, bool root
 			case EToken::Null: inst.src1 = 0; inst.src1Kind = (uint8_t)ERefKind::Literal; break;
 			case EToken::True: inst.src1 = 1; inst.src1Kind = (uint8_t)ERefKind::Literal; break;
 			case EToken::False:inst.src1 = 2; inst.src1Kind = (uint8_t)ERefKind::Literal; break;
+			case EToken::This: inst.src1 = 3; inst.src1Kind = (uint8_t)ERefKind::Literal; break;
 			default:
 				inst.src1Kind = (uint8_t)ERefKind::Const;
 				inst.src1 = _constTbl.AddOrNot(stmt.self);
@@ -769,6 +770,7 @@ bool BytecodeBuilder::BuildExp(Bytecode& retCtx, const TreeNode& stmt, bool root
 			case EToken::Null: inst.src1 = 0; inst.src1Kind = (uint8_t)ERefKind::Literal; break;
 			case EToken::True: inst.src1 = 1; inst.src1Kind = (uint8_t)ERefKind::Literal; break;
 			case EToken::False:inst.src1 = 2; inst.src1Kind = (uint8_t)ERefKind::Literal; break;
+			case EToken::This: inst.src1 = 3; inst.src1Kind = (uint8_t)ERefKind::Literal; break;
 			default:
 				inst.src1Kind = (uint8_t)ERefKind::Const;
 				inst.src1 = _constTbl.AddOrNot(lhs->self);

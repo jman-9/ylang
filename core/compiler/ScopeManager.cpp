@@ -52,6 +52,12 @@ ScopeManager::ScopeType ScopeManager::GetCurScope() const
 {
 	return _scopeTbl.back().type;
 }
+bool ScopeManager::IsUnderClassScope() const
+{
+	for(int i=(int)_scopeTbl.size()-1; i>=0; i--)
+		if(_scopeTbl[i].type == SCOPE_CLASS) return true;
+	return false;
+}
 
 ScopeManager::Idx ScopeManager::AddOrNot(const Symbol& sym)
 {

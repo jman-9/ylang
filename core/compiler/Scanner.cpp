@@ -100,6 +100,7 @@ void Scanner::ProcessIdKeywords()
 		EToken::Null,
 		EToken::True,
 		EToken::False,
+		EToken::This,
 	};
 
 	for(auto& t : _tokens)

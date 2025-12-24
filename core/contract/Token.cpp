@@ -73,6 +73,7 @@ static bool Init()
 	s_tokenStrMap[EToken::True] = "true";
 	s_tokenStrMap[EToken::False] = "false";
 	s_tokenStrMap[EToken::DotDot] = "..";
+	s_tokenStrMap[EToken::This] = "this";
 
 	return true;
 }
@@ -130,7 +131,7 @@ bool Token::IsWhiteSpace(EToken tok)
 
 bool Token::IsLiteral(EToken tok)
 {
-	return tok == EToken::Int || tok == EToken::Float || tok == EToken::Str || tok == EToken::RawStr || tok == EToken::Null || tok == EToken::True || tok == EToken::False;
+	return tok == EToken::Int || tok == EToken::Float || tok == EToken::Str || tok == EToken::RawStr || tok == EToken::Null || tok == EToken::True || tok == EToken::False || tok == EToken::This;
 }
 
 bool Token::IsPrefixUnary(EToken tok)
