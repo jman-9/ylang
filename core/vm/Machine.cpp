@@ -16,6 +16,14 @@ using namespace std;
 namespace yvm
 {
 
+struct YArgsAuto
+{
+	YArgsAuto() {}
+	~YArgsAuto() { if(_ya.args) _ya.Reset(0); }
+	YArgs _ya;
+};
+
+
 Machine::Machine()
 {
 	_prg = nullptr;
@@ -723,7 +731,8 @@ bool Machine::Invoke(const Op::Invoke& ivk)
 		throw RuntimeError::NotMatchedParams(owner._type, modDesc->name, dst->attr().name, found->second.numPrms, ivk.numArgs);
 	}
 
-	YArgs ya;
+	YArgsAuto yaa;
+	YArgs& ya = yaa._ya;
 	int off = 0;
 	if(found->second.needSelf || owner == Variable::MODULEOBJ)
 	{
@@ -1045,8 +1054,14 @@ int Machine::Run(const Program& program, int start /* = 0 */)
 		cout << "\n" << e.ToStr() << "\n";
 		_retCode = -1;
 	}
-
 	_prgStack.pop();
+
+	while(!_prgStack.empty()) _prgStack.pop();
+	while(!_clsStack.empty()) _clsStack.pop();
+	while(!_retStack.empty()) _retStack.pop();
+	while(!_roffStack.empty()) _roffStack.pop();
+	while(_rpStack.size() > 1) _rpStack.pop();
+	_roff = 0;
 
 	if(_retCode == INT_MAX) _retCode = 0;
 	return _retCode;
@@ -1057,8 +1072,24 @@ int Machine::Continue(int start /* = -1 */)
 	_retCode = INT_MAX;
 
 	_prgStack.push(&_prgObj);
-	Exec(_prg->_mainCode, start > -1 ? start : _pc);
+	try
+	{
+		Exec(_prg->_mainCode, start > -1 ? start : _pc);
+	}
+	catch(RuntimeError e)
+	{
+		e._srcPath = _prgStack.top()->prgObj()._prg->_path;
+		cout << "\n" << e.ToStr() << "\n";
+		_retCode = -1;
+	}
 	_prgStack.pop();
+
+	while(!_prgStack.empty()) _prgStack.pop();
+	while(!_clsStack.empty()) _clsStack.pop();
+	while(!_retStack.empty()) _retStack.pop();
+	while(!_roffStack.empty()) _roffStack.pop();
+	while(_rpStack.size() > 1) _rpStack.pop();
+	_roff = 0;
 
 	if(_retCode == INT_MAX) _retCode = 0;
 	return _retCode;
