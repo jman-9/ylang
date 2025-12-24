@@ -1,5 +1,6 @@
 #include "Variable.h"
 #include "RuntimeError.h"
+#include <filesystem>
 
 
 namespace yvm
@@ -8,6 +9,7 @@ using namespace std;
 using namespace ymod;
 
 #define EPSILON (1e-9)
+#define INTERNALERR(__msg__) do { auto e = RuntimeError::Internal(__msg__); e._internalPath = filesystem::path(__FILE__).filename().string(); e._internalLine = __LINE__; throw e; } while(0)
 
 
 Variable::Variable()
@@ -140,8 +142,8 @@ void Variable::SetClass(const Class& cls, bool makeInstance, Variable* prgObj /*
 	if(makeInstance)
 	{
 		if(prgObj == nullptr)
-		{//TODO
-			throw 'n';
+		{
+			INTERNALERR(format("{}: must have program object to make an instance", cls.name));
 		}
 
 		ResetNewObj();
@@ -183,7 +185,7 @@ void Variable::SetModule(const ModuleDesc& mod, bool makeInstance)
 	YRet yr = mod.newer(nullptr);
 	if(yr.single.tp != YEArg::Object)
 	{
-		throw 'n';
+		//except
 	}*/
 }
 void Variable::SetProgram(const Program& prg, bool makeInstance)
@@ -242,8 +244,7 @@ bool Variable::Assign(EToken op, Variable& rval)
 {
 	if(!Token::IsAssign(op))
 	{
-		throw 'n';
-		return false;
+		INTERNALERR(format("'{}','{}': unsupported for '{}'", TypeStr(), rval.TypeStr(), Token::TokenString(op)));
 	}
 
 	if(_type == LVREF)
@@ -357,7 +358,7 @@ bool Variable::CalcAndAssign(Variable& lhs, EToken calcOp, Variable& rhs)
 		auto& lv = lvref();
 		if(!lv.CalcAndAssign(lhs, calcOp, rhs))
 		{
-			throw 'n';
+			return false;
 		}
 		Variable t = lv;
 		SetVar(t);
@@ -405,13 +406,13 @@ bool Variable::CalcAndAssign(Variable& lhs, EToken calcOp, Variable& rhs)
 			if(rhs != STR)
 			{
 				throw RuntimeError::UnsupportedOperands(calcOp, lhs._type, "", rhs._type, "");
-				//qaz			throw 'n'; //TODO
+				//qaz			 //TODO
 			}
 			SetAttr(lhs, *rhs._u._s);
 			break;
 		default:
 			throw RuntimeError::UnsupportedOperands(calcOp, lhs._type, "", rhs._type, "");
-			//qaz			throw 'n'; //TODO
+			//qaz			//TODO
 		}
 	}
 	else if(lhs == _TRUE_ || rhs == _TRUE_)
@@ -567,7 +568,6 @@ bool Variable::CalcUnaryAndAssign(EToken unaryOp, Variable& rhs)
 		case EToken::UnaryPlus: SetFloat(+rhs._u._f); break;
 		case EToken::UnaryMinus: SetFloat(-rhs._u._f); break;
 		case EToken::Not: SetFloat(!rhs._u._f); break;
-		case EToken::Tilde: SetFloat(0); throw 'n'; break; //TODO
 		default:
 			throw RuntimeError::UnsupportedOperand(unaryOp, rhs._type, "");
 			//qaz TODO
@@ -606,7 +606,7 @@ bool Variable::CalcUnaryAndAssign(EToken unaryOp, Variable& rhs)
 		return true;
 	}
 
-	throw 'n';
+	INTERNALERR(format("'{}': unsupported for '{}'", rhs.TypeStr(), Token::TokenString(unaryOp)));
 	return false;
 }
 
@@ -769,37 +769,37 @@ void Variable::ResetNewObj()
 
 int64_t Variable::int_() const
 {
-	if(_type != INT) throw 'n'; //TODO
+	if(_type != INT) INTERNALERR(format("{}: incorrect type", TypeStr()));
 	return _u._i;
 }
 double Variable::float_() const
 {
-	if(_type != FLOAT) throw 'n'; //TODO
+	if(_type != FLOAT) INTERNALERR(format("{}: incorrect type", TypeStr()));
 	return _u._f;
 }
 const std::string& Variable::str() const
 {
-	if(_type != STR) throw 'n'; //TODO
+	if(_type != STR) INTERNALERR(format("{}: incorrect type", TypeStr()));
 	return *_u._s;
 }
 const Variable& Variable::lvref() const
 {
-	if(_type != LVREF) throw 'n'; //TODO
+	if(_type != LVREF) INTERNALERR(format("{}: incorrect type", TypeStr()));
 	return *_u._o->_lvro._lvref;
 }
 Variable& Variable::lvref()
 {
-	if(_type != LVREF) throw 'n'; //TODO
+	if(_type != LVREF) INTERNALERR(format("{}: incorrect type", TypeStr()));
 	return *_u._o->_lvro._lvref;
 }
 const Attribute& Variable::attr() const
 {
-	if(_type != ATTR) throw 'n'; //TODO
+	if(_type != ATTR) INTERNALERR(format("{}: incorrect type", TypeStr()));
 	return *_u._attr;
 }
 Attribute& Variable::attr()
 {
-	if(_type != ATTR) throw 'n'; //TODO
+	if(_type != ATTR) INTERNALERR(format("{}: incorrect type", TypeStr()));
 	return *_u._attr;
 }
 
@@ -810,13 +810,13 @@ const Class& Variable::cls() const
 	else if(_type == CLASSOBJ)
 		return *_u._o->_clso._cls;
 	else
-		throw 'n'; //TODO
+		INTERNALERR(format("{}: incorrect type", TypeStr()));
 }
 
 const ModuleDesc& Variable::mod() const
 {
-	if(_type != MODULE) throw 'n'; //TODO
-	//qazreturn *_u._mod;
+	if(_type != MODULE) INTERNALERR(format("{}: incorrect type", TypeStr()));
+	//qaz TODO return *_u._mod;
 	return *modObj()._mod.modDesc;
 }
 
@@ -827,59 +827,59 @@ const Program& Variable::prg() const
 	else if(_type == PROGRAMOBJ)
 		return *_u._o->_prgo._prg;
 	else
-		throw 'n'; //TODO
+		INTERNALERR(format("{}: incorrect type", TypeStr()));
 }
 
 const std::vector<Variable>& Variable::list() const
 {
-	if(_type != LIST) throw 'n'; //TODO
+	if(_type != LIST) INTERNALERR(format("{}: incorrect type", TypeStr()));
 	return _u._o->_list;
 }
 vector<Variable>& Variable::list()
 {
-	if(_type != LIST) throw 'n'; //TODO
+	if(_type != LIST) INTERNALERR(format("{}: incorrect type", TypeStr()));
 	return _u._o->_list;
 }
 const std::unordered_map<std::string, Variable>& Variable::dict() const
 {
-	if(_type != DICT) throw 'n'; //TODO
+	if(_type != DICT) INTERNALERR(format("{}: incorrect type", TypeStr()));
 	return _u._o->_dict;
 }
 unordered_map<string, Variable>& Variable::dict()
 {
-	if(_type != DICT) throw 'n'; //TODO
+	if(_type != DICT) INTERNALERR(format("{}: incorrect type", TypeStr()));
 	return _u._o->_dict;
 }
 const ClassObject& Variable::clsObj() const
 {
-	if(_type != CLASSOBJ) throw 'n'; //TODO
+	if(_type != CLASSOBJ) INTERNALERR(format("{}: incorrect type", TypeStr()));
 	return _u._o->_clso;
 }
 ClassObject& Variable::clsObj()
 {
-	if(_type != CLASSOBJ) throw 'n'; //TODO
+	if(_type != CLASSOBJ) INTERNALERR(format("{}: incorrect type", TypeStr()));
 	return _u._o->_clso;
 }
 const ModuleObject& Variable::modObj() const
 {
-	//qaz
-	if(_type != MODULE && _type != MODULEOBJ) throw 'n'; //TODO
+	//qaz TODO arrange
+	if(_type != MODULE && _type != MODULEOBJ) INTERNALERR(format("{}: incorrect type", TypeStr()));
 	return _u._o->_modo;
 }
 ModuleObject& Variable::modObj()
 {
-	//qaz
-	if(_type != MODULE && _type != MODULEOBJ) throw 'n'; //TODO
+	//qaz TODO arrange
+	if(_type != MODULE && _type != MODULEOBJ) INTERNALERR(format("{}: incorrect type", TypeStr()));
 	return _u._o->_modo;
 }
 const ProgramObject& Variable::prgObj() const
 {
-	if(_type != PROGRAMOBJ) throw 'n'; //TODO
+	if(_type != PROGRAMOBJ) INTERNALERR(format("{}: incorrect type", TypeStr()));
 	return _u._o->_prgo;
 }
 ProgramObject& Variable::prgObj()
 {
-	if(_type != PROGRAMOBJ) throw 'n'; //TODO
+	if(_type != PROGRAMOBJ) INTERNALERR(format("{}: incorrect type", TypeStr()));
 	return _u._o->_prgo;
 }
 
@@ -891,8 +891,8 @@ void Variable::SetValueFromContract(YArg o)
 	case YEArg::Double: return SetFloat(o.ToDouble());
 	case YEArg::Str: return SetStr(o.ToStr());
 	case YEArg::YVar: SetVar(*(Variable*)o.o); break;
-	default://TODO qaz
-		throw 'n';
+	default:
+		INTERNALERR(format("{}: incorrect type", (int)o.tp));
 	}
 }
 YArg Variable::ToContract() const
@@ -939,7 +939,8 @@ YArg Variable::ToContract() const
 	case LIST: return { (void*)ToList(list()), YEArg::List };
 	case DICT: return { (void*)ToDict(dict()), YEArg::Dict };
 	case MODULEOBJ: return { modObj()._o, YEArg::Object };
-	default: throw 'n';
+	default:
+		INTERNALERR(format("{}: unsupported type", TypeStr()));
 	}
 	return YArg();
 }
