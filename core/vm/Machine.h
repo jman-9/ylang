@@ -43,6 +43,8 @@ protected:
 	int _pc;
 	int _retCode;
 
+	std::unordered_map<std::string, Variable> _prgObjTable;
+
 	ymod::ModuleManager _modMgr;
 
 	inline bool Assign(const Op::Assign& as);

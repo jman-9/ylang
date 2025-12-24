@@ -828,19 +828,28 @@ bool Machine::Inc(const Op::Inc& inc)
 	auto found = _prg->_programTable.find(name->str());
 	if(found != _prg->_programTable.end())
 	{
-		auto& prg = found->second;
-		//prg._mainCode
 		auto v = ResolveVar((ERefKind)inc.dstKind, inc.dst);
-		v->SetProgram(prg, true);
 
-		_prgStack.push(v);
+		auto found2 = _prgObjTable.find(name->str());
+		if(found2 != _prgObjTable.end())
+		{
+			v->SetVar(found2->second);
+		}
+		else
+		{
+			v->SetProgram(found->second, true);
 
-		int roffbk = _roff;
-		_roff++;
-		Exec(v->prgObj()._prg->_mainCode, 0);
-		_roff = roffbk;
+			_prgStack.push(v);
 
-		_prgStack.pop();
+			int roffbk = _roff;
+			_roff++;
+			Exec(v->prgObj()._prg->_mainCode, 0);
+			_roff = roffbk;
+
+			_prgStack.pop();
+
+			_prgObjTable[ name->str() ] = *v;
+		}
 	}
 	else
 	{
