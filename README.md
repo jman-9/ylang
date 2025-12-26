@@ -1,6 +1,6 @@
 <img src="ylang_logo.png" height="100">
 
-# ylang 0.1.1
+# ylang 0.1.2
 
 yet another programming language — retro, C-like, and Pythonic
 
@@ -14,15 +14,6 @@ combining C’s syntax with Python-like dynamic semantics.
 And beyond these, `ylang` also has its own style.
 
 It implements a complete compilation pipeline — from scanning to bytecode generation — and execution on its own virtual machine, named `yvm` — keeping it small, structured, and clear.
-
-## What's New
-
-* 0.1.1 introduces a stabilized architecture:
-  - module include system with namespaces
-  - restructured VM
-    - redesigned scope system 
-    - refined stack model
-    - memory model based on reference counting
 
 ## Language Characteristics
 
@@ -219,7 +210,10 @@ println("=== quick example ===");
 include json;
 
 fn main() {
-    data = { "name": "Alice", "hp": 100 };
+	print("input character's name: ");
+	name = readln();
+
+    data = { "name": name, "hp": 100 };
     json_text = json.dump(data);
 	println("dumped JSON text: " + json_text);	
 	
@@ -242,6 +236,7 @@ Output:
 
 ```bash
 === quick example ===
+input character's name: Alice
 dumped JSON text: {"hp":100,"name":"Alice"}
 parsed JSON object: {'hp': 100, 'name': 'Alice'}
 
@@ -301,5 +296,6 @@ This project is licensed under the **MIT License** — see the [LICENSE](LICENSE
 | **0.0.5** | Class system, increment/decrement operators (`++`,`--`), chained assignments (`a=b=0`), basic literals (`null`,`true`,`false`)|
 | **0.1.0** | Namespace rule, source-based include, VM restructuring (scope/stack redesign, refcnt memory model, dynamic resizing)|
 | **0.1.1** | Fixed critical bugs, Refactored code, class field declaration using chained assignments, backward declarations in classes |
+| **0.1.2** | Runtime error handling, added readln(), module-level global variable sharing, 'this' support |
 
 ---
