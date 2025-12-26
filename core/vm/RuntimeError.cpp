@@ -1,4 +1,3 @@
-#pragma once
 #include "RuntimeError.h"
 #include <format>
 

@@ -498,7 +498,7 @@ bool BytecodeBuilder::BuildInvokeExp(Bytecode& retCtx, const TreeNode& stmt)
 
 	if (ivkType == EToken::LParen)
 	{//todo dynamic eval
-		throw std::exception("not implemented");
+		throw std::logic_error("not implemented");
 	}
 
 	if(ivkType == EToken::Dot)
