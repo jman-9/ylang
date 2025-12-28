@@ -4,6 +4,9 @@
 #include "Rand.h"
 #include "File.h"
 #include "Json.h"
+#include "Time.h"
+#include "Shell.h"
+#include "Fs.h"
 #include <unordered_set>
 using namespace std;
 
@@ -18,6 +21,9 @@ static bool Init()
 	s_builtinMap.insert(Rand::GetModuleDesc().name);
 	s_builtinMap.insert(File::GetModuleDesc().name);
 	s_builtinMap.insert(Json::GetModuleDesc().name);
+	s_builtinMap.insert(Time::GetModuleDesc().name);
+	s_builtinMap.insert(Shell::GetModuleDesc().name);
+	s_builtinMap.insert(Fs::GetModuleDesc().name);
 	return true;
 }
 static bool init = Init();
@@ -30,6 +36,9 @@ bool ybuiltin::Garage::RegisterAll(ymod::ModuleManager& retModMgr)
 	if(!retModMgr.RegisterModuleDesc(Rand::GetModuleDesc())) return false;
 	if(!retModMgr.RegisterModuleDesc(File::GetModuleDesc())) return false;
 	if(!retModMgr.RegisterModuleDesc(Json::GetModuleDesc())) return false;
+	if(!retModMgr.RegisterModuleDesc(Time::GetModuleDesc())) return false;
+	if(!retModMgr.RegisterModuleDesc(Shell::GetModuleDesc())) return false;
+	if(!retModMgr.RegisterModuleDesc(Fs::GetModuleDesc())) return false;
 	return true;
 }
 

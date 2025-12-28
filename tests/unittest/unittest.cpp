@@ -23,7 +23,7 @@ using namespace ycom;
 
 struct Result
 {
-	int code;
+	int64_t code;
 	bool build;
 	ErrorTable errTbl;
 };
@@ -441,6 +441,35 @@ TEST_CASE( "Primitive String Test", "[primstr]" )
 	REQUIRE( ret.code == 0 );
 }
 
+TEST_CASE( "Builtin Math Test", "[bltmath]" )
+{
+	Result ret;
+
+	ret = Run( R"YT( include math; println(math.pi); )YT" );
+	REQUIRE( ret.code == 0 );
+
+	ret = Run( R"YT( include math; if(math.pow(5, 3) != 5 * 5 * 5) exit(1); )YT" );
+	REQUIRE( ret.code == 0 );
+
+	ret = Run( R"YT( include math; if(math.abs(-1) != 1) exit(1); )YT" );
+	REQUIRE( ret.code == 0 );
+	ret = Run( R"YT( include math; if(math.abs(0) != 0) exit(1); )YT" );
+	REQUIRE( ret.code == 0 );
+	ret = Run( R"YT( include math; if(math.abs(-2.0) != 2.0) exit(1); )YT" );
+	REQUIRE( ret.code == 0 );
+	ret = Run( R"YT( include math; if(math.abs(0.0) != 0.0) exit(1); )YT" );
+	REQUIRE( ret.code == 0 );
+
+	ret = Run( R"YT( include math; if(math.min(9, 8) != 8) exit(1); )YT" );
+	REQUIRE( ret.code == 0 );
+	ret = Run( R"YT( include math; if(math.max(9, 8) != 9) exit(1); )YT" );
+	REQUIRE( ret.code == 0 );
+	ret = Run( R"YT( include math; if(math.min(5, 2.0) != 2.0) exit(1); )YT" );
+	REQUIRE( ret.code == 0 );
+	ret = Run( R"YT( include math; if(math.max(5.0, 2) != 5.0) exit(1); )YT" );
+	REQUIRE( ret.code == 0 );
+}
+
 TEST_CASE( "Builtin Random Test", "[bltrand]" )
 {
 	Result ret;
@@ -462,7 +491,20 @@ TEST_CASE( "Builtin Sys Test", "[bltsys]" )
 	ret = Run( R"YT( include sys; println(sys.executable); if(sys.executable.empty()) exit(1); )YT" );
 	REQUIRE( ret.code == 0 );
 
-	ret = Run( R"YT( include sys; println(sys.argv); )YT" );
+	string s = filesystem::current_path().string();
+	ret = Run( format( "include sys; println(sys.cwd()); if('''{}''' != sys.cwd()) exit(1); ", s ));
+	REQUIRE( ret.code == 0 );
+
+	ret = Run( "include sys; println(sys.env());");
+	REQUIRE( ret.code == 0 );
+
+	ret = Run( R"YT( include sys; if(sys.getenv("xd9382110_never_find_me_xd9382110") != null) exit(1); )YT" );
+	REQUIRE( ret.code == 0 );
+
+	ret = Run( R"YT( include sys; println(sys.getenv("PATH")); if(sys.getenv("PATH").empty()) exit(1); )YT" );
+	REQUIRE( ret.code == 0 );
+
+	ret = Run( R"YT( include sys; println(sys.setenv("x2y0z5a2", "test_value")); if(sys.getenv("x2y0z5a2") != "test_value") exit(1); )YT" );
 	REQUIRE( ret.code == 0 );
 }
 
@@ -539,6 +581,60 @@ TEST_CASE( "Builtin Json Test", "[bltjson]" )
 	REQUIRE( ret.code == 0 );
 
 	filesystem::remove("jsontest-ab4Nxq.txt");
+}
+
+TEST_CASE( "Builtin Time Test", "[blttime]" )
+{
+	Result ret;
+
+	auto t = time(nullptr);
+	ret = Run( R"YT( include time; time.sleep(2200); )YT");
+	REQUIRE( time(nullptr) - t >= 2 );
+
+	t = time(nullptr);
+	ret = Run( R"YT( include time; exit(time.now()); )YT");
+	REQUIRE( abs(ret.code - t) < 2.0 );
+}
+
+TEST_CASE( "Builtin Shell Test", "[bltshell]" )
+{
+	Result ret;
+#ifdef WIN32
+	string cmd = "dir";
+#else
+	string cmd = "ls";
+#endif
+
+	ret = Run( format("include shell; shell.system('{}');", cmd) );
+	REQUIRE( ret.code == 0 );
+
+	ret = Run( format("include shell; r = shell.run('{}'); println(r); if(!r || r.empty()) exit(1);", cmd) );
+	REQUIRE( ret.code == 0 );
+}
+
+TEST_CASE( "Builtin FileSystem Test", "[bltfs]" )
+{
+	Result ret;
+
+	ret = Run( R"YT( include fs; if(fs.exists("2052 never find 9810")) exit(1); )YT");
+	REQUIRE( ret.code == 0 );
+
+	string cwd = filesystem::current_path().string();
+	ret = Run( format( "include fs; println(fs.cwd()); if('''{}''' != fs.cwd()) exit(1); ", cwd) );
+	REQUIRE( ret.code == 0 );
+
+	ret = Run( format( "include fs; if(!fs.cwd('..')) exit(1); " ));
+	REQUIRE( ret.code == 0 );
+	string newcwd = filesystem::current_path().string();
+	ret = Run( format( "include fs; println(fs.cwd()); if('''{}''' != fs.cwd()) exit(1); fs.cwd('''{}''');", newcwd, cwd) );
+	REQUIRE( ret.code == 0 );
+
+	FILE* fp = fopen("test.file.txt", "w");
+	fputs("test", fp);
+	fclose(fp);
+	ret = Run( R"YT( include fs; if(!fs.exists("test.file.txt")) exit(1); )YT");
+	REQUIRE( ret.code == 0 );
+	filesystem::remove("test.file.txt");
 }
 
 TEST_CASE( "Class Test", "[class]" )
@@ -770,19 +866,23 @@ int main(int argc, const char** argv)
 	Catch::ConfigData& cfg = _session.configData();
 
 	cfg.showSuccessfulTests = true;
-	cfg.testsOrTags.push_back("[scanner],");
-	cfg.testsOrTags.push_back("[exp],");
-	cfg.testsOrTags.push_back("[forif],");
-	cfg.testsOrTags.push_back("[func],");
-	cfg.testsOrTags.push_back("[incdec],");
-	cfg.testsOrTags.push_back("[logop],");
-	cfg.testsOrTags.push_back("[primstr],");
-	cfg.testsOrTags.push_back("[bltrand],");
-	cfg.testsOrTags.push_back("[bltsys],");
-	cfg.testsOrTags.push_back("[bltfile],");
-	cfg.testsOrTags.push_back("[bltjson],");
-	cfg.testsOrTags.push_back("[class],");
-	cfg.testsOrTags.push_back("[includes],");
+// 	cfg.testsOrTags.push_back("[scanner],");
+// 	cfg.testsOrTags.push_back("[exp],");
+// 	cfg.testsOrTags.push_back("[forif],");
+// 	cfg.testsOrTags.push_back("[func],");
+// 	cfg.testsOrTags.push_back("[incdec],");
+// 	cfg.testsOrTags.push_back("[logop],");
+// 	cfg.testsOrTags.push_back("[primstr],");
+// 	cfg.testsOrTags.push_back("[bltmath],");
+// 	cfg.testsOrTags.push_back("[bltrand],");
+// 	cfg.testsOrTags.push_back("[bltsys],");
+// 	cfg.testsOrTags.push_back("[bltfile],");
+// 	cfg.testsOrTags.push_back("[bltjson],");
+// 	cfg.testsOrTags.push_back("[blttime],");
+// 	cfg.testsOrTags.push_back("[bltshell],");
+	cfg.testsOrTags.push_back("[bltfs],");
+// 	cfg.testsOrTags.push_back("[class],");
+// 	cfg.testsOrTags.push_back("[includes],");
 
 	int numFailed = _session.run();
 };

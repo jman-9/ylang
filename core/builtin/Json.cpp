@@ -102,9 +102,8 @@ YRet Parse(YArgs* args)
 				else if(v.is_number_float())
 					newV->SetFloat(v);
 				else if(v.is_boolean())
-				{//TODO ugly...
-					newV->Clear();
-					newV->_type = v == true ? Variable::_TRUE_ : Variable::_FALSE_;
+				{
+					newV->SetBool(v);
 				}
 				else
 					newV->SetStr(v);
@@ -183,8 +182,8 @@ YRet Dump(YArgs* args)
 				*jtrav = vtrav->int_();
 			else if(*vtrav == Variable::FLOAT)
 				*jtrav = vtrav->float_();
-			else if(*vtrav == Variable::_TRUE_ || *vtrav == Variable::_FALSE_)
-				*jtrav = *vtrav == Variable::_TRUE_ ? true : false;
+			else if(vtrav->IsBool())
+				*jtrav = vtrav->bool_();
 			else
 				*jtrav = vtrav->ToStr();
 

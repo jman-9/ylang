@@ -34,6 +34,7 @@ struct Module
 };
 
 using YModIniter = Module (*)();
+using YModFinalizer = void (*)();
 
 struct ModuleDesc
 {
@@ -42,6 +43,7 @@ struct ModuleDesc
 	YModIniter initer = nullptr;
 	YModFn newer = nullptr;
 	YModFn deleter = nullptr;
+	//YModFinalizer finalizer = nullptr;
 	ModuleMemberTable memberTbl;
 
 	bool IsNull() const;

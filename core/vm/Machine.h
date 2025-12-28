@@ -15,8 +15,8 @@ class Machine
 public:
 	Machine();
 
-	int Run(const Program& program, int start = 0);
-	int Continue(int start = -1);
+	int64_t Run(const Program& program, int start = 0);
+	int64_t Continue(int start = -1);
 
 protected:
 	Variable* ResolveVar(ERefKind k, int idx);
@@ -24,7 +24,7 @@ protected:
 	inline void PushState();
 	inline void PopState();
 	inline bool ExecInst(const Instruction& inst);
-	inline int Exec(const Bytecode& code, int start = 0);
+	inline int64_t Exec(const Bytecode& code, int start = 0);
 
 	const Program* _prg;
 	Variable _prgObj;
@@ -41,7 +41,7 @@ protected:
 	int _sp;
 	int _roff;
 	int _pc;
-	int _retCode;
+	int64_t _retCode;
 
 	std::unordered_map<std::string, Variable> _prgObjTable;
 

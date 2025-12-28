@@ -26,7 +26,7 @@ Machine::Machine()
 	_roff = 0;
 	_sp = 0;
 	_pc = 0;
-	_retCode = INT_MAX;
+	_retCode = INT64_MAX;
 	_rpStack.push(0);
 
 	//TODO remove hardcoding
@@ -153,11 +153,11 @@ bool Machine::ExecInst(const Instruction& inst)
 	return false;
 }
 
-int Machine::Exec(const Bytecode& code, int start /* = 0 */)
+int64_t Machine::Exec(const Bytecode& code, int start /* = 0 */)
 {
 	PushState();
 
-	for(_pc = start; _pc < code._code.size() && _retCode == INT_MAX; _pc++)
+	for(_pc = start; _pc < code._code.size() && _retCode == INT64_MAX; _pc++)
 	{
 		int pc = _pc;
 		try
@@ -995,7 +995,7 @@ bool Machine::CallBuiltinFunc(const Op::Call& cal)
 		else
 		{
 			auto v = ResolveVar(ERefKind::Reg, _roff);
-			_retCode = (int)v->int_();
+			_retCode = v->int_();
 		}
 		break;
 
@@ -1046,10 +1046,10 @@ bool Machine::CreateClassObj(const Class& cls, int numArgs)
 	return true;
 }
 
-int Machine::Run(const Program& program, int start /* = 0 */)
+int64_t Machine::Run(const Program& program, int start /* = 0 */)
 {
 	_prg = &program;
-	_retCode = INT_MAX;
+	_retCode = INT64_MAX;
 
 	_prgObj.SetProgram(program, true);
 	_prgStack.push(&_prgObj);
@@ -1072,13 +1072,13 @@ int Machine::Run(const Program& program, int start /* = 0 */)
 	while(_rpStack.size() > 1) _rpStack.pop();
 	_roff = 0;
 
-	if(_retCode == INT_MAX) _retCode = 0;
+	if(_retCode == INT64_MAX) _retCode = 0;
 	return _retCode;
 }
 
-int Machine::Continue(int start /* = -1 */)
+int64_t Machine::Continue(int start /* = -1 */)
 {
-	_retCode = INT_MAX;
+	_retCode = INT64_MAX;
 
 	_prgStack.push(&_prgObj);
 	try
@@ -1100,7 +1100,7 @@ int Machine::Continue(int start /* = -1 */)
 	while(_rpStack.size() > 1) _rpStack.pop();
 	_roff = 0;
 
-	if(_retCode == INT_MAX) _retCode = 0;
+	if(_retCode == INT64_MAX) _retCode = 0;
 	return _retCode;
 }
 

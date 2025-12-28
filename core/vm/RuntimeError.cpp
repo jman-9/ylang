@@ -74,6 +74,28 @@ RuntimeError RuntimeError::UnsupportedOperands(EToken tokType, Variable::Type lh
 	return e;
 }
 
+yvm::RuntimeError RuntimeError::IncorrectParam(Variable::Type input, std::vector<Variable::Type> paramTypes, int nTh)
+{
+	RuntimeError e;
+	e._type = TYPE;
+	e._code = INCORRECT_PARAM;
+	string paramTypeStr;
+	for(auto t : paramTypes)
+	{
+		paramTypeStr += Variable::TypeStr(t);
+		paramTypeStr += ' or ';
+	}
+	if(paramTypeStr.ends_with('or '))
+		paramTypeStr.resize(paramTypeStr.size() - strlen(" or "));
+
+	e._msg = format("'{}': incorrect param {} (expected '{}')", Variable::TypeStr(input), nTh, paramTypeStr);
+	return e;
+}
+yvm::RuntimeError RuntimeError::IncorrectParam(Variable::Type input, Variable::Type param, int nTh)
+{
+	return IncorrectParam(input, vector<Variable::Type>{param}, nTh);
+}
+
 yvm::RuntimeError RuntimeError::DivideByZero()
 {
 	RuntimeError e;

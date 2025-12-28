@@ -90,6 +90,11 @@ void Variable::SetObj(Object* obj)
 	t->ReleaseRef();
 }
 
+bool Variable::IsBool() const
+{
+	return _type == _TRUE_ || _type == _FALSE_;
+}
+
 bool Variable::IsObject() const
 {
 	return _type == OBJ || _type == CLASSOBJ || _type == MODULEOBJ || _type == PROGRAMOBJ;
@@ -205,6 +210,10 @@ void Variable::SetProgram(const Program& prg, bool makeInstance)
 		_type = PROGRAM;
 	}
 }
+void Variable::SetNull() { Clear(); _type = _NULL_; }
+void Variable::SetTrue() { Clear(); _type = _TRUE_; }
+void Variable::SetFalse(){ Clear(); _type = _FALSE_; }
+void Variable::SetBool(bool b) { b ? SetTrue() : SetFalse(); }
 
 void Variable::SetVar(Variable& var)
 {
@@ -766,6 +775,11 @@ void Variable::ResetNewObj()
 	_type = OBJ;
 }
 
+bool Variable::bool_() const
+{
+	if(!IsBool()) INTERNALERR(format("{}: incorrect type", TypeStr()));
+	return _type == Variable::_TRUE_;
+}
 int64_t Variable::int_() const
 {
 	if(_type != INT) INTERNALERR(format("{}: incorrect type", TypeStr()));

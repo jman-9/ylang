@@ -105,6 +105,10 @@ struct Variable
 	void SetClass(const Class& cls, bool makeInstance, Variable* prgObj = nullptr);
 	void SetModule(const ymod::ModuleDesc& mod, bool makeInstance);
 	void SetProgram(const Program& prg, bool makeInstance);
+	void SetNull();
+	void SetTrue();
+	void SetFalse();
+	void SetBool(bool b);
 	void SetVar(Variable& var);
 
 	bool Assign(EToken op, Variable& rval);
@@ -114,6 +118,7 @@ struct Variable
 
 	std::string ToStr() const;
 
+	bool IsBool() const;
 	bool IsObject() const;
 	bool IsNullOrFalse() const;
 	bool operator==(Type cmp) const;
@@ -121,6 +126,7 @@ struct Variable
 
 	void ResetNewObj();
 
+	bool bool_() const;
 	int64_t int_() const;
 	double float_() const;
 	const std::string& str() const;

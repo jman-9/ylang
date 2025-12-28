@@ -35,6 +35,7 @@ struct RuntimeError
 		UNSUPPORTED_TYPE,
 		UNSUPPORTED_OPERAND,
 		UNSUPPORTED_OPERANDS,
+		INCORRECT_PARAM,
 		DIVIDE_BY_ZERO,
 		NO_MEMBER,
 		NOT_MATCHED_PARAMS,
@@ -60,6 +61,8 @@ struct RuntimeError
 	static RuntimeError UnsupportedType(Variable::Type varType, std::string varName, std::string index);
 	static RuntimeError UnsupportedOperand(EToken tokType, Variable::Type unaryType, std::string unaryName);
 	static RuntimeError UnsupportedOperands(EToken tokType, Variable::Type lhsType, std::string lhsName, Variable::Type rhsType, std::string rhsName);
+	static RuntimeError IncorrectParam(Variable::Type input, std::vector<Variable::Type> paramTypes, int nTh);
+	static RuntimeError IncorrectParam(Variable::Type input, Variable::Type param, int nTh);
 	static RuntimeError DivideByZero();
 	static RuntimeError NoMember(Variable::Type ownerType, std::string ownerName, std::string memberName);
 	static RuntimeError NotMatchedParams(Variable::Type ownerType, std::string ownerName, std::string memberName, int numPrms, int numArgs);
