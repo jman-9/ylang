@@ -632,9 +632,36 @@ TEST_CASE( "Builtin FileSystem Test", "[bltfs]" )
 	FILE* fp = fopen("test.file.txt", "w");
 	fputs("test", fp);
 	fclose(fp);
-	ret = Run( R"YT( include fs; if(!fs.exists("test.file.txt")) exit(1); )YT");
+	ret = Run( R"YT( include fs; if(!fs.exists("test.file.txt")) exit(1); )YT" );
 	REQUIRE( ret.code == 0 );
 	filesystem::remove("test.file.txt");
+
+#ifdef WIN32
+	ret = Run( R"YT( include fs; p = fs.path.join('a', 'b', "c"); println(p); if(p != '''a\b\c''') exit(1); )YT" );
+#else
+	ret = Run( R"YT( include fs; p = fs.path.join('a', 'b', "c"); println(p); if(p != '''a/b/c''') exit(1); )YT" );
+#endif
+	REQUIRE( ret.code == 0 );
+
+#ifdef WIN32
+	filesystem::path testPath = "one\\two\\three\\four.five";
+#else
+	filesystem::path testPath = "one/two/three/four.five";
+#endif
+
+	ret = Run( format("path = '''{}'''; include fs; r = fs.path.parent(path); if(r != '''{}''') exit(1);", testPath.string(), testPath.parent_path().string()) );
+	REQUIRE( ret.code == 0 );
+	ret = Run( format("path = '''{}'''; include fs; r = fs.path.name(path); if(r != '''{}''') exit(1);", testPath.string(), testPath.filename().string()) );
+	REQUIRE( ret.code == 0 );
+	ret = Run( format("path = '''{}'''; include fs; r = fs.path.stem(path); if(r != '''{}''') exit(1);", testPath.string(), testPath.stem().string()) );
+	REQUIRE( ret.code == 0 );
+	ret = Run( format("path = '''{}'''; include fs; r = fs.path.ext(path); if(r != '''{}''') exit(1);", testPath.string(), testPath.extension().string()) );
+	REQUIRE( ret.code == 0 );
+	ret = Run( format("path = '''{}'''; include fs; r = fs.path.ext(path); if(r != '''{}''') exit(1);", testPath.string(), testPath.extension().string()) );
+	REQUIRE( ret.code == 0 );
+
+	ret = Run( format("path = '''{}'''; include fs; r = fs.abspath(path); if(r != '''{}''') exit(1);", testPath.string(), filesystem::absolute(testPath).string()) );
+	REQUIRE( ret.code == 0 );
 }
 
 TEST_CASE( "Class Test", "[class]" )

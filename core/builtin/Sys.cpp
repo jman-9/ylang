@@ -20,7 +20,7 @@ using namespace ymod;
 
 
 Module Init()
-{
+{//TODO memory leak
 	Module o(&GetModuleDesc());
 	Variable* v = new Variable;
 	v->SetStr(format("ylang {}", YLANG_VER));

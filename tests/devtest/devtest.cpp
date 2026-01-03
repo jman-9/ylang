@@ -6,20 +6,8 @@
 using namespace std;
 
 const char* testcode1 = R"TEST(
-
-a = 10;
-//a /= 0;
-//a %= 0;
-a /= 0.0;
-//a %= 0.0;
-
-a = 5.482;
-a /= 0;
-//a %= 0;
-a /= 0.0;
-//a %= 0.0;
-
-
+eprint("haha");
+eprintln(" a");
 )TEST";
 const char* testcode2 = R"TEST(
 )TEST";

@@ -971,19 +971,19 @@ bool Machine::CallBuiltinFunc(const Op::Call& cal)
 		else
 		{
 			auto v = ResolveVar(ERefKind::Reg, _roff);
-			cout << v->ToStr();
+			printf("%s", v->ToStr().c_str());
 		}
 		break;
 
 	case 0xFFFF0000 + 1:
 		if(cal.numPrms == 0)
 		{
-			cout << "\n";
+			printf("\n");
 		}
 		else
 		{
 			auto v = ResolveVar(ERefKind::Reg, _roff);
-			cout << v->ToStr() << "\n";
+			printf("%s\n", v->ToStr().c_str());
 		}
 		break;
 
@@ -1004,6 +1004,29 @@ bool Machine::CallBuiltinFunc(const Op::Call& cal)
 			auto v = ResolveVar(ERefKind::Reg, _roff);
 			v->SetStr("");
 			getline(cin, *v->_u._s);
+		}
+		break;
+
+	case 0xFFFF0000 + 4:
+		if(cal.numPrms == 0)
+		{//noop
+		}
+		else
+		{
+			auto v = ResolveVar(ERefKind::Reg, _roff);
+			fprintf(stderr, "%s", v->ToStr().c_str());
+		}
+		break;
+
+	case 0xFFFF0000 + 5:
+		if(cal.numPrms == 0)
+		{
+			fprintf(stderr, "\n");
+		}
+		else
+		{
+			auto v = ResolveVar(ERefKind::Reg, _roff);
+			fprintf(stderr, "%s\n", v->ToStr().c_str());
 		}
 		break;
 

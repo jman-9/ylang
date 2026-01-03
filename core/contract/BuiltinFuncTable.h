@@ -12,6 +12,8 @@ struct BuiltinFuncTable
 		_tbl.insert({"println", off++});
 		_tbl.insert({"exit", off++});
 		_tbl.insert({"readln", off++});
+		_tbl.insert({"eprint", off++});
+		_tbl.insert({"eprintln", off++});
 	}
 
 	uint32_t GetFuncId(const std::string& funcName) const

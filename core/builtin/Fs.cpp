@@ -1,4 +1,5 @@
-#include "Time.h"
+#include "Fs.h"
+#include "Path.h"
 #include "vm/Variable.h"
 #include "vm/RuntimeError.h"
 #include "module/ModuleUtil.h"
@@ -9,6 +10,7 @@
 namespace ybuiltin::Fs
 {
 using namespace yvm;
+using namespace ymod;
 using namespace std;
 
 
@@ -48,57 +50,39 @@ YRet Cwd(YArgs* args)
 	return yr;
 }
 
-YRet Run(YArgs* args)
+YRet AbsPath(YArgs* args)
 {
-	MODARG_VAR(0, cmd, Variable::STR);
+	MODARG_VAR(0, path, Variable::STR);
 
 	auto rv = (Variable*)args->retBuff.o;
-#ifdef WIN32
-	FILE* fp = _popen(cmd.str().data(), "rt");
-	if(!fp)
-	{
-		rv->SetNull();
-	}
-#else
-	FILE* fp = nullptr;
-#endif
-
-	string s;
-	char buf[128];
-	for( ; fgets(buf, 127, fp); )
-	{
-		s += buf;
-	}
-
-	if(feof(fp))
-	{
-		rv->SetStr(s);
-	}
-	else
-	{
-		rv->SetNull();
-	}
-
-	fclose(fp);
-
+	rv->SetStr(filesystem::absolute(path.str()).string());
 	YRet yr;
 	yr.single.SetYVar(rv);
 	return yr;
 }
 
 
-const ymod::ModuleDesc& GetModuleDesc()
+Module Init()
+{//TODO memory leak
+	Module o(&GetModuleDesc());
+	Variable* v = new Variable;
+	v->SetModule(Path::GetModuleDesc(), false);
+	o.memberVars["path"] = YArg{v, YEArg::YVar};
+	return o;
+}
+
+const ModuleDesc& GetModuleDesc()
 {
 	static ymod::ModuleDesc m;
 
 	if(m.name.empty())
 	{
 		m.name = "fs";
+		m.initer = Init;
 		m.builtin = true;
 		m.memberTbl[ "exists" ] = { "exists", ymod::ModuleMemberDesc::FUNC, false, 1, Exists };
 		m.memberTbl[ "cwd" ] = { "cwd", ymod::ModuleMemberDesc::FUNC, false, 0, Cwd };
-		//m.memberTbl[ "" ] = { "cwd", ymod::ModuleMemberDesc::FUNC, false, 0, Cwd };
-		//m.memberTbl[ "run" ] = { "run", ymod::ModuleMemberDesc::FUNC, false, 1, Run };
+		m.memberTbl[ "abspath" ] = { "abs", ymod::ModuleMemberDesc::FUNC, false, 1, AbsPath };
 	}
 	return m;
 }
