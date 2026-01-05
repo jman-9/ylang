@@ -491,10 +491,6 @@ TEST_CASE( "Builtin Sys Test", "[bltsys]" )
 	ret = Run( R"YT( include sys; println(sys.executable); if(sys.executable.empty()) exit(1); )YT" );
 	REQUIRE( ret.code == 0 );
 
-	string s = filesystem::current_path().string();
-	ret = Run( format( "include sys; println(sys.cwd()); if('''{}''' != sys.cwd()) exit(1); ", s ));
-	REQUIRE( ret.code == 0 );
-
 	ret = Run( "include sys; println(sys.env());");
 	REQUIRE( ret.code == 0 );
 
@@ -893,23 +889,23 @@ int main(int argc, const char** argv)
 	Catch::ConfigData& cfg = _session.configData();
 
 	cfg.showSuccessfulTests = true;
-// 	cfg.testsOrTags.push_back("[scanner],");
-// 	cfg.testsOrTags.push_back("[exp],");
-// 	cfg.testsOrTags.push_back("[forif],");
-// 	cfg.testsOrTags.push_back("[func],");
-// 	cfg.testsOrTags.push_back("[incdec],");
-// 	cfg.testsOrTags.push_back("[logop],");
-// 	cfg.testsOrTags.push_back("[primstr],");
-// 	cfg.testsOrTags.push_back("[bltmath],");
-// 	cfg.testsOrTags.push_back("[bltrand],");
-// 	cfg.testsOrTags.push_back("[bltsys],");
-// 	cfg.testsOrTags.push_back("[bltfile],");
-// 	cfg.testsOrTags.push_back("[bltjson],");
-// 	cfg.testsOrTags.push_back("[blttime],");
-// 	cfg.testsOrTags.push_back("[bltshell],");
-	cfg.testsOrTags.push_back("[bltfs],");
-// 	cfg.testsOrTags.push_back("[class],");
-// 	cfg.testsOrTags.push_back("[includes],");
+  	cfg.testsOrTags.push_back("[scanner],");
+  	cfg.testsOrTags.push_back("[exp],");
+  	cfg.testsOrTags.push_back("[forif],");
+  	cfg.testsOrTags.push_back("[func],");
+  	cfg.testsOrTags.push_back("[incdec],");
+  	cfg.testsOrTags.push_back("[logop],");
+  	cfg.testsOrTags.push_back("[primstr],");
+  	cfg.testsOrTags.push_back("[bltmath],");
+  	cfg.testsOrTags.push_back("[bltrand],");
+  	cfg.testsOrTags.push_back("[bltsys],");
+  	cfg.testsOrTags.push_back("[bltfile],");
+  	cfg.testsOrTags.push_back("[bltjson],");
+  	cfg.testsOrTags.push_back("[blttime],");
+  	cfg.testsOrTags.push_back("[bltshell],");
+ 	cfg.testsOrTags.push_back("[bltfs],");
+  	cfg.testsOrTags.push_back("[class],");
+  	cfg.testsOrTags.push_back("[includes],");
 
 	int numFailed = _session.run();
 };

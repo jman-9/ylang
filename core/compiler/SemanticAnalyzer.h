@@ -5,6 +5,7 @@
 #include "NamespaceUtil.h"
 #include "ScopeManager.h"
 #include <string>
+#include <vector>
 #include <map>
 #include <unordered_set>
 
@@ -18,12 +19,13 @@ public:
 	SemanticAnalyzer();
 	~SemanticAnalyzer();
 
-	bool Analyze(const TreeNode& code);
+	bool Analyze(const TreeNode& code, const std::vector<std::string>& paths = {});
 
 	std::vector<Error> _errors;
 
 protected:
 	ScopeManager _scopeMgr;
+	std::vector<std::string> _paths;
 
 	NamespaceUtil::Context _nsCtx;
 	NamespaceUtil::Tracker _nsTracker;

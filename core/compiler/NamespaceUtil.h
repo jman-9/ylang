@@ -41,6 +41,6 @@ struct Resolution
 	string namespacePath;
 };
 
-Resolution ResolveInclude(const string& incStr);
+Resolution ResolveInclude(const string& incStr, const string& baseDir);
 
 }

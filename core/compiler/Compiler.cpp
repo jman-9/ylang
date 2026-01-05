@@ -26,131 +26,20 @@ namespace ycom
 
 #define MAIN_PRG "_____main_____"
 
-ErrorTable Compiler::CompileCode(const string& src, Program& retProgram)
+
+Compiler::Compiler()
 {
-	ErrorTable errTbl;
-	vector<Error> errs;
-	vector<TreeNodeSptr> includes;
-	stack<pair<vector<TreeNodeSptr>, int>> incStack;
-	unordered_map<string, TreeNodeSptr> astMap;
-	stack<TreeNodeSptr> astStack;
+	_paths.push_back(filesystem::current_path().string());
+}
 
-	string curSrc = src;
-	string curMod = MAIN_PRG;
+void Compiler::AddPath(std::string path)
+{
+	_paths.push_back(path);
+}
 
-	do {
-		if(!curSrc.empty())
-		{
-			auto inserted = astMap.insert({curMod, {}});
-			auto& ast = inserted.first->second;
-			errs = ParseCode(curSrc, ast);
-			if(!errs.empty())
-			{
-				errTbl[ curMod ] = errs;
-				break;
-			}
-
-			ast->self.val = curMod;
-
-			incStack.push({});
-			errs = ExtractIncludes(*ast, incStack.top().first);
-			if(!errs.empty())
-			{
-				errTbl[ curMod ].insert(errTbl[ curMod ].end(), errs.begin(), errs.end());
-				break;
-			}
-			astStack.push(ast);
-		}
-
-		curSrc = "";
-		for( ; !incStack.empty(); )
-		{
-			auto& incStmts = incStack.top().first;
-			auto& idx = incStack.top().second;
-
-			if(idx >= incStmts.size())
-			{
-				incStack.pop();
-				continue;
-			}
-
-			auto& stmt = incStmts[idx++];
-			auto& incName = stmt->childs.front()->self.val;
-			if(ybuiltin::Garage::IsBuiltin(incName)) continue;
-
-			auto resInc = NamespaceUtil::ResolveInclude(incName);
-			//TODO qaz mod check
-			errs = ReadSourceFile(resInc.absPath + ".y", curSrc);
-			if(!errs.empty())
-			{
-				errTbl[ curMod ].insert(errTbl[ curMod ].end(), errs.begin(), errs.end());
-				break;
-			}
-			if(!curSrc.empty())
-			{
-				curMod = resInc.absPath;
-				break;
-			}
-		}
-		if(!errs.empty()) break;
-	} while(!curSrc.empty());
-
-	unordered_map<std::string, Program> prgMap;
-	if(errTbl.empty())
-	{
-		while(!astStack.empty())
-		{
-			Program prg;
-
-			auto ast = astStack.top();
-			astStack.pop();
-
-			if(prgMap.contains(ast->self.val))
-				continue;
-
-			SemanticAnalyzer sa;
-			sa.Analyze(*ast);
-			if(!sa._errors.empty())
-			{
-				errTbl[ast->self.val] = sa._errors;
-				break;
-			}
-
-			BytecodeBuilder bb;
-			if(!bb.Build(*ast, prg, &prgMap))
-			{
-				errTbl[ast->self.val].push_back(ErrorBuilder::Default(0, "bytecode build error"));
-				break;
-			}
-
-			prg._path = ast->self.val;
-			prg._name = filesystem::path(ast->self.val).stem().string();
-			prgMap[ ast->self.val ] = prg;
-
-		#ifdef BYTECODE_DEBUG_OUT
-			for(auto& c : prg._classTable)
-			{
-				cout << c.first << endl;
-				for(auto& [k, v] : c.second._funcMap)
-				{
-					cout << k << endl;
-					for(int i=0; i<c.second._funcs[v]._codeStrs.size(); i++)
-					{
-						cout << format("{:4} {}\n", i, c.second._funcs[v]._codeStrs[i]);
-					}
-				}
-			}
-
-			cout << prg._name << endl;
-			for(int i=0; i<prg._mainCode._codeStrs.size(); i++)
-			{
-				cout << format("{:4} {}\n", i, prg._mainCode._codeStrs[i]);
-			}
-			cout << endl;
-		#endif
-		}
-	}
-
+ErrorTable Compiler::CompileCode(const string& src, Program& retProgram, const string& srcAbsPath /* = "" */)
+{
+	auto errTbl = CompileCodePriv(src, retProgram, srcAbsPath);
 	if(!errTbl.empty())
 	{
 	#ifdef ERROR_DEBUG_OUT
@@ -165,32 +54,176 @@ ErrorTable Compiler::CompileCode(const string& src, Program& retProgram)
 		return errTbl;
 	}
 
-	retProgram = prgMap[ MAIN_PRG ];
-	retProgram._programTable = prgMap;
-	retProgram._programTable.erase(MAIN_PRG);
+	string name = srcAbsPath.empty() ? MAIN_PRG : srcAbsPath;
+	Program prg = retProgram._programTable[ name ];
+	prg._programTable = retProgram._programTable;
+	prg._programTable.erase(name);
+	retProgram = prg;
+	retProgram._name = filesystem::path(srcAbsPath).stem().string();
 	return {};
 }
 
 ErrorTable Compiler::CompileFile(const string& srcPath, Program& retProgram)
 {
 	auto fsPath = filesystem::path{srcPath};
-	string base = fsPath.parent_path().string();
-	if(!base.empty())
-		filesystem::current_path(base);
+	filesystem::path absPath = filesystem::absolute(fsPath);
+	if(!filesystem::exists(absPath))
+	{
+		ErrorTable errTbl;
+		errTbl[absPath.string()].push_back(ErrorBuilder::FileOpenError(0, srcPath));
+	#ifdef ERROR_DEBUG_OUT
+		for(auto& [f, es] : errTbl)
+		{
+			for(auto& e : es)
+			{
+				cout << format("{}({}): error E{}: {}\n", f, e.line, (int)e.code, e.msg);
+			}
+		}
+	#endif
+		return errTbl;
+	}
 
+	_paths.push_back(absPath.parent_path().string());
+
+	auto errTbl = CompileFilePriv(absPath.string(), retProgram);
+	if(!errTbl.empty())
+	{
+	#ifdef ERROR_DEBUG_OUT
+		for(auto& [f, es] : errTbl)
+		{
+			for(auto& e : es)
+			{
+				cout << format("{}({}): error E{}: {}\n", f, e.line, (int)e.code, e.msg);
+			}
+		}
+	#endif
+		_paths.pop_back();
+		return errTbl;
+	}
+
+	_paths.pop_back();
+
+	string modPath = absPath.string();
+	if(modPath.ends_with(".y"))
+		modPath.resize(modPath.size() - 2);
+
+	Program prg = retProgram._programTable[ modPath ];
+	prg._programTable = retProgram._programTable;
+	prg._programTable.erase(modPath);
+	retProgram = prg;
+	retProgram._name = fsPath.stem().string();
+	return {};
+}
+
+ErrorTable Compiler::CompileCodePriv(const string& src, Program& retProgram, const string& srcAbsPath /*= ""*/)
+{
+	ErrorTable errTbl;
+	vector<Error> errs;
+	vector<TreeNodeSptr> includes;
+
+	string curSrc = src;
+	string curMod = srcAbsPath.empty() ? MAIN_PRG : srcAbsPath;
+	if(curMod.ends_with(".y"))
+		curMod.resize(curMod.size() - 2);
+	string curModDir = srcAbsPath.empty() ? filesystem::current_path().string() : filesystem::path(srcAbsPath).parent_path().string();
+
+	TreeNodeSptr ast;
+	errs = ParseCode(curSrc, ast);
+	if(!errs.empty())
+	{
+		errTbl[ curMod ] = errs;
+		return errTbl;
+	}
+
+	ast->self.val = curMod;
+
+	errs = ExtractIncludes(*ast, includes);
+	if(!errs.empty())
+	{
+		errTbl[ curMod ].insert(errTbl[ curMod ].end(), errs.begin(), errs.end());
+		return errTbl;
+	}
+
+	vector<string> paths = _paths;
+	paths.push_back(curModDir);
+
+	for(auto& inc : includes)
+	{
+		auto& incName = inc->childs.front()->self.val;
+		if(ybuiltin::Garage::IsBuiltin(incName)) continue;
+
+		NamespaceUtil::Resolution resInc;
+		for(auto base : paths)
+		{
+			resInc = NamespaceUtil::ResolveInclude(incName, base);
+			if(filesystem::exists(resInc.absPath + ".y"))
+				break;
+		}
+		if(retProgram._programTable.contains(resInc.absPath))
+			continue;
+
+		//TODO qaz mod check
+		errTbl = CompileFilePriv(resInc.absPath + ".y", retProgram);
+		if(!errTbl.empty())
+			return errTbl;
+	}
+
+	SemanticAnalyzer sa;
+	sa.Analyze(*ast, paths);
+	if(!sa._errors.empty())
+	{
+		errTbl[ curMod ].insert(errTbl[ curMod ].end(), errs.begin(), errs.end());
+		return errTbl;
+	}
+
+	Program prg;
+	BytecodeBuilder bb;
+	if(!bb.Build(*ast, prg, &retProgram._programTable, paths))
+	{
+		errTbl[ curMod ].push_back(ErrorBuilder::Default(0, "bytecode build error"));
+		return errTbl;
+	}
+
+	prg._path = curMod;
+	prg._name = filesystem::path(curMod).stem().string();
+	retProgram._programTable[ curMod ] = prg;
+
+#ifdef BYTECODE_DEBUG_OUT
+	for(auto& c : prg._classTable)
+	{
+		cout << c.first << endl;
+		for(auto& [k, v] : c.second._funcMap)
+		{
+			cout << k << endl;
+			for(int i=0; i<c.second._funcs[v]._codeStrs.size(); i++)
+			{
+				cout << format("{:4} {}\n", i, c.second._funcs[v]._codeStrs[i]);
+			}
+		}
+	}
+
+	cout << prg._name << endl;
+	for(int i=0; i<prg._mainCode._codeStrs.size(); i++)
+	{
+		cout << format("{:4} {}\n", i, prg._mainCode._codeStrs[i]);
+	}
+	cout << endl;
+#endif
+
+	return {};
+}
+
+ErrorTable Compiler::CompileFilePriv(const string & srcAbsPath, Program & retProgram)
+{
 	string src;
-	auto errs = ReadSourceFile(fsPath.filename().string(), src);
+	auto errs = ReadSourceFile(srcAbsPath, src);
 	if(!errs.empty())
 	{
 		ErrorTable errTbl;
-		errTbl[srcPath] = errs;
+		errTbl[srcAbsPath] = errs;
 		return errTbl;
 	}
-	auto errTbl = CompileCode(src, retProgram);
-	if(!errTbl.empty()) return errTbl;
-
-	retProgram._name = fsPath.stem().string();
-	return {};
+	return CompileCodePriv(src, retProgram, srcAbsPath);
 }
 
 

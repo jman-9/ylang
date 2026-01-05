@@ -43,22 +43,22 @@ void Tracker::AddTrackingPath(const string& path)
 }
 
 
-Resolution ResolveInclude(const string& incStr)
+Resolution ResolveInclude(const string& incStr, const string& baseDir)
 {
 	Resolution res;
 
 	auto pos = incStr.find_last_of('/');
 	if(pos == string::npos)
 	{
-		res.absPath = StrUtil::Replace(incStr, ".", "/");
-		res.absPath = filesystem::absolute(res.absPath).string();
+		res.absPath = baseDir + "/" + StrUtil::Replace(incStr, ".", "/");
+		res.absPath = filesystem::absolute(filesystem::path(res.absPath).lexically_normal()).string();
 		res.namespacePath = incStr;
 	}
 	else
 	{
 		string sub = incStr.substr(pos+1);
-		res.absPath = incStr.substr(0, pos+1) + StrUtil::Replace(incStr.substr(pos+1), ".", "/");
-		res.absPath = filesystem::absolute(res.absPath).string();
+		res.absPath = baseDir + "/" + incStr.substr(0, pos+1) + StrUtil::Replace(incStr.substr(pos+1), ".", "/");
+		res.absPath = filesystem::absolute(filesystem::path(res.absPath).lexically_normal()).string();
 		res.namespacePath = sub;
 	}
 	return res;

@@ -1,6 +1,8 @@
 #include "SemanticAnalyzer.h"
 #include "BuiltinFuncTable.h"
+#include "builtin/BuiltinGarage.h"
 #include <format>
+#include <filesystem>
 using namespace std;
 
 
@@ -18,8 +20,12 @@ SemanticAnalyzer::~SemanticAnalyzer()
 {
 }
 
-bool SemanticAnalyzer::Analyze(const TreeNode& code)
+bool SemanticAnalyzer::Analyze(const TreeNode& code, const std::vector<std::string>& paths /* = */ )
 {
+	_paths = paths;
+	if(_paths.empty())
+		_paths.push_back(filesystem::current_path().string());
+
 	for(const auto& stmt : code.childs)
 	{
 		if(!AnalyzeStmt(*stmt, {}))
@@ -116,7 +122,27 @@ bool SemanticAnalyzer::AnalyzeInclude(const TreeNode& stmt)
 		return false;
 	}
 
-	auto res = NamespaceUtil::ResolveInclude(modPath.val);
+	NamespaceUtil::Resolution res;
+	if(ybuiltin::Garage::IsBuiltin(modPath.val))
+	{
+		res.namespacePath = modPath.val;
+	}
+	else
+	{
+		for(auto& base : _paths)
+		{
+			res = NamespaceUtil::ResolveInclude(modPath.val, base);
+			//TODO qaz module
+			if(filesystem::exists(res.absPath + ".y"))
+				break;
+			res = {};
+		}
+		if(res.absPath.empty())
+		{
+			_errors.push_back(ErrorBuilder::NotFound(modPath.line, modPath.val));
+			return false;
+		}
+	}
 
 	auto idx = _scopeMgr.GetIdx(res.namespacePath);
 	if(!idx.IsNone())

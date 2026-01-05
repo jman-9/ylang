@@ -42,13 +42,14 @@ public:
 	BytecodeBuilder();
 	~BytecodeBuilder();
 
-	bool Build(const TreeNode& code, Program& retProgram, const std::unordered_map<std::string, Program>* programTable = nullptr);
+	bool Build(const TreeNode& code, Program& retProgram, const std::unordered_map<std::string, Program>* programTable = nullptr, const std::vector<std::string>& paths = {});
 
 protected:
 	uint32_t _reg;
 	Program _prg;
 	ConstTable _constTbl;
 	ScopeManager _scopeMgr;
+	std::vector<std::string> _paths;
 
 	const std::unordered_map<std::string, Program>* _prgTbl = nullptr;
 

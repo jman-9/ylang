@@ -2,6 +2,7 @@
 #include "BuiltinFuncTable.h"
 #include "NamespaceUtil.h"
 #include <stdexcept>
+#include <filesystem>
 using namespace std;
 
 
@@ -50,9 +51,13 @@ BytecodeBuilder::BytecodeBuilder()
 BytecodeBuilder::~BytecodeBuilder()
 {
 }
-bool BytecodeBuilder::Build(const TreeNode& code, Program& retProgram, const unordered_map<std::string, Program>* programTable /* = nullptr */)
+bool BytecodeBuilder::Build(const TreeNode& code, Program& retProgram, const std::unordered_map<std::string, Program>* programTable /* = nullptr */, const std::vector<std::string>& paths /* = */ )
 {
 	_prgTbl = programTable;
+	//TODO commonize with Semantic...
+	_paths = paths;
+	if(_paths.empty())
+		_paths.push_back(filesystem::current_path().string());
 
 	for(const auto& stmt : code.childs)
 	{
@@ -160,7 +165,15 @@ bool BytecodeBuilder::BuildInclude(Bytecode& retCtx, const TreeNode& stmt)
 	auto& incName = *stmt.childs[0];
 	const auto& incStr = incName.self.val;
 
-	auto res = ycom::NamespaceUtil::ResolveInclude(incStr);
+	NamespaceUtil::Resolution res;
+	for(auto& base : _paths)
+	{
+		res = NamespaceUtil::ResolveInclude(incStr, base);
+		//TODO qaz module
+		if(filesystem::exists(res.absPath + ".y"))
+			break;
+		res = {};
+	}
 
 	//TODOqaz function... resolve module
 	if(_prgTbl && _prgTbl->contains(res.absPath))
