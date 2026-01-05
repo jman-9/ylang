@@ -26,6 +26,8 @@ static bool InitParser()
 	s_opMap[ EToken::LShiftAssign ] = 10;
 	s_opMap[ EToken::RShiftAssign ] = 10;
 
+	s_opMap[ EToken::Question ] = 15;
+
 	s_opMap[ EToken::Or ] = 20;
 	s_opMap[ EToken::And ] = 30;
 
@@ -64,6 +66,8 @@ static bool InitParser()
 	s_precMap[ EToken::XorAssign ] = 10;
 	s_precMap[ EToken::LShiftAssign ] = 10;
 	s_precMap[ EToken::RShiftAssign ] = 10;
+
+	s_precMap[ EToken::Question ] = 15;
 
 	s_precMap[ EToken::Or ] = 20;
 	s_precMap[ EToken::And ] = 30;
@@ -329,6 +333,38 @@ TreeNodeSptr Parser::ParseExp(bool first)
 			_errors.push_back(ErrorBuilder::SyntaxError(cur.line, cur.val));
 			return nullptr;
 		}
+
+		if(cur == EToken::Question)
+		{//TODO functionalize
+			auto sz = _errors.size();
+
+			MoveNext();
+
+			TreeNodeSptr lhs = ParseExpLoop(EToken::Colon);
+			if(!lhs)
+			{
+				if(sz >= _errors.size())
+					_errors.push_back(ErrorBuilder::SyntaxError(cur.line, cur.val));
+				return nullptr;
+			}
+
+			MoveNext();
+
+			TreeNodeSptr rhs = ParseExpLoop(EToken::Semicolon, EToken::RParen);
+			if(!rhs)
+			{
+				if(sz >= _errors.size())
+					_errors.push_back(ErrorBuilder::SyntaxError(cur.line, cur.val));
+				return nullptr;
+			}
+
+			TreeNodeSptr node = NewNode();
+			node->self = cur;
+			node->PushFrontChild(lhs);
+			node->PushBackChild(rhs);
+			return node;
+		}
+
 		node = ParseOpExp();
 		break;
 	}

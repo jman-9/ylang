@@ -44,6 +44,7 @@ void Scanner::Init()
 	_transTbl.next['~'] = { "~", EToken::Tilde, };
 	_transTbl.next['^'] = { "^", EToken::Caret, };
 	_transTbl.next['!'] = { "!", EToken::Not, };
+	_transTbl.next['?'] = { "?", EToken::Question, };
 	_transTbl.next['='] = { "=", EToken::Assign, };
 	_transTbl.next['>'] = { ">", EToken::Greater, };
 	_transTbl.next['<'] = { "<", EToken::Less, };

@@ -93,6 +93,7 @@ protected:
 	bool BuildDictExp(Bytecode& retCtx, const TreeNode& stmt);
 	bool BuildIndexExp(Bytecode& retCtx, const TreeNode& stmt);
 	bool BuildLValueFieldExp(Bytecode& retCtx, const TreeNode& stmt);
+	bool BuildTernaryExp(Bytecode& retCtx, const TreeNode& stmt);
 	bool BuildExp(Bytecode& retCtx, const TreeNode& stmt, bool root);
 };
 

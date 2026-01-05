@@ -245,6 +245,60 @@ TEST_CASE( "Expression Test", "[exp]" )
 
 	ret = Run( R"YT( a = 9; b = 7; exit(!!!a + b); )YT" );
 	REQUIRE( ret.code == 7  );
+
+	ret = Run( R"YT( a = : ; )YT" );
+	REQUIRE( !ret.build );
+
+	ret = Run( R"YT( a = ? ; )YT" );
+	REQUIRE( !ret.build );
+
+	ret = Run( R"YT( a = 9 ? ; )YT" );
+	REQUIRE( !ret.build );
+
+	ret = Run( R"YT( a = 6 ? : ; )YT" );
+	REQUIRE( !ret.build );
+
+	ret = Run( R"YT( a = 6 ? 1 : ; )YT" );
+	REQUIRE( !ret.build );
+
+	ret = Run( R"YT( a = 6 ? : 3; )YT" );
+	REQUIRE( !ret.build );
+
+	ret = Run( R"YT( a = 6 ? 4 ; )YT" );
+	REQUIRE( !ret.build );
+
+	ret = Run( R"YT( x=5; y=10; z = x<y ? x+y : x-y; println(z); exit(z); )YT" );
+	REQUIRE( ret.code == 15 );
+
+	ret = Run( R"YT( x=0; v = x>0 ? 1 : x==0 ? 0 : -1; println(v);  exit(v); )YT" );
+	REQUIRE( ret.code == 0 );
+
+	ret = Run( R"YT( a=2; b=3; r = a+b > 4 ? a*b : a-b; println(r);  exit(r); )YT" );
+	REQUIRE( ret.code == 6 );
+
+	ret = Run( R"YT( a=10; b=20; c=30; d = a = 0 ? b=900 : b<c ? 98 : 25; println("{d} {a} {b}"); if(a!=98 || d!=98) exit(1); )YT" );
+	REQUIRE( !ret.code );
+
+	ret = Run( R"YT( fn add(a,b) return a+b; fn sub(a,b) return a-b; ;; x=1; y=2; z = x<y ? add(x,y) : sub(x,y); println(z); exit(z); )YT" );
+	REQUIRE( ret.code == 3 );
+
+	ret = Run( R"YT( x=0; fn inc() return ++x; ;; v = true ? inc() : inc(); println(x); exit(x); )YT" );
+	REQUIRE( ret.code == 1 );
+
+	ret = Run( R"YT( a=5; b=10; c=15; r = (a>b) ? a : (b>c ? b : c); println(r); exit(r); )YT" );
+	REQUIRE( ret.code == 15 );
+
+	ret = Run( R"YT( name = "Alice"; msg = name != "" ? "Hello " + name : "Hello"; println(msg); exit(msg == "Hello Alice");  )YT" );
+	REQUIRE( ret.code != 0 );
+
+	ret = Run( R"YT( x = null; r = x ? 1 : 0; exit(r); )YT" );
+	REQUIRE( ret.code == 0 );
+
+	ret = Run( R"YT( f = false; r = f ? 1 : 0; exit(r); )YT" );
+	REQUIRE( ret.code == 0 );
+
+	ret = Run( R"YT( fn sign(x) return x>0 ? 1 : x<0 ? -1 : 0; if(sign(10)!=1) exit(1); if(sign(-3)!=-1) exit(2); if(sign(0)!=0) exit(3); )YT" );
+	REQUIRE( ret.code == 0 );
 }
 
 TEST_CASE( "For If Test", "[forif]" )
@@ -889,23 +943,23 @@ int main(int argc, const char** argv)
 	Catch::ConfigData& cfg = _session.configData();
 
 	cfg.showSuccessfulTests = true;
-  	cfg.testsOrTags.push_back("[scanner],");
-  	cfg.testsOrTags.push_back("[exp],");
-  	cfg.testsOrTags.push_back("[forif],");
-  	cfg.testsOrTags.push_back("[func],");
-  	cfg.testsOrTags.push_back("[incdec],");
-  	cfg.testsOrTags.push_back("[logop],");
-  	cfg.testsOrTags.push_back("[primstr],");
-  	cfg.testsOrTags.push_back("[bltmath],");
-  	cfg.testsOrTags.push_back("[bltrand],");
-  	cfg.testsOrTags.push_back("[bltsys],");
-  	cfg.testsOrTags.push_back("[bltfile],");
-  	cfg.testsOrTags.push_back("[bltjson],");
-  	cfg.testsOrTags.push_back("[blttime],");
-  	cfg.testsOrTags.push_back("[bltshell],");
- 	cfg.testsOrTags.push_back("[bltfs],");
-  	cfg.testsOrTags.push_back("[class],");
-  	cfg.testsOrTags.push_back("[includes],");
+//   	cfg.testsOrTags.push_back("[scanner],");
+   	cfg.testsOrTags.push_back("[exp],");
+//   	cfg.testsOrTags.push_back("[forif],");
+//   	cfg.testsOrTags.push_back("[func],");
+//   	cfg.testsOrTags.push_back("[incdec],");
+//   	cfg.testsOrTags.push_back("[logop],");
+//   	cfg.testsOrTags.push_back("[primstr],");
+//   	cfg.testsOrTags.push_back("[bltmath],");
+//   	cfg.testsOrTags.push_back("[bltrand],");
+//   	cfg.testsOrTags.push_back("[bltsys],");
+//   	cfg.testsOrTags.push_back("[bltfile],");
+//   	cfg.testsOrTags.push_back("[bltjson],");
+//   	cfg.testsOrTags.push_back("[blttime],");
+//   	cfg.testsOrTags.push_back("[bltshell],");
+//  	cfg.testsOrTags.push_back("[bltfs],");
+//   	cfg.testsOrTags.push_back("[class],");
+//   	cfg.testsOrTags.push_back("[includes],");
 
 	int numFailed = _session.run();
 };

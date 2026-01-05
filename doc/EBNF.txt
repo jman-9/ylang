@@ -3,7 +3,8 @@ AssignOp -> '=' | '+=' | '-=' | '*=' | '/=' | '%=' | '<<=' | '>>=' | '&=' | '|='
 Args -> Exp {',' Exp}
 
 Exp -> AssignExp
-AssignExp -> OrExp | LValue AssignOp AssignExp
+AssignExp -> TenaryExp | LValue AssignOp AssignExp
+TenaryExp -> OrExp | TenaryExp '?' Exp ':' Exp
 OrExp -> AndExp | OrExp '||' AndExp
 AndExp   -> BitOrExp | AndExp '&&' BitOrExp
 BitOrExp -> BitXorExp | BitOrExp '|' BitXorExp

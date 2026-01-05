@@ -6,28 +6,12 @@
 using namespace std;
 
 const char* testcode1 =
-R"TEST(fn cd() {
-	a = 10;
-	a.unknown();
-}
-
-fn ba() {
-	return cd();
-}
-
-fn ab() {
-	return ba();
-}
-
-ab();
-
-
-/*a = 10;
+R"TEST(
+a = 10;
 b = 20;
 c = 30;
-//d = a = 0 ? b = 900 : b < c ? 98 : 25;
-//println("{d} {a} {b}");
-*/
+d = a = 0 ? b = 900 : b < c ? 98 : 25;
+println("{d} {a} {b}");
 
 
 )TEST";

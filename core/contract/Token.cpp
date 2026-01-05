@@ -39,6 +39,7 @@ static bool Init()
 	s_tokenStrMap[EToken::LShift] = "<<";
 	s_tokenStrMap[EToken::RShift] = ">>";
 	s_tokenStrMap[EToken::Not] = "!";
+	s_tokenStrMap[EToken::Question] = "?";
 	s_tokenStrMap[EToken::Assign] = "=";
 	s_tokenStrMap[EToken::PlusAssign] = "+=";
 	s_tokenStrMap[EToken::MinusAssign] = "-=";

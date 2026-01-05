@@ -41,6 +41,7 @@ enum class EToken : uint8_t
 	LShift,
 	RShift,
 	Not,
+	Question,
 	Assign,
 	PlusAssign,
 	MinusAssign,

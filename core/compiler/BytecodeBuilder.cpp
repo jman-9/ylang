@@ -694,6 +694,45 @@ bool BytecodeBuilder::BuildLValueFieldExp(Bytecode& retCtx, const TreeNode& stmt
 	return true;
 }
 
+bool BytecodeBuilder::BuildTernaryExp(Bytecode& retCtx, const TreeNode& stmt)
+{
+	auto& test = *stmt.childs[0];
+	auto& _true = *stmt.childs[1];
+	auto& _false = *stmt.childs[2];
+
+	if(!BuildExp(retCtx, test, false))
+	{//TODO log
+		return false;
+	}
+
+	size_t condLine = retCtx.nextCodeSlot();
+	retCtx.PushBytecode<EOpcode::Noop>();
+
+	Op::Jz jz;
+	jz.testKind = (uint8_t)ERefKind::Reg;
+	jz.test = _reg;
+
+	if(!BuildExp(retCtx, _true, false))
+	{//TODO log
+		return false;
+	}
+
+	size_t skipLine = retCtx.nextCodeSlot();
+	retCtx.PushBytecode<EOpcode::Noop>();
+
+	jz.pos = (uint32_t)retCtx.nextCodeSlot();
+	retCtx.FillBytecode((int)condLine, jz, stmt.self.line);
+
+	if(!BuildExp(retCtx, _false, false))
+	{//TODO log
+		return false;
+	}
+
+	Op::Jmp jmp{ .pos = (uint32_t)retCtx.nextCodeSlot() };
+	retCtx.FillBytecode((int)skipLine, jmp, stmt.self.line);
+	return true;
+}
+
 bool BytecodeBuilder::BuildExp(Bytecode& retCtx, const TreeNode& stmt, bool root)
 {
 	uint32_t regStack = _reg;
@@ -738,6 +777,7 @@ bool BytecodeBuilder::BuildExp(Bytecode& retCtx, const TreeNode& stmt, bool root
 	case EToken::Index:
 	case EToken::LValueIndex: return BuildIndexExp(retCtx, stmt);
 	case EToken::LValueField: return BuildLValueFieldExp(retCtx, stmt);
+	case EToken::Question: return BuildTernaryExp(retCtx, stmt);
 	}
 
 	TreeNode* lhs = !stmt.childs.empty() ? stmt.childs.front().get() : nullptr;
