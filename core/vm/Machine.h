@@ -10,6 +10,13 @@
 namespace yvm
 {
 
+struct Caller
+{
+	std::string prgName;
+	std::string prgPath;
+	int line;
+};
+
 class Machine
 {
 public:
@@ -21,10 +28,9 @@ public:
 protected:
 	Variable* ResolveVar(ERefKind k, int idx);
 
-	inline void PushState();
-	inline void PopState();
-	inline bool ExecInst(const Instruction& inst);
-	inline int64_t Exec(const Bytecode& code, int start = 0);
+	inline int64_t GoSub(Variable* callee, const Bytecode* sub, int start = 0);
+
+	inline bool Exec(const Bytecode& code, int start = 0);
 
 	const Program* _prg;
 	Variable _prgObj;
@@ -38,6 +44,8 @@ protected:
 	std::stack<uint32_t> _retStack;
 	std::stack<Variable*> _clsStack;
 	std::stack<Variable*> _prgStack;
+	std::stack<const Bytecode*> _codeStack;
+	std::stack<Caller> _callStack;
 	int _sp;
 	int _roff;
 	int _pc;

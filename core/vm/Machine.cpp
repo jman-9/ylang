@@ -28,6 +28,7 @@ Machine::Machine()
 	_pc = 0;
 	_retCode = INT64_MAX;
 	_rpStack.push(0);
+	_spStack.push(0);
 
 	//TODO remove hardcoding
 	_literals.resize(3);
@@ -103,17 +104,65 @@ Variable* Machine::ResolveVar(ERefKind k, int idx)
 	}
 }
 
-void Machine::PushState()
+int64_t Machine::GoSub(Variable* callee, const Bytecode* sub, int start /* = 0 */)
 {
+	Caller caller;
+	caller.prgName = _prgStack.top()->prg()._name;
+	caller.prgPath = _prgStack.top()->prg()._path;
+	caller.line = _codeStack.top()->_srcLines[_pc];
+	_callStack.push(caller);
+
+	bool pushedObj = false;
+	bool pushedSub = false;
+	if(callee)
+	{
+		switch(callee->_type)
+		{
+		case Variable::CLASSOBJ:
+			if(_clsStack.empty() || callee != _clsStack.top())
+			{
+				_clsStack.push(callee);
+				_prgStack.push(callee->clsObj()._prgObj);
+				pushedObj = true;
+			}
+			break;
+
+		case Variable::PROGRAMOBJ:
+			if(_prgStack.top() != callee)
+			{
+				_prgStack.push(callee);
+				pushedObj = true;
+			}
+			break;
+
+		default:
+			INTERNALERR("invalid type");
+		}
+	}
+
+	if(sub)
+	{
+		if(sub != _codeStack.top())
+		{
+			_codeStack.push(sub);
+			pushedSub = true;
+		}
+	}
+	else
+	{
+		sub = _codeStack.top();
+	}
+
 	_rpStack.push(_rpStack.top() + _roff);
 	_roffStack.push(_roff);
 	_roff = 0;
 	_retStack.push((uint32_t)_pc);
 	_spStack.push(_sp);
-}
 
-void Machine::PopState()
-{
+
+	Exec(*sub, start);
+
+
 	_sp = _spStack.top();
 	_spStack.pop();
 	_rpStack.pop();
@@ -121,48 +170,65 @@ void Machine::PopState()
 	_roffStack.pop();
 	_pc = _retStack.top();
 	_retStack.pop();
-}
 
-bool Machine::ExecInst(const Instruction& inst)
-{
-	switch((EOpcode)inst.kind)
+	if(pushedSub)
 	{
-	case EOpcode::Noop: break;
-	case EOpcode::Assign: Assign(*(Op::Assign*)inst.code.data()); break;
-	case EOpcode::PushSp: PushSp(); break;
-	case EOpcode::PopSp: PopSp(); break;
-	case EOpcode::Jmp:	Jmp(*(Op::Jmp*)inst.code.data()); break;
-	case EOpcode::Call: Call(*(Op::Call*)inst.code.data()); break;
-	case EOpcode::Ret: Ret(); return true;
-	case EOpcode::Jz: Jz(*(Op::Jz*)inst.code.data()); break;
-	case EOpcode::ListSet: ListSet(*(Op::ListSet*)inst.code.data()); break;
-	case EOpcode::ListAdd: ListAdd(*(Op::ListAdd*)inst.code.data()); break;
-	case EOpcode::DictSet: DictSet(*(Op::DictSet*)inst.code.data()); break;
-	case EOpcode::DictAdd: DictAdd(*(Op::DictAdd*)inst.code.data()); break;
-	case EOpcode::Index: Index(*(Op::Index*)inst.code.data()); break;
-	case EOpcode::LValueIndex: LValueIndex(*(Op::LValueIndex*)inst.code.data()); break;
-	case EOpcode::Invoke: Invoke(*(Op::Invoke*)inst.code.data()); break;
-	case EOpcode::Inc: Inc(*(Op::Inc*)inst.code.data()); break;
-	case EOpcode::Jnz: Jnz(*(Op::Jnz*)inst.code.data()); break;
-	case EOpcode::NewMod: NewMod(*(Op::NewMod*)inst.code.data()); break;
-	case EOpcode::NewCls: NewCls(*(Op::NewCls*)inst.code.data()); break;
-	case EOpcode::LValueField: LValueField(*(Op::LValueField*)inst.code.data()); break;
-	default:
-		INTERNALERR(format("'{}': unknown opcode", inst.kind));//TODO
+		_codeStack.pop();
 	}
-	return false;
+
+	if(pushedObj)
+	{
+		switch(callee->_type)
+		{
+		case Variable::CLASSOBJ:
+			_prgStack.pop();
+			_clsStack.pop();
+			break;
+
+		case Variable::PROGRAMOBJ:
+			_prgStack.pop();
+			break;
+		}
+	}
+
+	_callStack.pop();
+	return 0;
 }
 
-int64_t Machine::Exec(const Bytecode& code, int start /* = 0 */)
+bool Machine::Exec(const Bytecode& code, int start /*= 0*/)
 {
-	PushState();
-
 	for(_pc = start; _pc < code._code.size() && _retCode == INT64_MAX; _pc++)
 	{
 		int pc = _pc;
 		try
 		{
-			if(ExecInst(code._code[_pc])) break;
+			auto& inst = code._code[_pc];
+
+			switch((EOpcode)inst.kind)
+			{
+			case EOpcode::Noop: break;
+			case EOpcode::Assign: Assign(*(Op::Assign*)inst.code.data()); break;
+			case EOpcode::PushSp: PushSp(); break;
+			case EOpcode::PopSp: PopSp(); break;
+			case EOpcode::Jmp:	Jmp(*(Op::Jmp*)inst.code.data()); break;
+			case EOpcode::Call: Call(*(Op::Call*)inst.code.data()); break;
+			case EOpcode::Ret: Ret(); return true;
+			case EOpcode::Jz: Jz(*(Op::Jz*)inst.code.data()); break;
+			case EOpcode::ListSet: ListSet(*(Op::ListSet*)inst.code.data()); break;
+			case EOpcode::ListAdd: ListAdd(*(Op::ListAdd*)inst.code.data()); break;
+			case EOpcode::DictSet: DictSet(*(Op::DictSet*)inst.code.data()); break;
+			case EOpcode::DictAdd: DictAdd(*(Op::DictAdd*)inst.code.data()); break;
+			case EOpcode::Index: Index(*(Op::Index*)inst.code.data()); break;
+			case EOpcode::LValueIndex: LValueIndex(*(Op::LValueIndex*)inst.code.data()); break;
+			case EOpcode::Invoke: Invoke(*(Op::Invoke*)inst.code.data()); break;
+			case EOpcode::Inc: Inc(*(Op::Inc*)inst.code.data()); break;
+			case EOpcode::Jnz: Jnz(*(Op::Jnz*)inst.code.data()); break;
+			case EOpcode::NewMod: NewMod(*(Op::NewMod*)inst.code.data()); break;
+			case EOpcode::NewCls: NewCls(*(Op::NewCls*)inst.code.data()); break;
+			case EOpcode::LValueField: LValueField(*(Op::LValueField*)inst.code.data()); break;
+			default:
+				INTERNALERR(format("'{}': unknown opcode", inst.kind));//TODO
+			}
 		}
 		catch(RuntimeError e)
 		{
@@ -174,9 +240,7 @@ int64_t Machine::Exec(const Bytecode& code, int start /* = 0 */)
 			throw e;
 		}
 	}
-
-	PopState();
-	return 0;
+	return true;
 }
 
 bool Machine::Assign(const Op::Assign& as)
@@ -372,7 +436,7 @@ bool Machine::Call(const Op::Call& cal)
 
 	if(cal.seg == 0)
 	{//TODO
-		Exec(_prgStack.top()->prgObj()._prg->_mainCode, cal.pos);
+		GoSub(nullptr, nullptr, cal.pos);
 	}
 	else
 	{//TODO
@@ -609,7 +673,7 @@ bool Machine::Invoke(const Op::Invoke& ivk)
 		}
 
 		auto cls = _clsStack.top()->clsObj()._cls;
-		Exec(cls->_funcs[ivk.dst], 1);
+		GoSub(nullptr, &cls->_funcs[ivk.dst], 1);
 		return true;
 	}
 
@@ -642,11 +706,7 @@ bool Machine::Invoke(const Op::Invoke& ivk)
 			throw RuntimeError::NoMember(owner._type, cls->name, dst->attr().name);
 		}
 
-		_clsStack.push(&owner);
-		_prgStack.push(owner.clsObj()._prgObj);
-		Exec(cls->_funcs[found->second], 1);
-		_prgStack.pop();
-		_clsStack.pop();
+		GoSub(&owner, &cls->_funcs[found->second], 1);
 
 		auto vs = ResolveVar(ERefKind::Reg, ivk.dst + 1);
 		auto vt = ResolveVar(ERefKind::Reg, ivk.dst);
@@ -688,9 +748,7 @@ bool Machine::Invoke(const Op::Invoke& ivk)
 			if(found->second.kind == EGlobalSymbol::Fn)
 			{
 				_roff = ivk.dst + 1;
-				_prgStack.push(&owner);
-				Exec(prg->_mainCode, found->second.pos);
-				_prgStack.pop();
+				GoSub(&owner, &prg->_mainCode, found->second.pos);
 
 				auto vs = ResolveVar(ERefKind::Reg, ivk.dst + 1);
 				auto vt = ResolveVar(ERefKind::Reg, ivk.dst);
@@ -843,14 +901,10 @@ bool Machine::Inc(const Op::Inc& inc)
 		{
 			v->SetProgram(found->second, true);
 
-			_prgStack.push(v);
-
 			int roffbk = _roff;
 			_roff++;
-			Exec(v->prgObj()._prg->_mainCode, 0);
+			GoSub(v, &v->prgObj()._prg->_mainCode, 0);
 			_roff = roffbk;
-
-			_prgStack.pop();
 
 			_prgObjTable[ name->str() ] = *v;
 		}
@@ -1043,12 +1097,9 @@ bool Machine::CreateClassObj(const Class& cls, int numArgs)
 	Variable v;
 	v.SetClass(cls, true, _prgStack.top());
 
-	_clsStack.push(&v);
-	_prgStack.push(v.clsObj()._prgObj);
-
 	int roffbk = _roff;
 	_roff++;
-	Exec(v.clsObj()._cls->_initer, 0);
+	GoSub(&v, &v.clsObj()._cls->_initer, 0);
 	_roff = roffbk;
 
 	if(numArgs)
@@ -1058,11 +1109,8 @@ bool Machine::CreateClassObj(const Class& cls, int numArgs)
 
 	if(!v.clsObj()._cls->_ctor.empty())
 	{
-		Exec(v.clsObj()._cls->_ctor, 1);
+		GoSub(&v, &v.clsObj()._cls->_ctor, 1);
 	}
-
-	_prgStack.pop();
-	_clsStack.pop();
 
 	auto dst = ResolveVar(ERefKind::Reg, _roff);
 	dst->SetVar(v);
@@ -1072,31 +1120,8 @@ bool Machine::CreateClassObj(const Class& cls, int numArgs)
 int64_t Machine::Run(const Program& program, int start /* = 0 */)
 {
 	_prg = &program;
-	_retCode = INT64_MAX;
-
 	_prgObj.SetProgram(program, true);
-	_prgStack.push(&_prgObj);
-	try
-	{
-		Exec(_prg->_mainCode, start);
-	}
-	catch(RuntimeError e)
-	{
-		e._srcPath = _prgStack.top()->prgObj()._prg->_path;
-		cout << "\n" << e.ToStr() << "\n";
-		_retCode = -1;
-	}
-	_prgStack.pop();
-
-	while(!_prgStack.empty()) _prgStack.pop();
-	while(!_clsStack.empty()) _clsStack.pop();
-	while(!_retStack.empty()) _retStack.pop();
-	while(!_roffStack.empty()) _roffStack.pop();
-	while(_rpStack.size() > 1) _rpStack.pop();
-	_roff = 0;
-
-	if(_retCode == INT64_MAX) _retCode = 0;
-	return _retCode;
+	return Continue(start);
 }
 
 int64_t Machine::Continue(int start /* = -1 */)
@@ -1104,6 +1129,7 @@ int64_t Machine::Continue(int start /* = -1 */)
 	_retCode = INT64_MAX;
 
 	_prgStack.push(&_prgObj);
+	_codeStack.push(&_prg->_mainCode);
 	try
 	{
 		Exec(_prg->_mainCode, start > -1 ? start : _pc);
@@ -1112,8 +1138,18 @@ int64_t Machine::Continue(int start /* = -1 */)
 	{
 		e._srcPath = _prgStack.top()->prgObj()._prg->_path;
 		cout << "\n" << e.ToStr() << "\n";
+
+		printf("=== Call Stack ===\n");
+		for(;!_callStack.empty();)
+		{
+			auto& c = _callStack.top();
+			printf("'%s'!... Line %d\n", c.prgPath.c_str(), c.line);
+			_callStack.pop();
+		}
+
 		_retCode = -1;
 	}
+	_codeStack.pop();
 	_prgStack.pop();
 
 	while(!_prgStack.empty()) _prgStack.pop();
@@ -1121,6 +1157,8 @@ int64_t Machine::Continue(int start /* = -1 */)
 	while(!_retStack.empty()) _retStack.pop();
 	while(!_roffStack.empty()) _roffStack.pop();
 	while(_rpStack.size() > 1) _rpStack.pop();
+	while(_spStack.size() > 1) _spStack.pop();
+	while(!_callStack.empty()) _callStack.pop();
 	_roff = 0;
 
 	if(_retCode == INT64_MAX) _retCode = 0;

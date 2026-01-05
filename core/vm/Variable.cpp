@@ -550,12 +550,6 @@ bool Variable::CalcUnaryAndAssign(EToken unaryOp, Variable& rhs)
 		return true;
 	}
 
-	if(rhs._type == STR)
-	{//TODO
-		throw RuntimeError::UnsupportedOperand(unaryOp, rhs._type, "");
-		//qaz TODO
-	}
-
 	switch(rhs._type)
 	{
 	case INT:
@@ -582,6 +576,7 @@ bool Variable::CalcUnaryAndAssign(EToken unaryOp, Variable& rhs)
 		}
 		return true;
 
+	case STR:
 	case LVREF:
 	case ATTR:
 	case CLASS:
