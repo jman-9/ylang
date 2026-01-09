@@ -25,10 +25,13 @@ class Citizen {
     _job = 0;
     _money = 0;
 
-    fn Citizen(name, age, job) {
+    fn Citizen(name, age, job) {		
+		println(job);
+		
         _name = name;
         _age = age;
         _job = job;
+		
         _money = 0;
     }
 
@@ -86,16 +89,16 @@ class City {
     }
 
     fn addCitizen(c) {
-        _citizens.append(c);
+        _citizens.push_back(c);
     }
 
     fn addBuilding(b) {
-        _buildings.append(b);
+        _buildings.push_back(b);
     }
 
     fn collectTaxes() {
         total = 0;
-        for (i = 0; i < _citizens.len(); i++) {
+        for (i = 0; i < _citizens.size(); i++) {
             tax = _citizens[i].getTax();
             total = total + tax;
         }
@@ -105,7 +108,7 @@ class City {
 
     fn payMaintenance() {
         cost = 0;
-        for (i = 0; i < _buildings.len(); i++) {
+        for (i = 0; i < _buildings.size(); i++) {
             cost = cost + _buildings[i].upkeep();
         }
         if (_treasury >= cost) {
@@ -117,7 +120,7 @@ class City {
     }
 
     fn simulateDay() {
-        for (i = 0; i < _citizens.len(); i++) {
+        for (i = 0; i < _citizens.size(); i++) {
             _citizens[i].work();
         }
         taxes = collectTaxes();
@@ -127,10 +130,10 @@ class City {
 
     fn info() {
         println("=== City {_name} ===");
-        for (i = 0; i < _citizens.len(); i++) {
+        for (i = 0; i < _citizens.size(); i++) {
             println(_citizens[i].info());
         }
-        for (i = 0; i < _buildings.len(); i++) {
+        for (i = 0; i < _buildings.size(); i++) {
             println(_buildings[i].info());
         }
         println("Treasury: {_treasury}");

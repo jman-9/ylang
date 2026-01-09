@@ -13,8 +13,8 @@ fn clamp(v, min, max) {
 }
 
 fn random_choice(list) {
-    if (list.len() == 0) return null;
-    idx = rand.get(0, list.len() - 1);
+    if (list.size() == 0) return null;
+    idx = rand.get(0, list.size() - 1);
     return list[idx];
 }
 
@@ -59,13 +59,13 @@ class Inventory {
     fn Inventory() { }
 
     fn add(item) {
-        _items.append(item);
+        _items.push_back(item);
     }
 
     fn removeByIndex(index) {
-        if (index < 0 || index >= _items.len()) return null;
+        if (index < 0 || index >= _items.size()) return null;
         item = _items[index];
-        lastIndex = _items.len() - 1;
+        lastIndex = _items.size() - 1;
         if (index != lastIndex) {
             tmp = _items[lastIndex];
             _items[lastIndex] = _items[index];
@@ -78,7 +78,7 @@ class Inventory {
     fn removeByName(name) {
         found = null;
         foundIndex = -1;
-        for (i = 0; i < _items.len(); i++) {
+        for (i = 0; i < _items.size(); i++) {
             if (_items[i].name() == name) {
                 found = _items[i];
                 foundIndex = i;
@@ -90,35 +90,35 @@ class Inventory {
     }
 
     fn findFirst(kind) {
-        for (i = 0; i < _items.len(); i++) {
+        for (i = 0; i < _items.size(); i++) {
             if (_items[i].kind() == kind) return _items[i];
         }
         return null;
     }
 
     fn isEmpty() {
-        return _items.len() == 0;
+        return _items.size() == 0;
     }
 
     fn len() {
-        return _items.len();
+        return _items.size();
     }
 
     fn get(index) {
-        if (index < 0 || index >= _items.len()) return null;
+        if (index < 0 || index >= _items.size()) return null;
         return _items[index];
     }
 
     fn describe() {
-        if (_items.len() == 0) return "[]";
+        if (_items.size() == 0) return "[]";
         parts = [];
-        for (i = 0; i < _items.len(); i++) {
-            parts.append(_items[i].info());
+        for (i = 0; i < _items.size(); i++) {
+            parts.push_back(_items[i].info());
         }
         text = "[";
-        for (i = 0; i < parts.len(); i++) {
+        for (i = 0; i < parts.size(); i++) {
             text += parts[i];
-            if (i + 1 < parts.len()) text += ", ";
+            if (i + 1 < parts.size()) text += ", ";
         }
         text += "]";
         return text;
@@ -270,7 +270,7 @@ class Enemy {
     }
 
     fn addLoot(item) {
-        _lootTable.append(item);
+        _lootTable.push_back(item);
     }
 
     fn name() {
@@ -286,8 +286,8 @@ class Enemy {
     }
 
     fn randomLoot() {
-        if (_lootTable.len() == 0) return null;
-        idx = rand.get(0, _lootTable.len() - 1);
+        if (_lootTable.size() == 0) return null;
+        idx = rand.get(0, _lootTable.size() - 1);
         return _lootTable[idx];
     }
 
@@ -302,7 +302,7 @@ class Encounter {
     fn Encounter() { }
 
     fn addEnemy(e) {
-        _enemies.append(e);
+        _enemies.push_back(e);
     }
 
     fn allEnemies() {
@@ -310,36 +310,36 @@ class Encounter {
     }
 
     fn isCleared() {
-        for (i = 0; i < _enemies.len(); i++) {
+        for (i = 0; i < _enemies.size(); i++) {
             if (_enemies[i].isAlive()) return 0;
         }
         return 1;
     }
 
     fn describe() {
-        if (_enemies.len() == 0) return "No enemies.";
-        for (i = 0; i < _enemies.len(); i++) {
+        if (_enemies.size() == 0) return "No enemies.";
+        for (i = 0; i < _enemies.size(); i++) {
             println("  " + _enemies[i].describe());
         }
     }
 
     fn getRandomAliveEnemy() {
         alive = [];
-        for (i = 0; i < _enemies.len(); i++) {
-            if (_enemies[i].isAlive()) alive.append(_enemies[i]);
+        for (i = 0; i < _enemies.size(); i++) {
+            if (_enemies[i].isAlive()) alive.push_back(_enemies[i]);
         }
-        if (alive.len() == 0) return null;
-        idx = rand.get(0, alive.len() - 1);
+        if (alive.size() == 0) return null;
+        idx = rand.get(0, alive.size() - 1);
         return alive[idx];
     }
 
     fn getRandomAliveEnemyIndex() {
         aliveIndexes = [];
-        for (i = 0; i < _enemies.len(); i++) {
-            if (_enemies[i].isAlive()) aliveIndexes.append(i);
+        for (i = 0; i < _enemies.size(); i++) {
+            if (_enemies[i].isAlive()) aliveIndexes.push_back(i);
         }
-        if (aliveIndexes.len() == 0) return -1;
-        idx = rand.get(0, aliveIndexes.len() - 1);
+        if (aliveIndexes.size() == 0) return -1;
+        idx = rand.get(0, aliveIndexes.size() - 1);
         return aliveIndexes[idx];
     }
 }
@@ -365,11 +365,11 @@ class Dialogue {
     fn Dialogue() { }
 
     fn addLine(speaker, text) {
-        _lines.append(DialogueLine(speaker, text));
+        _lines.push_back(DialogueLine(speaker, text));
     }
 
     fn play() {
-        for (i = 0; i < _lines.len(); i++) {
+        for (i = 0; i < _lines.size(); i++) {
             _lines[i].render();
         }
     }
@@ -383,7 +383,7 @@ class Party {
     fn Party() { }
 
     fn addMember(npc) {
-        _members.append(npc);
+        _members.push_back(npc);
     }
 
     fn members() {
@@ -392,7 +392,7 @@ class Party {
 
     fn aliveCount() {
         count = 0;
-        for (i = 0; i < _members.len(); i++) {
+        for (i = 0; i < _members.size(); i++) {
             if (_members[i].isAlive()) count++;
         }
         return count;
@@ -411,7 +411,7 @@ class Party {
     }
 
     fn findFirstAlive() {
-        for (i = 0; i < _members.len(); i++) {
+        for (i = 0; i < _members.size(); i++) {
             if (_members[i].isAlive()) return _members[i];
         }
         return null;
@@ -419,17 +419,17 @@ class Party {
 
     fn randomAlive() {
         alive = [];
-        for (i = 0; i < _members.len(); i++) {
-            if (_members[i].isAlive()) alive.append(_members[i]);
+        for (i = 0; i < _members.size(); i++) {
+            if (_members[i].isAlive()) alive.push_back(_members[i]);
         }
-        if (alive.len() == 0) return null;
-        idx = rand.get(0, alive.len() - 1);
+        if (alive.size() == 0) return null;
+        idx = rand.get(0, alive.size() - 1);
         return alive[idx];
     }
 
     fn describe() {
         println("Party (gold={_gold}):");
-        for (i = 0; i < _members.len(); i++) {
+        for (i = 0; i < _members.size(); i++) {
             println("  " + _members[i].describe());
         }
     }
@@ -462,7 +462,7 @@ class Battle {
     }
 
     fn partyAct() {
-        for (i = 0; i < _party.members().len(); i++) {
+        for (i = 0; i < _party.members().size(); i++) {
             actor = _party.members()[i];
             if (!actor.isAlive()) continue;
 
@@ -499,7 +499,7 @@ class Battle {
     }
 
     fn enemiesAct() {
-        for (i = 0; i < _enc.allEnemies().len(); i++) {
+        for (i = 0; i < _enc.allEnemies().size(); i++) {
             e = _enc.allEnemies()[i];
             if (!e.isAlive()) continue;
 
@@ -519,16 +519,16 @@ class Battle {
 
     fn dropLoot() {
         println("Battle cleared. Checking loot...");
-        for (i = 0; i < _enc.allEnemies().len(); i++) {
+        for (i = 0; i < _enc.allEnemies().size(); i++) {
             e = _enc.allEnemies()[i];
             if (!e.isAlive()) continue;
         }
-        for (i = 0; i < _enc.allEnemies().len(); i++) {
+        for (i = 0; i < _enc.allEnemies().size(); i++) {
             e = _enc.allEnemies()[i];
             if (!e.isAlive()) continue;
         }
 
-        for (i = 0; i < _enc.allEnemies().len(); i++) {
+        for (i = 0; i < _enc.allEnemies().size(); i++) {
             e = _enc.allEnemies()[i];
             if (e.isAlive()) continue;
 
@@ -589,12 +589,12 @@ class Location {
     }
 
     fn addNeighbor(loc) {
-        _neighbors.append(loc);
+        _neighbors.push_back(loc);
     }
 
     fn randomNeighbor() {
-        if (_neighbors.len() == 0) return null;
-        idx = rand.get(0, _neighbors.len() - 1);
+        if (_neighbors.size() == 0) return null;
+        idx = rand.get(0, _neighbors.size() - 1);
         return _neighbors[idx];
     }
 
@@ -603,12 +603,12 @@ class Location {
     }
 
     fn addDialogue(dialog) {
-        _npcDialogues.append(dialog);
+        _npcDialogues.push_back(dialog);
     }
 
     fn randomDialogue() {
-        if (_npcDialogues.len() == 0) return null;
-        idx = rand.get(0, _npcDialogues.len() - 1);
+        if (_npcDialogues.size() == 0) return null;
+        idx = rand.get(0, _npcDialogues.size() - 1);
         return _npcDialogues[idx];
     }
 
@@ -624,7 +624,7 @@ class World {
     fn World() { }
 
     fn addLocation(loc) {
-        _locations.append(loc);
+        _locations.push_back(loc);
         if (!_start) _start = loc;
     }
 
@@ -737,7 +737,7 @@ class Adventure {
         dialog.play();
 
         moodDelta = rand.get(-1, 2);
-        for (i = 0; i < _ctx.party().members().len(); i++) {
+        for (i = 0; i < _ctx.party().members().size(); i++) {
             _ctx.party().members()[i].changeMood(moodDelta);
         }
     }

@@ -130,6 +130,7 @@ struct Variable
 	int64_t int_() const;
 	double float_() const;
 	const std::string& str() const;
+	std::string& str();
 	Variable& lvref();
 	const Variable& lvref() const;
 	const Attribute& attr() const;

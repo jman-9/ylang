@@ -29,8 +29,8 @@ class Diplomacy {
 
     fn summary(civs){
         println("--- Diplomacy ---");
-        for(i=0;i<civs.len();i+=1){
-            for(j=i+1;j<civs.len();j+=1){
+        for(i=0;i<civs.size();i+=1){
+            for(j=i+1;j<civs.size();j+=1){
                 ca = civs[i];
                 cb = civs[j];
                 r = get(ca.id, cb.id);

@@ -1,7 +1,8 @@
 println("=== dict example ===");
 
 d = {'x': 10, 'y': 20, 'z': 30};
-println(d.len());
+println(d.empty());
+println(d.size());
 
 println(d.keys());
 println(d.values());

@@ -12,7 +12,7 @@ class WarSystem {
 
     fn resolve_year(gs){
         map = gs.world_map;
-        for(i=0;i<gs.civs.len();i+=1){
+        for(i=0;i<gs.civs.size();i+=1){
             attacker = gs.civs[i];
             target_id = strat.pick_war_target(gs, attacker);
             if(target_id == 0) continue;
@@ -26,12 +26,12 @@ class WarSystem {
             if(a_city == null || d_city == null) continue;
 
             path = pathfinder.find_path(map, a_city.x, a_city.y, d_city.x, d_city.y);
-            if(path.len() == 0){
+            if(path.size() == 0){
                 println("  No viable path for campaign.");
                 continue;
             }
 
-            println("  Campaign path length: {path.len()}");
+            println("  Campaign path length: {path.size()}");
             resolve_campaign(attacker, defender, path);
         }
     }
@@ -41,7 +41,7 @@ class WarSystem {
         strength_d = defender.military_power;
         if(strength_a <= 0 || strength_d <= 0) return;
 
-        losses = path.len() / 3;
+        losses = path.size() / 3;
         strength_a -= losses;
         if(strength_a < 0) strength_a = 0;
 
@@ -49,7 +49,7 @@ class WarSystem {
             println("  {attacker.name} wins the war.");
             attacker.military_power = strength_a - strength_d / 2;
             defender.military_power = 0;
-            if(defender.cities.len() > 0){
+            if(defender.cities.size() > 0){
                 taken = defender.cities[0];
                 defender.cities.remove(0);
                 taken.owner_id = attacker.id;

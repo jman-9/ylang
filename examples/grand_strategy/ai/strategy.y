@@ -43,13 +43,13 @@ class StrategyAI {
     fn pick_war_target(gs, civ){
         best_id = 0;
         best_score = 0;
-        for(i=0;i<gs.civs.len();i+=1){
+        for(i=0;i<gs.civs.size();i+=1){
             other = gs.civs[i];
             if(other.id == civ.id) continue;
             rel = gs.diplomacy.get(civ.id, other.id);
             if(rel > 10) continue;
 
-            score = other.cities.len() * 5 + other.military_power;
+            score = other.cities.size() * 5 + other.military_power;
             if(score > best_score && civ.military_power > other.military_power + 5){
                 best_score = score;
                 best_id = other.id;
@@ -59,8 +59,8 @@ class StrategyAI {
     }
 
     fn adjust_diplomacy(gs){
-        for(i=0;i<gs.civs.len();i+=1){
-            for(j=i+1;j<gs.civs.len();j+=1){
+        for(i=0;i<gs.civs.size();i+=1){
+            for(j=i+1;j<gs.civs.size();j+=1){
                 a = gs.civs[i];
                 b = gs.civs[j];
 				

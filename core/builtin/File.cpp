@@ -1,7 +1,10 @@
 #include "File.h"
 #include "vm/Variable.h"
 #include "vm/RuntimeError.h"
+#include "module/ModuleUtil.h"
 #include <stdio.h>
+#include <filesystem>
+using namespace std;
 
 
 namespace ybuiltin::File
@@ -87,6 +90,43 @@ YRet Write(YArgs* args)
 	return { code };
 }
 
+YRet ReadAll(YArgs* args)
+{
+	MODARG_VAR(0, path, Variable::STR);
+
+	error_code ec;
+	uintmax_t sz = filesystem::file_size(path.str(), ec);
+	if(ec)
+		return { ec.value(), };
+
+	FILE* fp = fopen(path.str().c_str(), "r");
+	if(fp == nullptr)
+		return { errno, };
+
+	auto rv = (Variable*)args->retBuff.o;
+	rv->SetStr("");
+	rv->str().resize(sz+1);
+	uintmax_t rsz = fread(rv->str().data(), 1, sz, fp);
+	bool eof = feof(fp);
+	fclose(fp);
+
+	if(rsz != sz)
+	{//TODO
+		if(eof)
+		{
+			rv->str().resize(rsz+1);
+		}
+		else
+		{
+			return { errno ? errno : 1, };
+		}
+	}
+
+	YRet yr;
+	yr.single.SetYVar(rv);
+	return yr;
+}
+
 const ModuleDesc& GetModuleDesc()
 {
 	static ModuleDesc m;
@@ -98,6 +138,7 @@ const ModuleDesc& GetModuleDesc()
 		m.memberTbl["open"] = ModuleMemberDesc{ "open", ModuleMemberDesc::FUNC, false, 2, Open };
 		m.memberTbl["close"] = ModuleMemberDesc{ "close", ModuleMemberDesc::FUNC, true, 0, Close };
 		m.memberTbl["read"] = ModuleMemberDesc{ "read", ModuleMemberDesc::FUNC, true, 1, Read };
+		m.memberTbl["read_all"] = ModuleMemberDesc{ "read_all", ModuleMemberDesc::FUNC, false, 1, ReadAll };
 		m.memberTbl["write"] = ModuleMemberDesc{ "write", ModuleMemberDesc::FUNC, true, 1, Write };
 	}
 	return m;

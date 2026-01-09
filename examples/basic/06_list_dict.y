@@ -7,7 +7,7 @@ users = {
 
 println(users.keys());
 
-users['alice'].append(40);
+users['alice'].push_back(40);
 println(users['alice']);
 
 v = users['bob'].pop_back();

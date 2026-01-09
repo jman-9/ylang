@@ -33,7 +33,7 @@ Module Init()
 		argv->list().push_back({});
 		argv->list().back().SetStr(g_Args[i]);
 	}
-	o.memberVars["argv"] = YArg{argv, YEArg::YVar};
+	o.memberVars["args"] = YArg{argv, YEArg::YVar};
 
 	v = new Variable;
 	v->SetStr(g_Args[0]);

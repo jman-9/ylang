@@ -11,7 +11,18 @@ using namespace ymod;
 using namespace std;
 
 
-inline YRet Len(YArgs* args)
+inline YRet Empty(YArgs* args)
+{
+	auto self = (Variable*)args->args[0].o;
+
+	auto v = (Variable*)args->retBuff.o;
+	v->SetBool(self->dict().empty());
+	YRet yr;
+	yr.single.SetYVar(v);
+	return yr;
+}
+
+inline YRet Size(YArgs* args)
 {
 	auto self = (Variable*)args->args[0].o;
 
@@ -121,7 +132,8 @@ const ymod::ModuleDesc& GetModuleDesc()
 	{
 		m.name = "dict";
 		m.builtin = true;
-		m.memberTbl[ "len" ] = { "len", ymod::ModuleMemberDesc::FUNC, true, 0, Len };
+		m.memberTbl[ "empty" ] = { "empty", ymod::ModuleMemberDesc::FUNC, true, 0, Empty };
+		m.memberTbl[ "size" ] = { "len", ymod::ModuleMemberDesc::FUNC, true, 0, Size };
 		m.memberTbl[ "contains" ] = { "contains", ymod::ModuleMemberDesc::FUNC, true, 1, Contains };
 		m.memberTbl[ "keys" ] = { "keys", ymod::ModuleMemberDesc::FUNC, true, 0, Keys };
 		m.memberTbl[ "values" ] = { "values", ymod::ModuleMemberDesc::FUNC, true, 0, Values };

@@ -11,7 +11,18 @@ using namespace ymod;
 using namespace std;
 
 
-inline YRet Len(YArgs* args)
+inline YRet Empty(YArgs* args)
+{
+	auto self = (Variable*)args->args[0].o;
+
+	auto v = (Variable*)args->retBuff.o;
+	v->SetBool(self->list().empty());
+	YRet yr;
+	yr.single.SetYVar(v);
+	return yr;
+}
+
+inline YRet Size(YArgs* args)
 {
 	auto self = (Variable*)args->args[0].o;
 
@@ -31,7 +42,7 @@ inline YRet Resize(YArgs* args)
 	return {};
 }
 
-inline YRet Append(YArgs* args)
+inline YRet PushBack(YArgs* args)
 {
 	auto self = (Variable*)args->args[0].o;
 	auto a = (Variable*)args->args[1].o;
@@ -99,6 +110,29 @@ inline YRet PopBack(YArgs* args)
 	return yr;
 }
 
+inline YRet Front(YArgs* args)
+{
+	auto self = (Variable*)args->args[0].o;
+
+	auto v = (Variable*)args->retBuff.o;
+	v->SetVar(self->list().front());
+	YRet yr;
+	yr.single.SetYVar(v);
+	return yr;
+}
+
+inline YRet Back(YArgs* args)
+{
+	auto self = (Variable*)args->args[0].o;
+
+	auto v = (Variable*)args->retBuff.o;
+	v->SetVar(self->list().back());
+	YRet yr;
+	yr.single.SetYVar(v);
+	return yr;
+}
+
+
 const ymod::ModuleDesc& GetModuleDesc()
 {
 	static ModuleDesc m;
@@ -106,13 +140,16 @@ const ymod::ModuleDesc& GetModuleDesc()
 	{
 		m.name = "list";
 		m.builtin = true;
-		m.memberTbl[ "len" ] = { "len", ymod::ModuleMemberDesc::FUNC, true, 0, Len };
+		m.memberTbl[ "empty" ] = { "empty", ymod::ModuleMemberDesc::FUNC, true, 0, Empty };
+		m.memberTbl[ "size" ] = { "size", ymod::ModuleMemberDesc::FUNC, true, 0, Size };
 		m.memberTbl[ "resize" ] = { "resize", ymod::ModuleMemberDesc::FUNC, true, 1, Resize };
-		m.memberTbl[ "append" ] = { "append", ymod::ModuleMemberDesc::FUNC, true, 1, Append };
+		m.memberTbl[ "push_back" ] = { "push_back", ymod::ModuleMemberDesc::FUNC, true, 1, PushBack };
 		m.memberTbl[ "insert" ] = { "insert", ymod::ModuleMemberDesc::FUNC, true, 2, Insert };
 		m.memberTbl[ "pop" ] = { "pop", ymod::ModuleMemberDesc::FUNC, true, 1, Pop };
 		m.memberTbl[ "pop_front" ] = { "pop_front", ymod::ModuleMemberDesc::FUNC, true, 0, PopFront };
 		m.memberTbl[ "pop_back" ] = { "pop_back", ymod::ModuleMemberDesc::FUNC, true, 0, PopBack };
+		m.memberTbl[ "front" ] = { "front", ymod::ModuleMemberDesc::FUNC, true, 0, Front };
+		m.memberTbl[ "back" ] = { "back", ymod::ModuleMemberDesc::FUNC, true, 0, Back };
 	}
 	return m;
 }

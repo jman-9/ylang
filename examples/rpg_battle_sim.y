@@ -59,12 +59,12 @@ class Party {
     _members = [];
 
     fn add(c) {
-        _members.append(c);
+        _members.push_back(c);
     }
 
     fn aliveCount() {
         count = 0;
-        for (i = 0; i < _members.len(); i++) {
+        for (i = 0; i < _members.size(); i++) {
             if (_members[i].isAlive()) count++;
         }
         return count;
@@ -72,20 +72,20 @@ class Party {
 
     fn getRandomAlive() {
         alive_list = [];
-        for (i = 0; i < _members.len(); i++) {
+        for (i = 0; i < _members.size(); i++) {
             if (_members[i].isAlive())
-                alive_list.append(_members[i]);
+                alive_list.push_back(_members[i]);
         }
 
-        if (alive_list.len() == 0)
+        if (alive_list.size() == 0)
             return null;
 
-        idx = rand.get(0, alive_list.len() - 1);
+        idx = rand.get(0, alive_list.size() - 1);
         return alive_list[idx];
     }
 
     fn debug() {
-        for (i = 0; i < _members.len(); i++) {
+        for (i = 0; i < _members.size(); i++) {
             println(_members[i].status());
         }
     }

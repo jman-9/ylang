@@ -2,6 +2,7 @@
 #include "Str.h"
 #include "vm/Variable.h"
 #include "vm/RuntimeError.h"
+#include "module/ModuleUtil.h"
 #include <string>
 
 
@@ -16,13 +17,13 @@ inline YRet Empty(YArgs* args)
 	auto self = (Variable*)args->args[0].o;
 	YRet yr;
 	auto rv = (Variable*)args->retBuff.o;
-	rv->SetInt((int64_t)self->str().empty());
+	rv->SetBool(self->str().empty());
 	yr.single.tp = YEArg::YVar;
 	yr.single.o = rv;
 	return yr;
 }
 
-inline YRet Len(YArgs* args)
+inline YRet Size(YArgs* args)
 {
 	auto self = (Variable*)args->args[0].o;
 	YRet yr;
@@ -282,6 +283,32 @@ inline YRet Join(YArgs* args)
 	return yr;
 }
 
+inline YRet StartsWith(YArgs* args)
+{
+	auto self = (Variable*)args->args[0].o;
+	MODARG_VAR(1, str, Variable::STR);
+
+	const string& r = self->str();
+	auto rv = (Variable*)args->retBuff.o;
+	rv->SetBool(r.starts_with(str.str()));
+
+	YRet yr;
+	yr.single.SetYVar(rv);
+	return yr;
+}
+inline YRet EndsWith(YArgs* args)
+{
+	auto self = (Variable*)args->args[0].o;
+	MODARG_VAR(1, str, Variable::STR);
+
+	const string& r = self->str();
+	auto rv = (Variable*)args->retBuff.o;
+	rv->SetBool(r.ends_with(str.str()));
+
+	YRet yr;
+	yr.single.SetYVar(rv);
+	return yr;
+}
 
 const ymod::ModuleDesc& GetModuleDesc()
 {
@@ -291,7 +318,7 @@ const ymod::ModuleDesc& GetModuleDesc()
 		m.name = "str";
 		m.builtin = true;
 		m.memberTbl[ "empty" ] = { "empty", ymod::ModuleMemberDesc::FUNC, true, 0, Empty };
-		m.memberTbl[ "len" ] = { "len", ymod::ModuleMemberDesc::FUNC, true, 0, Len };
+		m.memberTbl[ "size" ] = { "size", ymod::ModuleMemberDesc::FUNC, true, 0, Size };
 		m.memberTbl[ "find" ] = { "find", ymod::ModuleMemberDesc::FUNC, true, 1, Find };
 		m.memberTbl[ "substr" ] = { "substr", ymod::ModuleMemberDesc::FUNC, true, 1, Substr };
 		m.memberTbl[ "replace" ] = { "replace", ymod::ModuleMemberDesc::FUNC, true, 2, Replace };
@@ -300,6 +327,8 @@ const ymod::ModuleDesc& GetModuleDesc()
 		m.memberTbl[ "ltrim" ] = { "ltrim", ymod::ModuleMemberDesc::FUNC, true, 0, LTrim };
 		m.memberTbl[ "rtrim" ] = { "rtrim", ymod::ModuleMemberDesc::FUNC, true, 0, RTrim };
 		m.memberTbl[ "join" ] = { "join", ymod::ModuleMemberDesc::FUNC, true, 1, Join };
+		m.memberTbl[ "starts_with" ] = { "starts_with", ymod::ModuleMemberDesc::FUNC, true, 1, StartsWith };
+		m.memberTbl[ "ends_with" ] = { "ends_with", ymod::ModuleMemberDesc::FUNC, true, 1, EndsWith };
 	}
 	return m;
 }

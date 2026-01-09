@@ -43,9 +43,9 @@ class Map {
                     t.river = true;
                     t.fertility += 0.1;
                 }
-                row.append(t);
+                row.push_back(t);
             }
-            tiles.append(row);
+            tiles.push_back(row);
         }
     }
 

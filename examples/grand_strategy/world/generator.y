@@ -26,9 +26,9 @@ class WorldGenerator {
         spawn_city(m, c2, 22, 13, "Maros");
         spawn_city(m, c3, 12, 14, "Westra");
 
-        gs.civs.append(c1);
-        gs.civs.append(c2);
-        gs.civs.append(c3);
+        gs.civs.push_back(c1);
+        gs.civs.push_back(c2);
+        gs.civs.push_back(c3);
     }
 
     fn spawn_city(map, civ, x, y, name){

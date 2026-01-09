@@ -12,7 +12,7 @@ fn main() {
     println("[1] System Information:");
 	println("Version: " + sys.version);
     println("Executable: " + sys.executable);
-    println("Arguments:  {sys.argv}");
+    println("Arguments:  {sys.args}");
 	println();
 
     println("[2] Random Number Example:");

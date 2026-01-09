@@ -22,13 +22,13 @@ class Civ {
     }
 
     fn add_city(city){
-        cities.append(city);
+        cities.push_back(city);
     }
 
     fn apply_turn(map){
         total_pop = 0;
         total_prod = 0;
-        for(i=0;i<cities.len();i+=1){
+        for(i=0;i<cities.size();i+=1){
             city = cities[i];
             city.apply_turn(map);
             total_pop += city.population;
@@ -58,10 +58,10 @@ class Civ {
     }
 
     fn main_city(){
-        if(cities.len() == 0) return null;
+        if(cities.size() == 0) return null;
         best = cities[0];
         best_score = best.population + best.stability / 2;
-        for(i=1;i<cities.len();i+=1){
+        for(i=1;i<cities.size();i+=1){
             c = cities[i];
             score = c.population + c.stability / 2;
             if(score > best_score){
@@ -73,6 +73,6 @@ class Civ {
     }
 
     fn summary(){
-        println("Civ #{id} {name}: cities={cities.len()} treasury={treasury} sci={science} stab={stability} mil={military_power}");
+        println("Civ #{id} {name}: cities={cities.size()} treasury={treasury} sci={science} stab={stability} mil={military_power}");
     }
 }

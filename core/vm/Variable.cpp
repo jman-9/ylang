@@ -790,6 +790,11 @@ const std::string& Variable::str() const
 	if(_type != STR) INTERNALERR(format("{}: incorrect type", TypeStr()));
 	return *_u._s;
 }
+std::string& Variable::str()
+{
+	if(_type != STR) INTERNALERR(format("{}: incorrect type", TypeStr()));
+	return *_u._s;
+}
 const Variable& Variable::lvref() const
 {
 	if(_type != LVREF) INTERNALERR(format("{}: incorrect type", TypeStr()));
@@ -807,7 +812,8 @@ const Attribute& Variable::attr() const
 }
 Attribute& Variable::attr()
 {
-	if(_type != ATTR) INTERNALERR(format("{}: incorrect type", TypeStr()));
+	if(_type != ATTR)
+		INTERNALERR(format("{}: incorrect type", TypeStr()));
 	return *_u._attr;
 }
 

@@ -14,7 +14,7 @@ class GameState {
     }
 
     fn get_civ(id){
-        for(i=0;i<civs.len();i+=1){
+        for(i=0;i<civs.size();i+=1){
             if(civs[i].id == id) return civs[i];
         }
         return null;
@@ -23,10 +23,10 @@ class GameState {
     fn print_yearly_report(){
         println("");
         println("=== YEARLY REPORT {year} ===");
-        println("Civs: {civs.len()}");
-        for(i=0;i<civs.len();i+=1){
+        println("Civs: {civs.size()}");
+        for(i=0;i<civs.size();i+=1){
             civs[i].summary();
-            for(j=0;j<civs[i].cities.len();j+=1){
+            for(j=0;j<civs[i].cities.size();j+=1){
                 civs[i].cities[j].summary();
             }
         }

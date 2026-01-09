@@ -68,12 +68,12 @@ class Inventory {
 
     fn describe() {
         ks = _items.keys();
-        if (ks.len() == 0) return "{{}}";
+        if (ks.size() == 0) return "{{}}";
         out = "{{";
-        for (i = 0; i < ks.len(); i++) {
+        for (i = 0; i < ks.size(); i++) {
             k = ks[i];
             out += "{k}:{_items[k]}";
-            if (i + 1 < ks.len()) out += ", ";
+            if (i + 1 < ks.size()) out += ", ";
         }
         out += "}}";
         return out;
@@ -164,27 +164,27 @@ class Habitat {
 
     fn Habitat() { }
 
-    fn addColonist(c) { _colonists.append(c); }
-    fn addFacility(b) { _facilities.append(b); }
+    fn addColonist(c) { _colonists.push_back(c); }
+    fn addFacility(b) { _facilities.push_back(b); }
 
     fn allColonists() { return _colonists; }
     fn allFacilities() { return _facilities; }
 
     fn aliveColonist() {
         alive = [];
-        for (i = 0; i < _colonists.len(); i++) {
+        for (i = 0; i < _colonists.size(); i++) {
             if (_colonists[i].isAlive())
-                alive.append(_colonists[i]);
+                alive.push_back(_colonists[i]);
         }
         return alive;
     }
 
     fn describe() {
         println("== Habitat ==");
-        for (i = 0; i < _colonists.len(); i++) {
+        for (i = 0; i < _colonists.size(); i++) {
             println("  " + _colonists[i].info());
         }
-        for (i = 0; i < _facilities.len(); i++) {
+        for (i = 0; i < _facilities.size(); i++) {
             println("  " + _facilities[i].describe());
         }
     }
@@ -273,13 +273,13 @@ class Colony {
     }
 
     fn addRover(r) {
-        _rovers.append(r);
+        _rovers.push_back(r);
     }
 
     fn dailyProduction() {
         cols = _hab.aliveColonist();
         effSum = 0.0;
-        for (i = 0; i < cols.len(); i++) {
+        for (i = 0; i < cols.size(); i++) {
             effSum += cols[i].workEff();
         }
         if (effSum == 0) return;
@@ -297,20 +297,20 @@ class Colony {
 
     fn dailyConsumption() {
         cols = _hab.aliveColonist();
-        totalFood = cols.len();
+        totalFood = cols.size();
         if (!_stock.remove("food", totalFood)) {
-            for (i = 0; i < cols.len(); i++) {
+            for (i = 0; i < cols.size(); i++) {
                 cols[i].moraleDown(1);
             }
         } else {
-            for (i = 0; i < cols.len(); i++) {
+            for (i = 0; i < cols.size(); i++) {
                 cols[i].moraleUp(1);
             }
         }
     }
 
     fn roverExpeditions() {
-        for (i = 0; i < _rovers.len(); i++) {
+        for (i = 0; i < _rovers.size(); i++) {
             r = _rovers[i];
             if (r.isBroken()) continue;
 
@@ -324,7 +324,7 @@ class Colony {
 
     fn dailyColonistUpdate() {
         cols = _hab.allColonists();
-        for (i = 0; i < cols.len(); i++) {
+        for (i = 0; i < cols.size(); i++) {
             cols[i].dailyUpdate();
         }
     }
@@ -350,13 +350,13 @@ class EventSystem {
 
         if (r < 0.1) {
             println("!! Sandstorm damages rovers");
-            for (i = 0; i < col._rovers.len(); i++) {
+            for (i = 0; i < col._rovers.size(); i++) {
                 col._rovers[i]._durability -= 10;
             }
         } else if (r < 0.15) {
             println("!! Minor quake affects morale");
             cs = col._hab.allColonists();
-            for (i = 0; i < cs.len(); i++) {
+            for (i = 0; i < cs.size(); i++) {
                 cs[i].moraleDown(1);
             }
         } else if (r < 0.18) {

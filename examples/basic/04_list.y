@@ -1,9 +1,9 @@
 println("=== list example ===");
 
 a = [1, 2, 3];
-println(a.len());
+println(a.size());
 
-a.append(4);
+a.push_back(4);
 a.insert(1, 99);
 println(a);
 

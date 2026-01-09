@@ -1,8 +1,9 @@
 println("=== string example ===");
 
 a = "hello world";
+println(a.empty());
 println(a);
-println(a.len());
+println(a.size());
 println(a.find("world"));
 println(a.substr(0, 5));
 

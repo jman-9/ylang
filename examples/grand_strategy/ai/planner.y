@@ -3,7 +3,7 @@ class GrandPlanner {
 
     fn expansion_value(civ, map){
         score = 0;
-        for(i=0;i<civ.cities.len();i+=1){
+        for(i=0;i<civ.cities.size();i+=1){
             c = civ.cities[i];
             t = map.get(c.x, c.y);
             if(t != null){
@@ -33,7 +33,7 @@ class GrandPlanner {
         exp = expansion_value(civ, map);
         stab = internal_stability(civ);
         if(stab < 35) return "stability";
-        if(civ.military_power < civ.cities.len() * 3) return "military";
+        if(civ.military_power < civ.cities.size() * 3) return "military";
         if(exp > 40) return "economy";
         if(civ.science < 40) return "science";
         return "balanced";

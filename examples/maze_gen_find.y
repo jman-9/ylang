@@ -28,16 +28,16 @@ fn make_grid(w, h, fill) {
     for (yy = 0; yy < h; yy += 1) {
         row = [];
         for (xx = 0; xx < w; xx += 1) {
-            row.append(fill);
+            row.push_back(fill);
         }
-        g.append(row);
+        g.push_back(row);
     }
     return g;
 }
 
 // -------- maze generation (DFS) --------
 fn shuffle_dirs(dirs) {
-    for (i = dirs.len() - 1; i > 0; i -= 1) {
+    for (i = dirs.size() - 1; i > 0; i -= 1) {
         j = rand.get(0, i);
         tmp = dirs[i];
         dirs[i] = dirs[j];
@@ -50,23 +50,23 @@ fn carve_maze(w, h, sx, sy) {
     grid = make_grid(w, h, 0);
     stack = [];
     grid[sy][sx] = 1;
-    stack.append([sx, sy]);
+    stack.push_back([sx, sy]);
 
-    for (; stack.len() > 0;) {
-        cur = stack[stack.len() - 1];
+    for (; stack.size() > 0;) {
+        cur = stack[stack.size() - 1];
         cx = cur[0]; cy = cur[1];
         dirs = [[0,-2],[2,0],[0,2],[-2,0]];
         dirs = shuffle_dirs(dirs);
         progressed = 0;
 
-        for (i=0;i<dirs.len();i+=1) {
+        for (i=0;i<dirs.size();i+=1) {
             d = dirs[i];
             nx = cx + d[0]; ny = cy + d[1];
             if (!in_bounds(nx, ny, w, h)) continue;
             if (grid[ny][nx] == 0) {
                 mx = (cx+nx)/2; my=(cy+ny)/2;
                 grid[my][mx]=1; grid[ny][nx]=1;
-                stack.append([nx,ny]);
+                stack.push_back([nx,ny]);
                 progressed=1; break;
             }
         }
@@ -79,12 +79,12 @@ fn key(x,y) { return "{x},{y}"; }
 
 // -------- A* + Visual Rendering --------
 fn render_visual(grid, start, goal, open_list, visited_mark, path_mark) {
-    w = grid[0].len();
-    h = grid.len();
+    w = grid[0].size();
+    h = grid.size();
 
     // Build marks for open nodes
     open_mark = {};
-    for (i = 0; i < open_list.len(); i += 1) {
+    for (i = 0; i < open_list.size(); i += 1) {
         ox = open_list[i][1];
         oy = open_list[i][2];
         k = key(ox, oy);
@@ -141,8 +141,8 @@ fn heuristic(ax, ay, bx, by) {
 fn neighbors4(x,y) { return [[x+1,y],[x-1,y],[x,y+1],[x,y-1]]; }
 
 fn visual_astar(grid, sx, sy, gx, gy) {
-    w = grid[0].len();
-    h = grid.len();
+    w = grid[0].size();
+    h = grid.size();
 
     open_list = [];               // list of [f, x, y]
     came = {};                    // "x,y" -> [px, py]
@@ -153,10 +153,10 @@ fn visual_astar(grid, sx, sy, gx, gy) {
     ks = key(sx, sy);
     gscore[ks] = 0.0;
     fscore[ks] = heuristic(sx, sy, gx, gy);
-    open_list.append([fscore[ks], sx, sy]);
+    open_list.push_back([fscore[ks], sx, sy]);
 
     for (step = 0; step < 100000; step += 1) {
-        if (open_list.len() == 0) {
+        if (open_list.size() == 0) {
             // no path
             move_home();
             println("Step: {step}");
@@ -166,11 +166,11 @@ fn visual_astar(grid, sx, sy, gx, gy) {
 
         // pick best (min f) from open_list
         best_i = 0;
-        for (i = 1; i < open_list.len(); i += 1) {
+        for (i = 1; i < open_list.size(); i += 1) {
             if (open_list[i][0] < open_list[best_i][0]) best_i = i;
         }
         node = open_list[best_i];
-        last = open_list[open_list.len() - 1];
+        last = open_list[open_list.size() - 1];
         open_list[best_i] = last;
         open_list.pop_back();
 
@@ -206,7 +206,7 @@ fn visual_astar(grid, sx, sy, gx, gy) {
 
         // relax neighbors
         nb = neighbors4(x, y);
-        for (i = 0; i < nb.len(); i += 1) {
+        for (i = 0; i < nb.size(); i += 1) {
             nx = nb[i][0];
             ny = nb[i][1];
             if (!in_bounds(nx, ny, w, h)) continue;
@@ -225,7 +225,7 @@ fn visual_astar(grid, sx, sy, gx, gy) {
                 gscore[kn] = tentative;
                 f = tentative + heuristic(nx, ny, gx, gy);
                 fscore[kn] = f;
-                open_list.append([f, nx, ny]);
+                open_list.push_back([f, nx, ny]);
             }
         }
 

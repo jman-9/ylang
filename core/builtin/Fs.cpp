@@ -61,6 +61,49 @@ YRet AbsPath(YArgs* args)
 	return yr;
 }
 
+YRet ReadDir(YArgs* args)
+{
+	MODARG_VAR(0, path, Variable::STR);
+
+	bool recursive = false;
+	if(args->numArgs > 1)
+	{
+		const auto& v = *(Variable*)args->args[1].o;
+		if(!v.IsBool())
+		{//TODO
+			throw RuntimeError::IncorrectParam(v._type, Variable::_TRUE_, 1);
+		}
+		recursive = v.bool_();
+	}
+
+	auto rv = (Variable*)args->retBuff.o;
+	rv->SetList();
+	if(recursive)
+	{
+		for(auto& d : filesystem::recursive_directory_iterator(path.str()))
+		{
+			if(!d.is_regular_file())
+				continue;
+			rv->list().push_back({});
+			rv->list().back().SetStr(d.path().string());
+		}
+	}
+	else
+	{
+		for(auto& d : filesystem::directory_iterator(path.str()))
+		{
+			if(!d.is_regular_file())
+				continue;
+			rv->list().push_back({});
+			rv->list().back().SetStr(d.path().string());
+		}
+	}
+
+	YRet yr;
+	yr.single.SetYVar(rv);
+	return yr;
+}
+
 
 Module Init()
 {//TODO memory leak
@@ -83,6 +126,7 @@ const ModuleDesc& GetModuleDesc()
 		m.memberTbl[ "exists" ] = { "exists", ymod::ModuleMemberDesc::FUNC, false, 1, Exists };
 		m.memberTbl[ "cwd" ] = { "cwd", ymod::ModuleMemberDesc::FUNC, false, 0, Cwd };
 		m.memberTbl[ "abspath" ] = { "abs", ymod::ModuleMemberDesc::FUNC, false, 1, AbsPath };
+		m.memberTbl[ "readdir" ] = { "abs", ymod::ModuleMemberDesc::FUNC, false, 1, ReadDir };
 	}
 	return m;
 }

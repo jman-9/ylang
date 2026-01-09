@@ -8,17 +8,17 @@ fn make_grid(w, h) {
     for (i = 0; i < h; i += 1) {
         row = [];
         for (j = 0; j < w; j += 1) {
-            row.append(0);
+            row.push_back(0);
         }
-        g.append(row);
+        g.push_back(row);
     }
     return g;
 }
 
 fn show_grid(g, ax, ay) {
-    for (y = 0; y < g.len(); y += 1) {
+    for (y = 0; y < g.size(); y += 1) {
         line = "";
-        for (x = 0; x < g[0].len(); x += 1) {
+        for (x = 0; x < g[0].size(); x += 1) {
             if (x == ax && y == ay) {
                 line += "\033[33m@\033[0m";
             } else if (g[y][x] == 1) {
@@ -56,10 +56,10 @@ fn step(g, x, y, d) {
     if (d == 2) { y += 1; }
     if (d == 3) { x -= 1; }
 
-    if (x < 0) { x = g[0].len() - 1; }
-    if (x >= g[0].len()) { x = 0; }
-    if (y < 0) { y = g.len() - 1; }
-    if (y >= g.len()) { y = 0; }
+    if (x < 0) { x = g[0].size() - 1; }
+    if (x >= g[0].size()) { x = 0; }
+    if (y < 0) { y = g.size() - 1; }
+    if (y >= g.size()) { y = 0; }
 
     return {'x': x, 'y': y, 'd': d};
 }

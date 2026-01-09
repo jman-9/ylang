@@ -27,30 +27,30 @@ fn csv_to_json(csv_text) {
 
     arr = [];
 
-    for (i = 1; i < lines.len(); i += 1) {
+    for (i = 1; i < lines.size(); i += 1) {
         cols = split_csv_line(lines[i].trim());
         row = {};
-        for (j = 0; j < header.len(); j += 1) {
+        for (j = 0; j < header.size(); j += 1) {
             row[header[j]] = cols[j];
         }
-        arr.append(row);
+        arr.push_back(row);
     }
     return arr;
 }
 
 fn json_to_csv(json_arr) {
-    if (json_arr.len() == 0) {
+    if (json_arr.size() == 0) {
         return "";
     }
 
     header = json_arr[0].keys();
     out = [",".join(header)];
-    for (i=0; i<json_arr.len(); i += 1) {
+    for (i=0; i<json_arr.size(); i += 1) {
         line = [];
-        for (j=0; j<header.len(); j += 1) {
-            line.append(json_arr[i][header[j]]);
+        for (j=0; j<header.size(); j += 1) {
+            line.push_back(json_arr[i][header[j]]);
         }
-        out.append(",".join(line));
+        out.push_back(",".join(line));
     }
     return "\n".join(out);
 }
@@ -59,12 +59,12 @@ fn verify_csv_equivalence(a_text, b_text) {
     a_lines = a_text.trim().split("\n");
     b_lines = b_text.trim().split("\n");
 
-    if (a_lines.len() != b_lines.len()) {
+    if (a_lines.size() != b_lines.size()) {
         println("[FAIL] Line count mismatch");
         return 0;
     }
 
-    for (i = 0; i < a_lines.len(); i += 1) {
+    for (i = 0; i < a_lines.size(); i += 1) {
         if (a_lines[i].trim() != b_lines[i].trim()) {
             println("[FAIL] Row mismatch at line {i}");
             println("  A: " + a_lines[i]);
