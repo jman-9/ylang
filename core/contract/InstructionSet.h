@@ -153,15 +153,19 @@ struct Jnz
 
 struct NewMod
 {
-	uint8_t numArgs = 0;
+	uint16_t numArgs = 0;
+	uint8_t nameKind = (uint8_t)ERefKind::None;
 	uint8_t dstKind = (uint8_t)ERefKind::None;
+	uint16_t name = 0;
 	uint16_t dst = 0;
 };
 
 struct NewCls
 {
-	uint8_t numArgs = 0;
+	uint16_t numArgs = 0;
+	uint8_t nameKind = (uint8_t)ERefKind::None;
 	uint8_t dstKind = (uint8_t)ERefKind::None;
+	uint16_t name = 0;
 	uint16_t dst = 0;
 };
 

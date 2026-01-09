@@ -128,7 +128,7 @@ void Bytecode::FillBytecode(int ln, const OpType& inst, int srcLine /* = -1 */)
 	}
 	else if constexpr (std::is_same_v<Op::Invoke, OpType>)
 	{
-		_codeStrs[ln] = std::format("invoke {}{}(...)", ValKindChar(ERefKind::Reg), "l", ValKindChar(inst.dstKind), inst.dst);
+		_codeStrs[ln] = std::format("{}{} = invoke {}{}(...)", ValKindChar(inst.dstKind), inst.dst, ValKindChar(inst.dstKind), inst.dst);
 	}
 	else if constexpr (std::is_same_v<Op::Inc, OpType>)
 	{
@@ -140,11 +140,11 @@ void Bytecode::FillBytecode(int ln, const OpType& inst, int srcLine /* = -1 */)
 	}
 	else if constexpr (std::is_same_v<Op::NewMod, OpType>)
 	{
-		_codeStrs[ln] = std::format("newmod {}{}(...)", ValKindChar(ERefKind::Reg), "l", ValKindChar(inst.dstKind), inst.dst);
+		_codeStrs[ln] = std::format("{}{} = newmod {}{}(...)", ValKindChar(inst.dstKind), inst.dst, ValKindChar(inst.nameKind), inst.name);
 	}
 	else if constexpr (std::is_same_v<Op::NewCls, OpType>)
 	{
-		_codeStrs[ln] = std::format("newcls {}{}(...)", ValKindChar(ERefKind::Reg), "l", ValKindChar(inst.dstKind), inst.dst);
+		_codeStrs[ln] = std::format("{}{} = newcls {}{}(...)", ValKindChar(inst.dstKind), inst.dst, ValKindChar(inst.nameKind), inst.name);
 	}
 	else if constexpr (std::is_same_v<Op::LValueField, OpType>)
 	{

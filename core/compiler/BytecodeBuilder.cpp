@@ -3,6 +3,7 @@
 #include "NamespaceUtil.h"
 #include <stdexcept>
 #include <filesystem>
+#include <iostream>
 using namespace std;
 
 
@@ -539,18 +540,17 @@ bool BytecodeBuilder::BuildInvokeExp(Bytecode& retCtx, const TreeNode& stmt)
 	{
 		if(_prg._classTable.contains(ivkType.val))
 		{//TODO
-			Op::NewCls nc{ .numArgs = (uint8_t)(stmt.childs.size()-1), .dstKind = (uint8_t)ERefKind::Const, .dst = (uint16_t)constIdx,  };
+			Op::NewCls nc{ .numArgs = (uint16_t)(stmt.childs.size()-1), .nameKind = (uint8_t)ERefKind::Const, .dstKind = (uint8_t)ERefKind::Reg, .name = (uint16_t)constIdx, .dst = (uint16_t)_reg };
 			retCtx.PushBytecode(nc, stmt.self.line);
 		}
 		else if(_prg._moduleTable.contains(ivkType.val))
 		{//TODO
-			Op::NewMod nm{ .numArgs = (uint8_t)(stmt.childs.size()-1), .dstKind = (uint8_t)ERefKind::Const, .dst = (uint16_t)constIdx };
+			Op::NewMod nm{ .numArgs = (uint16_t)(stmt.childs.size()-1), .nameKind = (uint8_t)ERefKind::Const, .dstKind = (uint8_t)ERefKind::Reg, .name = (uint16_t)constIdx, .dst = (uint16_t)_reg };
 			retCtx.PushBytecode(nm, stmt.self.line);
 		}
 		else
-		{
-			Op::Invoke ivk{ .numArgs = (uint8_t)(stmt.childs.size()-1), .dstKind = (uint8_t)ERefKind::Const, .dst = (uint16_t)constIdx };
-			retCtx.PushBytecode(ivk, stmt.self.line);
+		{//TODO
+			return false;
 		}
 	}
 	else
@@ -560,7 +560,7 @@ bool BytecodeBuilder::BuildInvokeExp(Bytecode& retCtx, const TreeNode& stmt)
 			auto& fmap = _clsStack.top()->_funcMap;
 			uint16_t idx = (uint16_t)fmap[stmt.childs.front()->self.val];
 
-			Op::Invoke ivk{ .numArgs = (uint8_t)(stmt.childs.size()-1), .dstKind = (uint8_t)ERefKind::MemberFunc, .dst = idx };
+			Op::Invoke ivk{ .numArgs = (uint8_t)(stmt.childs.size()-1), .dstKind = (uint8_t)ERefKind::MemberFunc, .dst = (uint16_t)idx };
 			retCtx.PushBytecode(ivk, stmt.self.line);
 		}
 		else

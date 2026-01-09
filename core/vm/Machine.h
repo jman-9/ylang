@@ -46,6 +46,7 @@ protected:
 	std::stack<Variable*> _prgStack;
 	std::stack<const Bytecode*> _codeStack;
 	std::stack<Caller> _callStack;
+	std::stack<Variable> _tmpStack;
 	int _sp;
 	int _roff;
 	int _pc;
@@ -81,7 +82,7 @@ protected:
 	//inline bool InvokeClsFunc(const Variable& owner, const std::string& attrName);
 	//inline bool InvokeModFunc(const Variable& owner, const std::string& attrName);
 
-	inline bool CreateClassObj(const Class& cls, int numArgs);
+	inline bool CreateClassObj(Variable& prgObj, const Class& cls, int numArgs, Variable* retDst = nullptr);
 };
 
 }

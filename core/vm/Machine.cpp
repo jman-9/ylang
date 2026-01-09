@@ -436,7 +436,7 @@ bool Machine::Call(const Op::Call& cal)
 
 	if(cal.seg == 0)
 	{//TODO
-		GoSub(nullptr, nullptr, cal.pos);
+		GoSub(nullptr, &_prgStack.top()->prg()._mainCode, cal.pos);
 	}
 	else
 	{//TODO
@@ -728,9 +728,7 @@ bool Machine::Invoke(const Op::Invoke& ivk)
 			else
 				_roff = ivk.dst + 1;
 
-			_prgStack.push(&owner);
-			CreateClassObj(found->second, ivk.numArgs);
-			_prgStack.pop();
+			CreateClassObj(owner, found->second, ivk.numArgs);
 
 			auto vs = ResolveVar(ERefKind::Reg, ivk.dst + 1);
 			auto vt = ResolveVar(ERefKind::Reg, ivk.dst);
@@ -836,6 +834,8 @@ bool Machine::Invoke(const Op::Invoke& ivk)
 		}
 	}
 
+	string attrName = dst->attr().name;
+
 	auto ret = ResolveVar(ERefKind::Reg, ivk.dst);
 	ya.retBuff.tp = YEArg::YVar;
 	ya.retBuff.o = ret;
@@ -843,7 +843,7 @@ bool Machine::Invoke(const Op::Invoke& ivk)
 	auto yr = found->second.func(&ya);
 	if(yr.code)
 	{//TODO
-		INTERNALERR(format("'{}::{}()': module logic error", modDesc->name, dst->attr().name));
+		INTERNALERR(format("'{}::{}()': module logic error", modDesc->name, attrName));
 	}
 	if(modDesc->builtin)
 	{
@@ -940,22 +940,25 @@ bool Machine::NewMod(const Op::NewMod& nm)
 
 bool Machine::NewCls(const Op::NewCls& nc)
 {
-	Variable* dst = ResolveVar((ERefKind)nc.dstKind, nc.dst);
-	if(*dst != Variable::STR)
+	Variable* name = ResolveVar((ERefKind)nc.nameKind, nc.name);
+	if(*name != Variable::STR)
 	{//TODO
-		INTERNALERR(format("'{}': incorrect class name type", dst->TypeStr()));
+		INTERNALERR(format("'{}': incorrect class name type", name->TypeStr()));
 	}
 
 	const Program* prg = _prgStack.top()->prgObj()._prg;
 
-
-	auto found = prg->_classTable.find(dst->str());
+	auto found = prg->_classTable.find(name->str());
 	if(found == prg->_classTable.end())
 	{//TODO
-		INTERNALERR(format("'{}': class not found", dst->str()));
+		INTERNALERR(format("'{}': class not found", name->str()));
 	}
 
-	CreateClassObj(found->second, nc.numArgs);
+	//TODO workaround
+	int roffbk = _roff;
+	Variable* dst = ResolveVar((ERefKind)nc.dstKind, nc.dst);
+	_roff = roffbk;
+	CreateClassObj(*_prgStack.top(), found->second, nc.numArgs, dst);
 	return true;
 }
 
@@ -1092,10 +1095,11 @@ bool Machine::CallBuiltinFunc(const Op::Call& cal)
 }
 
 
-bool Machine::CreateClassObj(const Class& cls, int numArgs)
-{// TODO .. very fragile
-	Variable v;
-	v.SetClass(cls, true, _prgStack.top());
+bool Machine::CreateClassObj(Variable& prgObj, const Class& cls, int numArgs, Variable* retDst /* = nullptr */)
+{// TODO use variable pool
+	_tmpStack.push({});
+	Variable& v = _tmpStack.top();
+	v.SetClass(cls, true, &prgObj);
 
 	int roffbk = _roff;
 	_roff++;
@@ -1112,8 +1116,9 @@ bool Machine::CreateClassObj(const Class& cls, int numArgs)
 		GoSub(&v, &v.clsObj()._cls->_ctor, 1);
 	}
 
-	auto dst = ResolveVar(ERefKind::Reg, _roff);
+	auto dst = retDst ? retDst : ResolveVar(ERefKind::Reg, _roff);
 	dst->SetVar(v);
+	_tmpStack.pop();
 	return true;
 }
 
@@ -1136,11 +1141,12 @@ int64_t Machine::Continue(int start /* = -1 */)
 	}
 	catch(RuntimeError e)
 	{
+		auto t = this;
 		e._srcPath = _prgStack.top()->prgObj()._prg->_path;
 		cout << "\n" << e.ToStr() << "\n";
 
 		printf("=== Call Stack ===\n");
-		for(;!_callStack.empty();)
+		for(;_callStack.size() > 1;)
 		{
 			auto& c = _callStack.top();
 			printf("'%s'!... Line %d\n", c.prgPath.c_str(), c.line);
@@ -1159,6 +1165,7 @@ int64_t Machine::Continue(int start /* = -1 */)
 	while(_rpStack.size() > 1) _rpStack.pop();
 	while(_spStack.size() > 1) _spStack.pop();
 	while(!_callStack.empty()) _callStack.pop();
+	while(!_tmpStack.empty()) _tmpStack.pop();
 	_roff = 0;
 
 	if(_retCode == INT64_MAX) _retCode = 0;

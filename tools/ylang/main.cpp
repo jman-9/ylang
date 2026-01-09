@@ -28,5 +28,7 @@ int main(int argc, const char** argv)
 		}
 	}
 
+	//TODO workaround
+	g_Args.erase(g_Args.begin());
 	return y.RunFile(argv[1]) == false;
 }

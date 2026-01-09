@@ -467,7 +467,7 @@ TEST_CASE( "Primitive String Test", "[primstr]" )
 {
 	Result ret;
 
-	ret = Run( R"YT( a = 'hello'; if(a.len() != 5) exit(1); )YT" );
+	ret = Run( R"YT( a = 'hello'; if(a.size() != 5) exit(1); )YT" );
 	REQUIRE( ret.code == 0 );
 
 	ret = Run( R"YT( a = 'a b c d t'; if(a.find(' c d') != 3) exit(1); )YT" );
@@ -479,16 +479,16 @@ TEST_CASE( "Primitive String Test", "[primstr]" )
 	ret = Run( R"YT( a = 'hello world'; a = a.replace('world', 'ylang'); if(a != 'hello ylang') exit(1); )YT" );
 	REQUIRE( ret.code == 0 );
 
-	ret = Run( R"YT( a = 'a b c d t'; if(a.split().len() != 5) exit(1); )YT" );
+	ret = Run( R"YT( a = 'a b c d t'; if(a.split().size() != 5) exit(1); )YT" );
 	REQUIRE( ret.code == 0 );
 
-	ret = Run( R"YT( a = '\r \n \t \v 12345 7\t9 \r \n \t \v '; if(a.trim().len() != 9) exit(1); )YT" );
+	ret = Run( R"YT( a = '\r \n \t \v 12345 7\t9 \r \n \t \v '; if(a.trim().size() != 9) exit(1); )YT" );
 	REQUIRE( ret.code == 0 );
 
-	ret = Run( R"YT( a = '  \t  12345 7\t9 \t\n'; if(a.ltrim().len() != 12) exit(1); )YT" );
+	ret = Run( R"YT( a = '  \t  12345 7\t9 \t\n'; if(a.ltrim().size() != 12) exit(1); )YT" );
 	REQUIRE( ret.code == 0 );
 
-	ret = Run( R"YT( a = ' \v 12345 7\t9 \t\n\r\v '; if(a.rtrim().len() != 12) exit(1); )YT" );
+	ret = Run( R"YT( a = ' \v 12345 7\t9 \t\n\r\v '; if(a.rtrim().size() != 12) exit(1); )YT" );
 	REQUIRE( ret.code == 0 );
 
 	ret = Run( R"YT( delim = '::'; list = ['aa' , 'bb', 'cc', 'dd']; if(delim.join(list) != 'aa::bb::cc::dd') exit(1); )YT" );
@@ -572,8 +572,8 @@ TEST_CASE( "Builtin File Test", "[bltfile]" )
 		a.open("test-ab4Nxq.txt", "r");
 		r = a.read(100);
 		a.close();
-		println("{w} {w.len()}");
-		println("{r} {r.len()}");
+		println("{w} {w.size()}");
+		println("{r} {r.size()}");
 		if(r != w) exit(1);
 	)YT" );
 	REQUIRE( ret.code == 0 );
@@ -712,6 +712,11 @@ TEST_CASE( "Builtin FileSystem Test", "[bltfs]" )
 
 	ret = Run( format("path = '''{}'''; include fs; r = fs.abspath(path); if(r != '''{}''') exit(1);", testPath.string(), filesystem::absolute(testPath).string()) );
 	REQUIRE( ret.code == 0 );
+
+	ret = Run( R"YT( include fs; p = fs.readdir(fs.cwd()); println(p); )YT" );
+	REQUIRE( ret.code == 0 );
+	ret = Run( R"YT( include fs; p = fs.readdir(fs.cwd(), true); println(p); )YT" );
+	REQUIRE( ret.code == 0 );
 }
 
 TEST_CASE( "Class Test", "[class]" )
@@ -796,11 +801,11 @@ TEST_CASE( "Class Test", "[class]" )
 		class ParticleSystem {
 			_particles = [];
 
-			fn add(p) { _particles.append(p); return 123456789; }
-			fn updateAll(dt) { for(i=0; i<_particles.len(); i++) _particles[i].update(dt); }
+			fn add(p) { _particles.push_back(p); return 123456789; }
+			fn updateAll(dt) { for(i=0; i<_particles.size(); i++) _particles[i].update(dt); }
 			fn debug() {
 				println("=== ParticleSystem Debug ===");
-				for(i=0; i<_particles.len(); i++) _particles[i].debug();
+				for(i=0; i<_particles.size(); i++) _particles[i].debug();
 			}
 		}
 
@@ -943,23 +948,23 @@ int main(int argc, const char** argv)
 	Catch::ConfigData& cfg = _session.configData();
 
 	cfg.showSuccessfulTests = true;
-//   	cfg.testsOrTags.push_back("[scanner],");
+   	cfg.testsOrTags.push_back("[scanner],");
    	cfg.testsOrTags.push_back("[exp],");
-//   	cfg.testsOrTags.push_back("[forif],");
-//   	cfg.testsOrTags.push_back("[func],");
-//   	cfg.testsOrTags.push_back("[incdec],");
-//   	cfg.testsOrTags.push_back("[logop],");
-//   	cfg.testsOrTags.push_back("[primstr],");
-//   	cfg.testsOrTags.push_back("[bltmath],");
-//   	cfg.testsOrTags.push_back("[bltrand],");
-//   	cfg.testsOrTags.push_back("[bltsys],");
-//   	cfg.testsOrTags.push_back("[bltfile],");
-//   	cfg.testsOrTags.push_back("[bltjson],");
-//   	cfg.testsOrTags.push_back("[blttime],");
-//   	cfg.testsOrTags.push_back("[bltshell],");
-//  	cfg.testsOrTags.push_back("[bltfs],");
-//   	cfg.testsOrTags.push_back("[class],");
-//   	cfg.testsOrTags.push_back("[includes],");
+   	cfg.testsOrTags.push_back("[forif],");
+   	cfg.testsOrTags.push_back("[func],");
+   	cfg.testsOrTags.push_back("[incdec],");
+   	cfg.testsOrTags.push_back("[logop],");
+   	cfg.testsOrTags.push_back("[primstr],");
+   	cfg.testsOrTags.push_back("[bltmath],");
+   	cfg.testsOrTags.push_back("[bltrand],");
+   	cfg.testsOrTags.push_back("[bltsys],");
+   	cfg.testsOrTags.push_back("[bltfile],");
+   	cfg.testsOrTags.push_back("[bltjson],");
+   	cfg.testsOrTags.push_back("[blttime],");
+   	cfg.testsOrTags.push_back("[bltshell],");
+  	cfg.testsOrTags.push_back("[bltfs],");
+   	cfg.testsOrTags.push_back("[class],");
+   	cfg.testsOrTags.push_back("[includes],");
 
 	int numFailed = _session.run();
 };
