@@ -172,7 +172,7 @@ ErrorTable Compiler::CompileCodePriv(const string& src, Program& retProgram, con
 	sa.Analyze(*ast, paths);
 	if(!sa._errors.empty())
 	{
-		errTbl[ curMod ].insert(errTbl[ curMod ].end(), errs.begin(), errs.end());
+		errTbl[ curMod ].insert(errTbl[ curMod ].end(), sa._errors.begin(), sa._errors.end());
 		return errTbl;
 	}
 
