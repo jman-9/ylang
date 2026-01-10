@@ -1,5 +1,7 @@
 #pragma once
 #include "StrUtil.h"
+#include <algorithm>
+
 
 namespace StrUtil
 {
@@ -86,6 +88,19 @@ string Join(const vector<string>& v, const string& delim)
 		}
 	}
 	return j;
+}
+
+string ToUpper(const string& src)
+{
+	string s = src;
+	transform(s.begin(), s.end(), s.begin(), [](unsigned char c) { return static_cast<char>(toupper(c)); });
+	return s;
+}
+string ToLower(const string& src)
+{
+	string s = src;
+	transform(s.begin(), s.end(), s.begin(), [](unsigned char c) { return static_cast<char>(tolower(c)); });
+	return s;
 }
 
 }

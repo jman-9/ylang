@@ -12,6 +12,8 @@ namespace StrUtil
 	inline string LTrim(const string& src);
 	inline string RTrim(const string& src);
 	inline string Join(const vector<string>& v, const string& delim);
+	inline string ToUpper(const string& src);
+	inline string ToLower(const string& src);
 }
 
 #include "StrUtil.inl"

@@ -784,7 +784,7 @@ bool Machine::Invoke(const Op::Invoke& ivk)
 
 	if(ivk.numArgs < found->second.numPrms)
 	{//TODO qaz
-		throw RuntimeError::NotMatchedParams(owner._type, modDesc->name, dst->attr().name, found->second.numPrms, ivk.numArgs);
+		throw RuntimeError::NotMatchedNumParams(owner._type, modDesc->name, dst->attr().name, found->second.numPrms, ivk.numArgs);
 	}
 
 	YArgsAuto yaa;

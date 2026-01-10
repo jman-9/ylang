@@ -3,6 +3,7 @@
 #include "vm/Variable.h"
 #include "vm/RuntimeError.h"
 #include "module/ModuleUtil.h"
+#include "util/StrUtil.h"
 #include <string>
 
 
@@ -310,6 +311,29 @@ inline YRet EndsWith(YArgs* args)
 	return yr;
 }
 
+inline YRet ToUpper(YArgs* args)
+{
+	auto self = (Variable*)args->args[0].o;
+
+	auto rv = (Variable*)args->retBuff.o;
+	rv->SetStr(StrUtil::ToUpper(self->str()));
+
+	YRet yr;
+	yr.single.SetYVar(rv);
+	return yr;
+}
+inline YRet ToLower(YArgs* args)
+{
+	auto self = (Variable*)args->args[0].o;
+
+	auto rv = (Variable*)args->retBuff.o;
+	rv->SetStr(StrUtil::ToLower(self->str()));
+
+	YRet yr;
+	yr.single.SetYVar(rv);
+	return yr;
+}
+
 const ymod::ModuleDesc& GetModuleDesc()
 {
 	static ModuleDesc m;
@@ -329,6 +353,8 @@ const ymod::ModuleDesc& GetModuleDesc()
 		m.memberTbl[ "join" ] = { "join", ymod::ModuleMemberDesc::FUNC, true, 1, Join };
 		m.memberTbl[ "starts_with" ] = { "starts_with", ymod::ModuleMemberDesc::FUNC, true, 1, StartsWith };
 		m.memberTbl[ "ends_with" ] = { "ends_with", ymod::ModuleMemberDesc::FUNC, true, 1, EndsWith };
+		m.memberTbl[ "toupper" ] = { "toupper", ymod::ModuleMemberDesc::FUNC, true, 0, ToUpper };
+		m.memberTbl[ "tolower" ] = { "tolower", ymod::ModuleMemberDesc::FUNC, true, 0, ToLower };
 	}
 	return m;
 }

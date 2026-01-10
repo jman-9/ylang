@@ -38,7 +38,7 @@ struct RuntimeError
 		INCORRECT_PARAM,
 		DIVIDE_BY_ZERO,
 		NO_MEMBER,
-		NOT_MATCHED_PARAMS,
+		NOT_MATCHED_NUM_PARAMS,
 	};
 
 	Type _type;
@@ -65,7 +65,7 @@ struct RuntimeError
 	static RuntimeError IncorrectParam(Variable::Type input, Variable::Type param, int nTh);
 	static RuntimeError DivideByZero();
 	static RuntimeError NoMember(Variable::Type ownerType, std::string ownerName, std::string memberName);
-	static RuntimeError NotMatchedParams(Variable::Type ownerType, std::string ownerName, std::string memberName, int numPrms, int numArgs);
+	static RuntimeError NotMatchedNumParams(Variable::Type ownerType, std::string ownerName, std::string memberName, int numPrms, int numArgs);
 };
 
 }

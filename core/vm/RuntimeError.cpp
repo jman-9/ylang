@@ -108,7 +108,7 @@ yvm::RuntimeError RuntimeError::DivideByZero()
 RuntimeError RuntimeError::NoMember(Variable::Type ownerType, std::string ownerName, std::string memberName)
 {
 	RuntimeError e;
-	e._type = TYPE;
+	e._type = MEMBER;
 	e._code = NO_MEMBER;
 	if(ownerName.empty())
 	{
@@ -121,18 +121,23 @@ RuntimeError RuntimeError::NoMember(Variable::Type ownerType, std::string ownerN
 	return e;
 }
 
-RuntimeError RuntimeError::NotMatchedParams(Variable::Type ownerType, std::string ownerName, std::string memberName, int numPrms, int numArgs)
+RuntimeError RuntimeError::NotMatchedNumParams(Variable::Type ownerType, std::string ownerName, std::string memberName, int numPrms, int numArgs)
 {
 	RuntimeError e;
-	e._type = TYPE;
-	e._code = NOT_MATCHED_PARAMS;
-	/*TODO
-	e.what = format("'{}' type has no member '{}'", (int)e.ownerType, e.memberName);
+	e._type = MEMBER;
+	e._code = NOT_MATCHED_NUM_PARAMS;
+
+	if(ownerName.empty())
+		ownerName = Variable::TypeStr(ownerType);
+
+	if(numPrms > numArgs)
+	{
+		e._msg = format("too few arguments({}) to '{}::{}({})'", numArgs, ownerName, memberName, numPrms );
 	}
 	else
 	{
-		e.what = format("'{}' object has no member '{}'", e.ownerName, e.memberName);
-	}*/
+		e._msg = format("too many arguments({}) to '{}::{}({})'", numArgs, ownerName, memberName, numPrms );
+	}
 	return e;
 }
 
