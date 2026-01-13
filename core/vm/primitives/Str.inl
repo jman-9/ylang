@@ -338,15 +338,25 @@ inline YRet ToInt(YArgs* args)
 {
 	auto self = (Variable*)args->args[0].o;
 
-	auto rv = (Variable*)args->retBuff.o;
+	int base = 10;
+	if(args->numArgs >= 2)
+	{
+		MODARG_VAR(1, vbase, Variable::INT);
+		base = vbase.int_();
+	}
+
+	int64_t converted;
 	try
 	{
-		rv->SetInt(stoll(self->str()));
+		converted = stoll(self->str(), nullptr, base);
 	}
-	catch(...)
+	catch(const std::exception& ee)
 	{
-		rv->SetInt(0);
+		INTERNALERR(ee.what());
 	}
+
+	auto rv = (Variable*)args->retBuff.o;
+	rv->SetInt(converted);
 
 	YRet yr;
 	yr.single.SetYVar(rv);
