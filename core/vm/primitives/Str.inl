@@ -334,6 +334,25 @@ inline YRet ToLower(YArgs* args)
 	return yr;
 }
 
+inline YRet ToInt(YArgs* args)
+{
+	auto self = (Variable*)args->args[0].o;
+
+	auto rv = (Variable*)args->retBuff.o;
+	try
+	{
+		rv->SetInt(stoll(self->str()));
+	}
+	catch(...)
+	{
+		rv->SetInt(0);
+	}
+
+	YRet yr;
+	yr.single.SetYVar(rv);
+	return yr;
+}
+
 const ymod::ModuleDesc& GetModuleDesc()
 {
 	static ModuleDesc m;
@@ -355,6 +374,7 @@ const ymod::ModuleDesc& GetModuleDesc()
 		m.memberTbl[ "ends_with" ] = { "ends_with", ymod::ModuleMemberDesc::FUNC, true, 1, EndsWith };
 		m.memberTbl[ "toupper" ] = { "toupper", ymod::ModuleMemberDesc::FUNC, true, 0, ToUpper };
 		m.memberTbl[ "tolower" ] = { "tolower", ymod::ModuleMemberDesc::FUNC, true, 0, ToLower };
+		m.memberTbl[ "to_int" ] = { "to_int", ymod::ModuleMemberDesc::FUNC, true, 0, ToInt };
 	}
 	return m;
 }

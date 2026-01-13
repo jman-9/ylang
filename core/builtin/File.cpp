@@ -105,7 +105,7 @@ YRet ReadAll(YArgs* args)
 
 	auto rv = (Variable*)args->retBuff.o;
 	rv->SetStr("");
-	rv->str().resize(sz+1);
+	rv->str().resize(sz);
 	uintmax_t rsz = fread(rv->str().data(), 1, sz, fp);
 	bool eof = feof(fp);
 	fclose(fp);
@@ -114,7 +114,7 @@ YRet ReadAll(YArgs* args)
 	{//TODO
 		if(eof)
 		{
-			rv->str().resize(rsz+1);
+			rv->str().resize(rsz);
 		}
 		else
 		{
