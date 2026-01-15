@@ -83,9 +83,9 @@ yvm::RuntimeError RuntimeError::IncorrectParam(Variable::Type input, std::vector
 	for(auto t : paramTypes)
 	{
 		paramTypeStr += Variable::TypeStr(t);
-		paramTypeStr += ' or ';
+		paramTypeStr += " or ";
 	}
-	if(paramTypeStr.ends_with('or '))
+	if(paramTypeStr.ends_with("or "))
 		paramTypeStr.resize(paramTypeStr.size() - strlen(" or "));
 
 	e._msg = format("'{}': incorrect param {} (expected '{}')", Variable::TypeStr(input), nTh, paramTypeStr);

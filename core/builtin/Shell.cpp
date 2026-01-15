@@ -29,13 +29,13 @@ YRet Run(YArgs* args)
 	auto rv = (Variable*)args->retBuff.o;
 #ifdef WIN32
 	FILE* fp = _popen(cmd.str().data(), "rt");
+#else
+	FILE* fp = popen(cmd.str().data(), "r");
+#endif
 	if(!fp)
 	{
 		rv->SetNull();
 	}
-#else
-	FILE* fp = nullptr;
-#endif
 
 	string s;
 	char buf[128];
