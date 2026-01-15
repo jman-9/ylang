@@ -127,6 +127,32 @@ YRet ReadAll(YArgs* args)
 	return yr;
 }
 
+YRet WriteAll(YArgs* args)
+{
+	MODARG_VAR(0, path, Variable::STR);
+	MODARG_VAR(1, data, Variable::STR);
+
+	FILE* fp = fopen(path.str().c_str(), "w");
+	if(fp == nullptr)
+		return { errno, };
+
+	size_t wsz = 0;
+	if(data == Variable::STR)
+	{
+		wsz = fwrite(data.str().c_str(), 1, data.str().size(), fp);
+	}
+	else
+	{//TODO buffer
+	 //yet;
+		INTERNALERR(format("{} :not implemented", data.TypeStr()));
+	}
+	fclose(fp);
+
+	int code = 0;
+	if(wsz < data.str().size()) code = errno ? errno : 1;
+	return { code };
+}
+
 const ModuleDesc& GetModuleDesc()
 {
 	static ModuleDesc m;
@@ -138,8 +164,9 @@ const ModuleDesc& GetModuleDesc()
 		m.memberTbl["open"] = ModuleMemberDesc{ "open", ModuleMemberDesc::FUNC, false, 2, Open };
 		m.memberTbl["close"] = ModuleMemberDesc{ "close", ModuleMemberDesc::FUNC, true, 0, Close };
 		m.memberTbl["read"] = ModuleMemberDesc{ "read", ModuleMemberDesc::FUNC, true, 1, Read };
-		m.memberTbl["read_all"] = ModuleMemberDesc{ "read_all", ModuleMemberDesc::FUNC, false, 1, ReadAll };
 		m.memberTbl["write"] = ModuleMemberDesc{ "write", ModuleMemberDesc::FUNC, true, 1, Write };
+		m.memberTbl["read_all"] = ModuleMemberDesc{ "read_all", ModuleMemberDesc::FUNC, false, 1, ReadAll };
+		m.memberTbl["write_all"] = ModuleMemberDesc{ "write_all", ModuleMemberDesc::FUNC, false, 2, WriteAll };
 	}
 	return m;
 }
