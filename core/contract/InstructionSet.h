@@ -17,6 +17,7 @@ enum class EOpcode : uint16_t
 	ListAdd,
 	DictSet,
 	DictAdd,
+	BytesSet,
 	Index,
 	LValueIndex,
 	Invoke,
@@ -110,6 +111,14 @@ struct DictAdd
 	uint16_t key = 0;
 	uint16_t val = 0;
 	uint16_t rsvd2 = 0;
+};
+
+struct BytesSet
+{
+	uint8_t dstKind = (uint8_t)ERefKind::None;
+	uint8_t szKind = (uint8_t)ERefKind::None;
+	uint16_t dst = 0;
+	uint16_t sz = 0;
 };
 
 struct Index

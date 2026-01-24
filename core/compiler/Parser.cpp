@@ -139,7 +139,7 @@ static bool IsPrimary(const Token& tok)
 }
 static bool IsPrimaryPrefix(EToken tok)
 {
-	return IsPrimary(tok) || tok == EToken::LParen || tok == EToken::LBracket || tok == EToken::LBrace;
+	return IsPrimary(tok) || tok == EToken::LParen || tok == EToken::LBracket || tok == EToken::LBrace || tok == EToken::Less;
 }
 static bool IsPrimaryPrefix(const Token& tok)
 {
@@ -147,7 +147,7 @@ static bool IsPrimaryPrefix(const Token& tok)
 }
 static bool IsPrimaryPostfix(EToken tok)
 {
-	return IsPrimary(tok) || tok == EToken::RParen || tok == EToken::RBracket || tok == EToken::RBrace;
+	return IsPrimary(tok) || tok == EToken::RParen || tok == EToken::RBracket || tok == EToken::RBrace || tok == EToken::Greater;
 }
 static bool IsPrimaryPostfix(const Token& tok)
 {
@@ -312,6 +312,11 @@ TreeNodeSptr Parser::ParseExp(bool first)
 			if(!IsPrimaryPostfix(GetPrev()))
 				if(node = ParsePrimaryExp()) break;
 		}
+		else if(GetCur() == EToken::Less)
+		{
+			if(!IsPrimaryPostfix(GetPrev()))
+				if(node = ParsePrimaryExp()) break;
+		}
 		else
 		{
 			if(node = ParsePrimaryExp()) break;
@@ -457,7 +462,7 @@ TreeNodeSptr Parser::ParsePrimaryExp()
 			TreeNodeSptr child = ParseExpLoop(EToken::Comma, EToken::RBracket);
 			if(!child)
 			{
-				_errors.push_back(ErrorBuilder::SyntaxError(cur.line, ','));
+				_errors.push_back(ErrorBuilder::SyntaxError(cur.line, cur.val));
 				return nullptr;
 			}
 			node->PushBackChild(child);
@@ -489,7 +494,7 @@ TreeNodeSptr Parser::ParsePrimaryExp()
 			TreeNodeSptr child = ParseExpLoop(EToken::Colon);
 			if(!child)
 			{
-				_errors.push_back(ErrorBuilder::SyntaxError(cur.line, ':'));
+				_errors.push_back(ErrorBuilder::SyntaxError(cur.line, cur.val));
 				return nullptr;
 			}
 			node->PushBackChild(child);
@@ -498,7 +503,7 @@ TreeNodeSptr Parser::ParsePrimaryExp()
 			child = ParseExpLoop(EToken::Comma, EToken::RBrace);
 			if(!child)
 			{
-				_errors.push_back(ErrorBuilder::SyntaxError(cur.line, ','));
+				_errors.push_back(ErrorBuilder::SyntaxError(cur.line, cur.val));
 				return nullptr;
 			}
 			node->childs.back()->PushBackChild(child);
@@ -510,6 +515,34 @@ TreeNodeSptr Parser::ParsePrimaryExp()
 
 			MoveNext();
 		}
+		return node;
+	}
+	else if(cur == EToken::Less)
+	{
+		TreeNodeSptr node = NewNode();
+		node->self = cur;
+		node->self.kind = EToken::Bytes;
+		MoveNext();
+
+		if(GetCur() == EToken::Greater)
+		{//push
+			MoveNext();
+			return node;
+		}
+
+		TreeNodeSptr child = ParseExpLoop(EToken::Greater);
+		if(GetCur() != EToken::Greater)
+		{
+			_errors.push_back(ErrorBuilder::Expected(cur.line, string(Token::TokenString(EToken::Greater))));
+			return nullptr;
+		}
+		MoveNext();
+		if(!child)
+		{
+			_errors.push_back(ErrorBuilder::SyntaxError(cur.line, cur.val));
+			return nullptr;
+		}
+		node->PushBackChild(child);
 		return node;
 	}
 	else

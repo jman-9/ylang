@@ -76,6 +76,10 @@ void Instruction::Fill(const OpType& inst)
 	{
 		kind = (uint8_t)EOpcode::DictAdd;
 	}
+	else if constexpr (std::is_same_v<Op::BytesSet, OpType>)
+	{
+		kind = (uint8_t)EOpcode::BytesSet;
+	}
 	else if constexpr (std::is_same_v<Op::Index, OpType>)
 	{
 		kind = (uint8_t)EOpcode::Index;

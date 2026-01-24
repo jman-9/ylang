@@ -61,6 +61,7 @@ struct Variable
 		OBJ,
 		LIST,
 		DICT,
+		BYTES,
 		CLASSOBJ,
 		MODULEOBJ,
 		PROGRAMOBJ,
@@ -102,6 +103,8 @@ struct Variable
 	void SetAttr(Attribute& attr);
 	void SetList(const std::vector<Variable>& list = std::vector<Variable>());
 	void SetDict(const std::unordered_map<std::string, Variable>& dict = std::unordered_map<std::string, Variable>());
+	void SetBytes(size_t sz);
+	void SetBytes(const std::vector<uint8_t>& bytes = std::vector<uint8_t>());
 	void SetClass(const Class& cls, bool makeInstance, Variable* prgObj = nullptr);
 	void SetModule(const ymod::ModuleDesc& mod, bool makeInstance);
 	void SetProgram(const Program& prg, bool makeInstance);
@@ -142,6 +145,8 @@ struct Variable
 	std::vector<Variable>& list();
 	const std::unordered_map<std::string, Variable>& dict() const;
 	std::unordered_map<std::string, Variable>& dict();
+	const std::vector<uint8_t>& bytes() const;
+	std::vector<uint8_t>& bytes();
 	const ClassObject& clsObj() const;
 	ClassObject& clsObj();
 	const ModuleObject& modObj() const;
@@ -161,6 +166,7 @@ struct Variable
 
 		std::vector<Variable> _list;
 		std::unordered_map<std::string, Variable> _dict;
+		std::vector<uint8_t> _bytes;
 		ClassObject _clso;
 		ModuleObject _modo;
 		ProgramObject _prgo;

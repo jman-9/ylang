@@ -91,6 +91,7 @@ protected:
 	bool BuildInvokeExp(Bytecode& retCtx, const TreeNode& stmt);
 	bool BuildListExp(Bytecode& retCtx, const TreeNode& stmt);
 	bool BuildDictExp(Bytecode& retCtx, const TreeNode& stmt);
+	bool BuildBytesExp(Bytecode& retCtx, const TreeNode& stmt);
 	bool BuildIndexExp(Bytecode& retCtx, const TreeNode& stmt);
 	bool BuildLValueFieldExp(Bytecode& retCtx, const TreeNode& stmt);
 	bool BuildTernaryExp(Bytecode& retCtx, const TreeNode& stmt);

@@ -118,6 +118,12 @@ void Bytecode::FillBytecode(int ln, const OpType& inst, int srcLine /* = -1 */)
 	{
 		_codeStrs[ln] = std::format("dictadd {}{}, {}{}:{}{}", ValKindChar(inst.dstKind), inst.dst, ValKindChar(inst.keyKind), inst.key, ValKindChar(inst.valKind), inst.val);
 	}
+	else if constexpr (std::is_same_v<Op::BytesSet, OpType>)
+	{
+		_codeStrs[ln] = std::format("bytesset {}{}", ValKindChar(inst.dstKind), inst.dst);
+		if(inst.szKind != (uint8_t)ERefKind::None)
+			_codeStrs[ln] += std::format("({}{})", ValKindChar(inst.szKind), inst.sz);
+	}
 	else if constexpr (std::is_same_v<Op::Index, OpType>)
 	{
 		_codeStrs[ln] = std::format("index {}{}[{}{}]", ValKindChar(inst.dstKind), inst.dst, ValKindChar(inst.idxKind), inst.idx);

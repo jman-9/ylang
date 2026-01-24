@@ -17,7 +17,7 @@ AddExp   -> MulExp | AddExp ('+' | '-') MulExp
 MulExp   -> PrefixExp | MulExp ('*' | '/' | '%') PrefixExp
 PrefixExp -> ('!' | '~' | '+' | '--' | '++') PrefixExp | PostfixExp
 PostfixExp → PrimaryExp { '(' [Args] ')' | '[' Exp ']' | '.' Id | '++' | '--' }
-PrimaryExp -> '('Exp')' | Id | Literal | ListExp | DictExp
+PrimaryExp -> '('Exp')' | Id | Literal | ListExp | DictExp | BytesExp
 
 Code -> {Stmt}
 Stmt -> Exp ';' | CompoundStmt | IncludeStmt | IfStmt | ForStmt | FnStmt | ReturnStmt | KeyStmt ';'
@@ -38,3 +38,6 @@ DictElems -> Exp ':' Exp {',' Exp ':' Exp} [',']
 
 ClassField -> LValue AssignOp AssignExp ';'
 ClassStmt -> 'class' Id '{' {FnStmt | ClassField} '}'
+
+BytesExp -> '<' [Exp] '>'
+

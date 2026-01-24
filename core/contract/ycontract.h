@@ -40,6 +40,7 @@ enum class YEArg : uint32_t
 	Str,
 	List,
 	Dict,
+	Bytes,
 	Object,
 };
 
@@ -80,6 +81,12 @@ struct YDict
 	int sz = 0;
 	YArg* keys = nullptr;
 	YArg* vals = nullptr;
+};
+struct YBytes
+{//TODO qaz
+	/*int sz = 0;
+	YArg* keys = nullptr;
+	YArg* vals = nullptr;*/
 };
 
 struct YArgs

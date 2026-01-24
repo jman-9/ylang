@@ -67,6 +67,7 @@ protected:
 	inline bool ListAdd(const Op::ListAdd& la);
 	inline bool DictSet(const Op::DictSet& ds);
 	inline bool DictAdd(const Op::DictAdd& da);
+	inline bool BytesSet(const Op::BytesSet& bs);
 	inline bool Index(const Op::Index& li);
 	inline bool LValueIndex(const Op::LValueIndex& lli);
 	inline bool Invoke(const Op::Invoke& ivk);

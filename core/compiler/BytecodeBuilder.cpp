@@ -645,6 +645,30 @@ bool BytecodeBuilder::BuildDictExp(Bytecode& retCtx, const TreeNode& stmt)
 	return true;
 }
 
+bool BytecodeBuilder::BuildBytesExp(Bytecode& retCtx, const TreeNode& stmt)
+{
+	uint32_t regStack = _reg;
+
+	if(!stmt.childs.empty())
+	{
+		_reg++;
+		if(!BuildExp(retCtx, *stmt.childs[0], false))
+		{//TODO log
+			return false;
+		}
+	}
+	_reg = regStack;
+
+	Op::BytesSet bs{ .dstKind = (uint8_t)ERefKind::Reg, .dst = (uint16_t)_reg };
+	if(!stmt.childs.empty())
+	{
+		bs.szKind = (uint8_t)ERefKind::Reg;
+		bs.sz = (uint16_t)(_reg+1);
+	}
+	retCtx.PushBytecode(bs, stmt.self.line);
+	return true;
+}
+
 bool BytecodeBuilder::BuildIndexExp(Bytecode& retCtx, const TreeNode& stmt)
 {
 	uint32_t regStack = _reg;
@@ -774,6 +798,7 @@ bool BytecodeBuilder::BuildExp(Bytecode& retCtx, const TreeNode& stmt, bool root
 	case EToken::Invoke: return BuildInvokeExp(retCtx, stmt);
 	case EToken::List: return BuildListExp(retCtx, stmt);
 	case EToken::Dict: return BuildDictExp(retCtx, stmt);
+	case EToken::Bytes: return BuildBytesExp(retCtx, stmt);
 	case EToken::Index:
 	case EToken::LValueIndex: return BuildIndexExp(retCtx, stmt);
 	case EToken::LValueField: return BuildLValueFieldExp(retCtx, stmt);

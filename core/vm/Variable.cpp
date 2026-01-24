@@ -47,6 +47,7 @@ void Variable::Clear()
 	case OBJ:
 	case LIST:
 	case DICT:
+	case BYTES:
 	case CLASS:
 	case CLASSOBJ:
 	case MODULEOBJ:
@@ -129,17 +130,31 @@ void Variable::SetAttr(Attribute& attr)
 void Variable::SetList(const std::vector<Variable>& list /*= std::vector<Variable>()*/)
 {
 	ResetNewObj();
-	for(auto& e : list)
-		_u._o->_list.push_back(e);
+	if(!list.empty())
+		_u._o->_list = list;
 	_u._o->_type = LIST;
 	_type = LIST;
 }
 void Variable::SetDict(const std::unordered_map<std::string, Variable>& dict /*= std::unordered_map<std::string, Variable>()*/)
-{	ResetNewObj();
-	for(auto& e : dict)
-		_u._o->_dict.insert(e);
+{
+	ResetNewObj();
+	if(!dict.empty())
+		_u._o->_dict = dict;
 	_u._o->_type = DICT;
 	_type = DICT;
+}
+void Variable::SetBytes(size_t sz)
+{
+	vector<uint8_t> b(sz);
+	SetBytes(b);
+}
+void Variable::SetBytes(const std::vector<uint8_t>& bytes /*= std::vector<uint8_t>()*/)
+{
+	ResetNewObj();
+	if(!bytes.empty())
+		_u._o->_bytes = bytes;
+	_u._o->_type = BYTES;
+	_type = BYTES;
 }
 void Variable::SetClass(const Class& cls, bool makeInstance, Variable* prgObj /* = nullptr */)
 {
@@ -237,6 +252,7 @@ void Variable::SetVar(Variable& var)
 	case OBJ:
 	case LIST:
 	case DICT:
+	case BYTES:
 	case CLASSOBJ:
 	case MODULE:
 	case MODULEOBJ:
@@ -583,6 +599,7 @@ bool Variable::CalcUnaryAndAssign(EToken unaryOp, Variable& rhs)
 	case MODULE:
 	case LIST:
 	case DICT:
+	case BYTES:
 	case CLASSOBJ:
 	case MODULEOBJ:
 	case _TRUE_:
@@ -715,6 +732,8 @@ string Variable::ToStr() const
 			r += "}";
 			return r;
 		}
+	case BYTES:
+		return format("bytes({})", bytes().size());
 	case CLASSOBJ:
 		return "classobj: " + clsObj()._cls->name;
 	case MODULEOBJ:
@@ -753,6 +772,7 @@ bool Variable::IsNullOrFalse() const
 	case PROGRAM:	return !_u._prg || prg()._mainCode.empty(); //TODO
 	case LIST:		return list().empty();
 	case DICT:		return dict().empty();
+	case BYTES:		return bytes().empty();
 	case CLASSOBJ:	return !clsObj()._cls;
 	case MODULEOBJ:	return !modObj()._mod.modDesc;
 	case PROGRAMOBJ:	return !prgObj()._prg;
@@ -864,6 +884,16 @@ unordered_map<string, Variable>& Variable::dict()
 	if(_type != DICT) INTERNALERR(format("{}: incorrect type", TypeStr()));
 	return _u._o->_dict;
 }
+const std::vector<uint8_t>& Variable::bytes() const
+{
+	if(_type != BYTES) INTERNALERR(format("{}: incorrect type", TypeStr()));
+	return _u._o->_bytes;
+}
+vector<uint8_t>& Variable::bytes()
+{
+	if(_type != BYTES) INTERNALERR(format("{}: incorrect type", TypeStr()));
+	return _u._o->_bytes;
+}
 const ClassObject& Variable::clsObj() const
 {
 	if(_type != CLASSOBJ) INTERNALERR(format("{}: incorrect type", TypeStr()));
@@ -945,6 +975,22 @@ YArg Variable::ToContract() const
 		return yd;
 	};
 
+	//TODO qaz
+	/*auto ToBytes = [](const vector<uint8_t>& bytes) -> YDict*
+	{
+		YDict* yd = new YDict;
+		yd->sz = (int)dict.size();
+		yd->keys = new YArg[yd->sz];
+		yd->vals = new YArg[yd->sz];
+		auto it = dict.begin();
+		for(int i=0; i<yd->sz; i++, it++)
+		{
+			yd->keys[i] = { (void*)ToYStr(it->first), YEArg::Str };
+			yd->vals[i] = it->second.ToContract();
+		}
+		return yd;
+	};*/
+
 	switch(_type)
 	{
 	case INT: return { (void*)(intptr_t)int_(), YEArg::Int64 };
@@ -952,6 +998,7 @@ YArg Variable::ToContract() const
 	case STR: return { (void*)ToYStr(str()), YEArg::Str };
 	case LIST: return { (void*)ToList(list()), YEArg::List };
 	case DICT: return { (void*)ToDict(dict()), YEArg::Dict };
+	case BYTES: throw 'n'; //TODO qaz return { (void*)ToBytes(bytes()), YEArg::Bytes };
 	case MODULEOBJ: return { modObj()._o, YEArg::Object };
 	default:
 		INTERNALERR(format("{}: unsupported type", TypeStr()));
@@ -975,6 +1022,7 @@ string_view Variable::TypeStr(Type t)
 	case OBJ: return "object";
 	case LIST: return "list";
 	case DICT: return "dict";
+	case BYTES: return "bytes";
 	case CLASSOBJ: return "class_instance";
 	case MODULEOBJ: return "module_instance";
 	case PROGRAMOBJ: return "program_instance";

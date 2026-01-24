@@ -218,6 +218,7 @@ bool Machine::Exec(const Bytecode& code, int start /*= 0*/)
 			case EOpcode::ListAdd: ListAdd(*(Op::ListAdd*)inst.code.data()); break;
 			case EOpcode::DictSet: DictSet(*(Op::DictSet*)inst.code.data()); break;
 			case EOpcode::DictAdd: DictAdd(*(Op::DictAdd*)inst.code.data()); break;
+			case EOpcode::BytesSet: BytesSet(*(Op::BytesSet*)inst.code.data()); break;
 			case EOpcode::Index: Index(*(Op::Index*)inst.code.data()); break;
 			case EOpcode::LValueIndex: LValueIndex(*(Op::LValueIndex*)inst.code.data()); break;
 			case EOpcode::Invoke: Invoke(*(Op::Invoke*)inst.code.data()); break;
@@ -523,6 +524,25 @@ bool Machine::DictAdd(const Op::DictAdd& da)
 	}
 
 	dst->dict()[*key->_u._s].SetVar(*val);
+	return true;
+}
+
+bool Machine::BytesSet(const Op::BytesSet& bs)
+{
+	Variable* dst = ResolveVar((ERefKind)bs.dstKind, bs.dst);
+	Variable* sz = ResolveVar((ERefKind)bs.szKind, bs.sz);
+
+	uint64_t rsz = sz ? sz->int_() : 0;
+	if(*dst != Variable::LVREF)
+	{
+		dst->SetBytes(rsz);
+	}
+	else
+	{
+		auto t = &dst->lvref();
+		t->SetBytes(rsz);
+		dst->SetVar(*t);
+	}
 	return true;
 }
 
