@@ -2,6 +2,7 @@
 #include "List.h"
 #include "vm/Variable.h"
 #include "vm/RuntimeError.h"
+#include "module/ModuleUtil.h"
 
 
 namespace yvm::primitive::List
@@ -57,10 +58,15 @@ inline YRet Insert(YArgs* args)
 		INTERNALERR_NUMARGS(3, args->numArgs);
 
 	auto self = (Variable*)args->args[0].o;
-	auto i = (Variable*)args->args[1].o;
-	auto v =(Variable*)args->args[2].o;
+	MODARG_VAR(1, i, Variable::INT);
+	auto v = (Variable*)args->args[2].o;
 
-	self->list().insert(self->list().begin() + i->int_(), *v);
+	if(i.int_() < 0 || i.int_() >= self->bytes().size())
+	{//qaz TODO
+		throw RuntimeError::OutOfRange(self->_type, "bytes", i.int_(), self->bytes().size());
+	}
+
+	self->list().insert(self->list().begin() + i.int_(), *v);
 	return {};
 }
 
@@ -70,10 +76,15 @@ inline YRet Pop(YArgs* args)
 		INTERNALERR_NUMARGS(2, args->numArgs);
 
 	auto self = (Variable*)args->args[0].o;
-	auto i = (Variable*)args->args[1].o;
+	MODARG_VAR(1, idx, Variable::INT);
 
-	Variable popped = self->list()[i->int_()];
-	self->list().erase(self->list().begin() + i->int_());
+	if(idx.int_() < 0 || idx.int_() >= self->bytes().size())
+	{//qaz TODO
+		throw RuntimeError::OutOfRange(self->_type, "bytes", idx.int_(), self->bytes().size());
+	}
+
+	Variable popped = self->list()[idx.int_()];
+	self->list().erase(self->list().begin() + idx.int_());
 
 	auto v = (Variable*)args->retBuff.o;
 	v->SetVar(popped);
@@ -85,6 +96,11 @@ inline YRet Pop(YArgs* args)
 inline YRet PopFront(YArgs* args)
 {
 	auto self = (Variable*)args->args[0].o;
+
+	if(self->list().empty())
+	{//qaz TODO
+		throw RuntimeError::OutOfRange(self->_type, "list", 0, 0);
+	}
 
 	Variable popped = self->list().front();
 	self->list().erase(self->list().begin());
@@ -100,6 +116,11 @@ inline YRet PopBack(YArgs* args)
 {
 	auto self = (Variable*)args->args[0].o;
 
+	if(self->list().empty())
+	{//qaz TODO
+		throw RuntimeError::OutOfRange(self->_type, "list", 0, 0);
+	}
+
 	Variable popped = self->list().back();
 	self->list().pop_back();
 
@@ -114,6 +135,11 @@ inline YRet Front(YArgs* args)
 {
 	auto self = (Variable*)args->args[0].o;
 
+	if(self->list().empty())
+	{//qaz TODO
+		throw RuntimeError::OutOfRange(self->_type, "list", 0, 0);
+	}
+
 	auto v = (Variable*)args->retBuff.o;
 	v->SetVar(self->list().front());
 	YRet yr;
@@ -124,6 +150,11 @@ inline YRet Front(YArgs* args)
 inline YRet Back(YArgs* args)
 {
 	auto self = (Variable*)args->args[0].o;
+
+	if(self->list().empty())
+	{//qaz TODO
+		throw RuntimeError::OutOfRange(self->_type, "list", 0, 0);
+	}
 
 	auto v = (Variable*)args->retBuff.o;
 	v->SetVar(self->list().back());
