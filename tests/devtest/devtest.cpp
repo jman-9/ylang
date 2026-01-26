@@ -12,6 +12,9 @@ println(a);
 a = <502>;
 println(a);
 
+println(a[500]);
+println(a[503]);
+
 )TEST";
 const char* testcode2 = R"TEST(
 )TEST";

@@ -32,6 +32,7 @@ struct RuntimeError
 		INTERNAL,
 		NOT_FOUND,
 		OUT_OF_RANGE,
+		OUT_OF_RANGE_VALUE,
 		UNSUPPORTED_TYPE,
 		UNSUPPORTED_OPERAND,
 		UNSUPPORTED_OPERANDS,
@@ -58,6 +59,7 @@ struct RuntimeError
 	static RuntimeError Internal(std::string msg);
 	static RuntimeError NotFound(Variable::Type varType, std::string varName, std::string index);
 	static RuntimeError OutOfRange(Variable::Type varType, std::string varName, int index, int len);
+	static RuntimeError OutOfRangeValue(Variable::Type varType, std::string varName, int64_t value, int64_t min, int64_t max);
 	static RuntimeError UnsupportedType(Variable::Type varType, std::string varName, std::string index);
 	static RuntimeError UnsupportedOperand(EToken tokType, Variable::Type unaryType, std::string unaryName);
 	static RuntimeError UnsupportedOperands(EToken tokType, Variable::Type lhsType, std::string lhsName, Variable::Type rhsType, std::string rhsName);

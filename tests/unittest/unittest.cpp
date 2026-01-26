@@ -495,6 +495,133 @@ TEST_CASE( "Primitive String Test", "[primstr]" )
 	REQUIRE( ret.code == 0 );
 }
 
+TEST_CASE( "Primitive List Test", "[primlist]" )
+{
+	Result ret;
+
+	ret = Run( R"YT( a = []; if(!a.empty()) exit(1); )YT" );
+	REQUIRE( ret.code == 0 );
+
+	ret = Run( R"YT( a = []; a.back(); )YT" );
+	REQUIRE( ret.code != 0 );
+
+	ret = Run( R"YT( a = []; a.front(); )YT" );
+	REQUIRE( ret.code != 0 );
+
+	ret = Run( R"YT( a = []; a.pop(98); )YT" );
+	REQUIRE( ret.code != 0 );
+
+	ret = Run( R"YT( a = []; a.pop_back(); )YT" );
+	REQUIRE( ret.code != 0 );
+
+	ret = Run( R"YT( a = []; a.pop_front(); )YT" );
+	REQUIRE( ret.code != 0 );
+
+	ret = Run( R"YT( a = <>; a.insert(9, 9); )YT" );
+	REQUIRE( ret.code != 0 );
+
+	ret = Run( R"YT( a = [1]; exit(a.size()); )YT" );
+	REQUIRE( ret.code == 1 );
+
+	ret = Run( R"YT( a = [1]; t = a[4]; )YT" );
+	REQUIRE( ret.code != 0 );
+
+	ret = Run( R"YT( a = <3>; t = a[-9]; )YT" );
+	REQUIRE( ret.code != 0 );
+
+	ret = Run( R"YT( a = [0, 1, 2]; if(a[2] != 2) exit(1); )YT" );
+	REQUIRE( ret.code == 0 );
+
+	ret = Run( R"YT( a = [1, 2, 3]; exit(a[2]); )YT" );
+	REQUIRE( ret.code == 3 );
+}
+
+TEST_CASE( "Primitive Bytes Test", "[primbytes]" )
+{
+	Result ret;
+
+	ret = Run( R"YT( a = <>; if(!a.empty()) exit(1); )YT" );
+	REQUIRE( ret.code == 0 );
+
+	ret = Run( R"YT( a = <>; a.back(); )YT" );
+	REQUIRE( ret.code != 0 );
+
+	ret = Run( R"YT( a = <>; a.front(); )YT" );
+	REQUIRE( ret.code != 0 );
+
+	ret = Run( R"YT( a = <>; a.pop(98); )YT" );
+	REQUIRE( ret.code != 0 );
+
+	ret = Run( R"YT( a = <>; a.pop_back(); )YT" );
+	REQUIRE( ret.code != 0 );
+
+	ret = Run( R"YT( a = <>; a.pop_front(); )YT" );
+	REQUIRE( ret.code != 0 );
+
+	ret = Run( R"YT( a = <>; a.insert(9, 9); )YT" );
+	REQUIRE( ret.code != 0 );
+
+	ret = Run( R"YT( a = <5>; exit(a.size()); )YT" );
+	REQUIRE( ret.code == 5 );
+
+	ret = Run( R"YT( a = <3>; t = a[4]; )YT" );
+	REQUIRE( ret.code != 0 );
+
+	ret = Run( R"YT( a = <3>; t = a[-9]; )YT" );
+	REQUIRE( ret.code != 0 );
+
+	ret = Run( R"YT( a = <3>; if(a[2] != 0) exit(1); )YT" );
+	REQUIRE( ret.code == 0 );
+
+	ret = Run( R"YT( a = <3>; exit(a[2]); )YT" );
+	REQUIRE( ret.code == 0 );
+
+	ret = Run( R"YT( a = <98>; a.set(52, 10); exit(a[52]); )YT" );
+	REQUIRE( ret.code == 10 );
+
+	ret = Run( R"YT( a = <98>; a.set(52, 10); exit(a[52]); )YT" );
+	REQUIRE( ret.code == 10 );
+
+	ret = Run( R"YT(
+		a = <10>;
+		for(i=0; i<a.size(); i++)
+			a.set(i, i+1);
+
+		b = <>;
+		b.copy(a);
+		for(i=0; i<b.size(); i++)
+			if(a[i] != b[i]) exit(b[i]);
+
+		b = <>;
+		b.copy(a, 0, 5);
+		t = 0;
+		for(i=0; i<b.size(); i++)
+			t += b[i];
+		if(t != 1 + 2 + 3 + 4 + 5) exit(t);
+
+		b.copy(a, 0, 5, 5);
+		t = 0;
+		for(i=0; i<b.size(); i++)
+			t += b[i];
+		if(t != 1 + 2 + 3 + 4 + 5 + 1 + 2 + 3 + 4 + 5) exit(t);
+
+		if(b.front() != 1) exit(1);
+		if(b.back() != 5) exit(2);
+		if(b.pop_front() != 1) exit(3);
+		if(b.pop_front() != 2) exit(4);
+		if(b.pop_back() != 5) exit(5);
+		if(b.pop_back() != 4) exit(6);
+		if(b.pop(3) != 1) exit(7);
+		b.resize(100);
+		if(b.size() != 100) exit(8);
+		b.insert(0, 98);
+		b.push_back(10);
+		if(b[0] != 98) exit(9);
+		if(b[101] != 10) exit(10);
+	)YT" );
+	REQUIRE( ret.code == 0 );
+}
+
 TEST_CASE( "Builtin Math Test", "[bltmath]" )
 {
 	Result ret;
@@ -948,23 +1075,25 @@ int main(int argc, const char** argv)
 	Catch::ConfigData& cfg = _session.configData();
 
 	cfg.showSuccessfulTests = true;
-   	cfg.testsOrTags.push_back("[scanner],");
-   	cfg.testsOrTags.push_back("[exp],");
-   	cfg.testsOrTags.push_back("[forif],");
-   	cfg.testsOrTags.push_back("[func],");
-   	cfg.testsOrTags.push_back("[incdec],");
-   	cfg.testsOrTags.push_back("[logop],");
-   	cfg.testsOrTags.push_back("[primstr],");
-   	cfg.testsOrTags.push_back("[bltmath],");
-   	cfg.testsOrTags.push_back("[bltrand],");
-   	cfg.testsOrTags.push_back("[bltsys],");
-   	cfg.testsOrTags.push_back("[bltfile],");
-   	cfg.testsOrTags.push_back("[bltjson],");
-   	cfg.testsOrTags.push_back("[blttime],");
-   	cfg.testsOrTags.push_back("[bltshell],");
-  	cfg.testsOrTags.push_back("[bltfs],");
-   	cfg.testsOrTags.push_back("[class],");
-   	cfg.testsOrTags.push_back("[includes],");
+//    	cfg.testsOrTags.push_back("[scanner],");
+//    	cfg.testsOrTags.push_back("[exp],");
+//    	cfg.testsOrTags.push_back("[forif],");
+//    	cfg.testsOrTags.push_back("[func],");
+//    	cfg.testsOrTags.push_back("[incdec],");
+//    	cfg.testsOrTags.push_back("[logop],");
+//    	cfg.testsOrTags.push_back("[primstr],");
+	cfg.testsOrTags.push_back("[primlist],");
+	cfg.testsOrTags.push_back("[primbytes],");
+//    	cfg.testsOrTags.push_back("[bltmath],");
+//    	cfg.testsOrTags.push_back("[bltrand],");
+//    	cfg.testsOrTags.push_back("[bltsys],");
+//    	cfg.testsOrTags.push_back("[bltfile],");
+//    	cfg.testsOrTags.push_back("[bltjson],");
+//    	cfg.testsOrTags.push_back("[blttime],");
+//    	cfg.testsOrTags.push_back("[bltshell],");
+//   	cfg.testsOrTags.push_back("[bltfs],");
+//    	cfg.testsOrTags.push_back("[class],");
+//    	cfg.testsOrTags.push_back("[includes],");
 
 	int numFailed = _session.run();
 };

@@ -2,11 +2,12 @@
 #include "Str.h"
 #include "List.h"
 #include "Dict.h"
+#include "Bytes.h"
 
 namespace yvm::primitive
 {
 
-const ymod::ModuleDesc* GetModuleDesc(Variable::Type primType);
+inline const ymod::ModuleDesc* GetModuleDesc(Variable::Type primType);
 
 }
 

@@ -551,51 +551,60 @@ bool Machine::Index(const Op::Index& li)
 	Variable* idx = ResolveVar((ERefKind)li.idxKind, li.idx);
 	Variable* dst = ResolveVar((ERefKind)li.dstKind, li.dst);
 
-	if(*idx == Variable::INT)
+	switch(idx->_type)
 	{
-		if(*dst == Variable::STR)
+	case Variable::INT:
+		switch(dst->_type)
 		{
+		case Variable::STR:
 			if(idx->int_() < 0 || idx->int_() >= dst->str().size())
 			{//qaz TODO
 				throw RuntimeError::OutOfRange(dst->_type, "str", idx->int_(), dst->str().size());
 			}
 			dst->SetStr(string() + dst->str()[idx->int_()]);
-		}
-		else if(*dst == Variable::LIST)
-		{
+			break;
+
+		case Variable::LIST:
 			if(idx->int_() < 0 || idx->int_() >= dst->list().size())
 			{//qaz TODO
 				throw RuntimeError::OutOfRange(dst->_type, "list", idx->int_(), dst->list().size());
 			}
 			dst->SetVar(dst->list()[idx->int_()]);
-		}
-		else
-		{
+			break;
+
+		case Variable::BYTES:
+			if(idx->int_() < 0 || idx->int_() >= dst->bytes().size())
+			{//qaz TODO
+				throw RuntimeError::OutOfRange(dst->_type, "bytes", idx->int_(), dst->bytes().size());
+			}
+			dst->SetInt((int64_t)dst->bytes()[idx->int_()]);
+			break;
+
+		default:
 			throw RuntimeError::UnsupportedType(dst->_type, "", to_string(idx->int_()));
 			//TODO qaz
 		}
+		break;
 
-
-	}
-	else if(*idx == Variable::STR)
-	{
+	case Variable::STR:
 		if(*dst != Variable::DICT)
 		{
 			throw RuntimeError::UnsupportedType(dst->_type, "", idx->str());
 			//TODO qaz
 		}
-
-		auto found = dst->dict().find(idx->str());
-		if(found == dst->dict().end())
+		else
 		{
-			throw RuntimeError::NotFound(dst->_type, "dict", idx->str());
-			//TODO qaz
+			auto found = dst->dict().find(idx->str());
+			if(found == dst->dict().end())
+			{
+				throw RuntimeError::NotFound(dst->_type, "dict", idx->str());
+				//TODO qaz
+			}
+			dst->SetVar(found->second);
 		}
+		break;
 
-		dst->SetVar(found->second);
-	}
-	else
-	{
+	default:
 		throw RuntimeError::UnsupportedType(dst->_type, "", idx->ToStr());
 		//TODO qaz
 	}

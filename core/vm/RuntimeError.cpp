@@ -47,6 +47,15 @@ RuntimeError RuntimeError::OutOfRange(Variable::Type varType, std::string varNam
 	return e;
 }
 
+RuntimeError RuntimeError::OutOfRangeValue(Variable::Type varType, std::string varName, int64_t value, int64_t min, int64_t max)
+{
+	RuntimeError e;
+	e._type = TYPE;
+	e._code = OUT_OF_RANGE_VALUE;
+	e._msg = format("'{}': value out of range in '{}(type:{}, min/max:{}/{})'", value, varName, Variable::TypeStr(varType), min, max);
+	return e;
+}
+
 RuntimeError RuntimeError::UnsupportedType(Variable::Type varType, std::string varName, std::string index)
 {
 	RuntimeError e;
