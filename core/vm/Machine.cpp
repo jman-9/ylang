@@ -383,7 +383,6 @@ bool Machine::Assign(const Op::Assign& as)
 			{
 				INTERNALERR(format("no operand for '{}'", Token::TokenString(op)));
 			}
-
 		}
 		else if(Token::IsPrefixUnary(op))
 		{//no-op
@@ -618,27 +617,23 @@ bool Machine::LValueIndex(const Op::LValueIndex& lli)
 
 	if(*idx == Variable::INT)
 	{
-		Variable* lst = nullptr;
-		if(*dst == Variable::LVREF)
+		if((*dst == Variable::LVREF && dst->lvref() == Variable::LIST) || *dst == Variable::LIST)
 		{
-			if(dst->lvref() != Variable::LIST)
-			{//qaz todo
-				throw RuntimeError::UnsupportedType(dst->lvref()._type, "", to_string(idx->int_()));
-			}
-			lst = &dst->lvref();
+			auto lst = *dst == Variable::LVREF ? &dst->lvref() : dst;
+			auto& t = lst->list()[idx->int_()];
+			dst->SetVarLVRef(t);
 		}
-		else if(*dst == Variable::LIST)
+		else if((*dst == Variable::LVREF && dst->lvref() != Variable::BYTES) || *dst == Variable::BYTES)
 		{
-			lst = dst;
+			auto bytes = *dst == Variable::LVREF ? &dst->lvref() : dst;
+			auto& t = bytes->bytes()[idx->int_()];
+			dst->SetByteRef(t);
 		}
 		else
-		{
-			throw RuntimeError::UnsupportedType(dst->_type, "", to_string(idx->int_()));
-			//qaz TODO
+		{//qaz todo
+			auto tp = *dst == Variable::LVREF ? dst->lvref()._type : dst->_type;
+			throw RuntimeError::UnsupportedType(tp, "", to_string(idx->int_()));
 		}
-
-		auto& t = lst->list()[idx->int_()];
-		dst->SetVarLVRef(t);
 	}
 	else if(*idx == Variable::STR)
 	{

@@ -43,8 +43,8 @@ void Variable::Clear()
 		if(_u._attr) { delete _u._attr; _u._attr = nullptr; }
 		break;
 
-	case LVREF:
 	case OBJ:
+	case LVREF:
 	case LIST:
 	case DICT:
 	case BYTES:
@@ -126,6 +126,12 @@ void Variable::SetAttr(Variable& owner, string name)
 void Variable::SetAttr(Attribute& attr)
 {
 	SetAttr(attr.owner, attr.name);
+}
+void Variable::SetByteRef(uint8_t& ref)
+{
+	Clear();
+	_u._bref = &ref;
+	_type = BYTEREF;
 }
 void Variable::SetList(const std::vector<Variable>& list /*= std::vector<Variable>()*/)
 {
@@ -247,9 +253,10 @@ void Variable::SetVar(Variable& var)
 	case ATTR: SetAttr(var._u._attr->owner, var._u._attr->name); break;
 	case CLASS: SetClass(*var._u._cls, false); break;
 	case PROGRAM: SetProgram(*var._u._prg, false); break;
+	case BYTEREF: SetByteRef(*var._u._bref); break;
 
-	case LVREF:
 	case OBJ:
+	case LVREF:
 	case LIST:
 	case DICT:
 	case BYTES:
@@ -280,6 +287,21 @@ bool Variable::Assign(EToken op, Variable& rval)
 		}
 		Variable t = lv;
 		SetVar(t);
+		return true;
+	}
+
+	if(_type == BYTEREF)
+	{
+		if(rval != INT)
+			throw RuntimeError::UnsupportedOperands(op, _type, "", rval._type, "");
+		if(rval.int_() < 0 || rval.int_() > 255)
+			throw RuntimeError::OutOfRangeValue(_type, "bytes_value", rval.int_(), 0, 255);
+
+		Variable tmp;
+		tmp.SetInt(bref());
+		tmp.Assign(op, rval);
+		bref() = (uint8_t)tmp.int_();
+		SetVar(tmp);
 		return true;
 	}
 
@@ -386,6 +408,22 @@ bool Variable::CalcAndAssign(Variable& lhs, EToken calcOp, Variable& rhs)
 		}
 		Variable t = lv;
 		SetVar(t);
+		return true;
+	}
+
+	if(_type == BYTEREF)
+	{
+		if(lhs != INT || rhs != INT)
+			throw RuntimeError::UnsupportedOperands(calcOp, lhs._type, "", rhs._type, "");
+
+		Variable tmp;
+		tmp.SetInt(0);
+		tmp.CalcAndAssign(lhs, calcOp, rhs);
+		if(tmp.int_() < 0 || tmp.int_() > 255)
+			throw RuntimeError::OutOfRangeValue(_type, "bytes_value", tmp.int_(), 0, 255);
+
+		bref() = (uint8_t)tmp.int_();
+		SetVar(tmp);
 		return true;
 	}
 
@@ -566,6 +604,24 @@ bool Variable::CalcUnaryAndAssign(EToken unaryOp, Variable& rhs)
 		return true;
 	}
 
+	if(_type == BYTEREF)
+	{
+		Variable tmp;
+		tmp.SetInt(bref());
+		if(!tmp.CalcUnaryAndAssign(unaryOp, rhs))
+		{//TODO
+			return false;
+		}
+		if(tmp != INT)
+			throw RuntimeError::UnsupportedOperand(unaryOp, tmp._type, "");
+		if(tmp.int_() < 0 || tmp.int_() > 255)
+			throw RuntimeError::OutOfRangeValue(_type, "bytes_value", tmp.int_(), 0, 255);
+
+		bref() = (uint8_t)tmp.int_();
+		SetVar(tmp);
+		return true;
+	}
+
 	switch(rhs._type)
 	{
 	case INT:
@@ -593,10 +649,11 @@ bool Variable::CalcUnaryAndAssign(EToken unaryOp, Variable& rhs)
 		return true;
 
 	case STR:
-	case LVREF:
 	case ATTR:
 	case CLASS:
 	case MODULE:
+	case BYTEREF:
+	case LVREF:
 	case LIST:
 	case DICT:
 	case BYTES:
@@ -644,6 +701,20 @@ bool Variable::CalcIncDec(EToken op)
 		return true;
 	}
 
+	if(_type == BYTEREF)
+	{
+		Variable tmp;
+		tmp.SetInt(bref());
+		if(!tmp.CalcIncDec(op))
+		{//TODO
+			return false;
+		}
+
+		bref() = (uint8_t)tmp.int_();
+		SetVar(tmp);
+		return true;
+	}
+
 	switch(op)
 	{
 	case EToken::PreInc:
@@ -685,8 +756,6 @@ string Variable::ToStr() const
 		return to_string(float_());
 	case STR:
 		return str();
-	case LVREF:
-		return "ref: " + lvref().ToStr();
 	case ATTR:
 		return "attr: " + attr().name;
 	case CLASS:
@@ -695,9 +764,13 @@ string Variable::ToStr() const
 		return "module: " + mod().name;
 	case PROGRAM:
 		return "program: (WIP)";
+	case BYTEREF:
+		return "byte_ref";
 
 	case OBJ:
 		return "obj: (uninitialized)";
+	case LVREF:
+		return "ref: " + lvref().ToStr();
 	case LIST:
 		{
 			string r = "[";
@@ -765,11 +838,12 @@ bool Variable::IsNullOrFalse() const
 	case INT:		return !int_();
 	case FLOAT:		return !float_();
 	case STR:		return str().empty();
-	case LVREF:		return lvref().IsNullOrFalse();
 	case ATTR:		return attr().name.empty();
+	case BYTEREF:	return !bref();
 	case CLASS:		return !_u._cls || cls().name.empty();
 	case MODULE:	return mod().IsNull(); //TODO qaz !_u._mod ||
 	case PROGRAM:	return !_u._prg || prg()._mainCode.empty(); //TODO
+	case LVREF:		return lvref().IsNullOrFalse();
 	case LIST:		return list().empty();
 	case DICT:		return dict().empty();
 	case BYTES:		return bytes().empty();
@@ -815,16 +889,6 @@ std::string& Variable::str()
 	if(_type != STR) INTERNALERR(format("{}: incorrect type", TypeStr()));
 	return *_u._s;
 }
-const Variable& Variable::lvref() const
-{
-	if(_type != LVREF) INTERNALERR(format("{}: incorrect type", TypeStr()));
-	return *_u._o->_lvro._lvref;
-}
-Variable& Variable::lvref()
-{
-	if(_type != LVREF) INTERNALERR(format("{}: incorrect type", TypeStr()));
-	return *_u._o->_lvro._lvref;
-}
 const Attribute& Variable::attr() const
 {
 	if(_type != ATTR) INTERNALERR(format("{}: incorrect type", TypeStr()));
@@ -835,6 +899,18 @@ Attribute& Variable::attr()
 	if(_type != ATTR)
 		INTERNALERR(format("{}: incorrect type", TypeStr()));
 	return *_u._attr;
+}
+const uint8_t& Variable::bref() const
+{
+	if(_type != BYTEREF)
+		INTERNALERR(format("{}: incorrect type", TypeStr()));
+	return *_u._bref;
+}
+uint8_t& Variable::bref()
+{
+	if(_type != BYTEREF)
+		INTERNALERR(format("{}: incorrect type", TypeStr()));
+	return *_u._bref;
 }
 
 const Class& Variable::cls() const
@@ -864,6 +940,16 @@ const Program& Variable::prg() const
 		INTERNALERR(format("{}: incorrect type", TypeStr()));
 }
 
+const Variable& Variable::lvref() const
+{
+	if(_type != LVREF) INTERNALERR(format("{}: incorrect type", TypeStr()));
+	return *_u._o->_lvro._lvref;
+}
+Variable& Variable::lvref()
+{
+	if(_type != LVREF) INTERNALERR(format("{}: incorrect type", TypeStr()));
+	return *_u._o->_lvro._lvref;
+}
 const std::vector<Variable>& Variable::list() const
 {
 	if(_type != LIST) INTERNALERR(format("{}: incorrect type", TypeStr()));
@@ -1014,12 +1100,13 @@ string_view Variable::TypeStr(Type t)
 	case INT: return "int";
 	case FLOAT: return "float";
 	case STR: return "string";
-	case LVREF: return "lvalue_reference";
 	case ATTR: return "attribute";
 	case CLASS: return "class";
 	case MODULE: return "module";
 	case PROGRAM: return "program";
+	case BYTEREF: return "byte_reference";
 	case OBJ: return "object";
+	case LVREF: return "lvalue_reference";
 	case LIST: return "list";
 	case DICT: return "dict";
 	case BYTES: return "bytes";

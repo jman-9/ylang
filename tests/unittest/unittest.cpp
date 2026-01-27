@@ -579,8 +579,44 @@ TEST_CASE( "Primitive Bytes Test", "[primbytes]" )
 	ret = Run( R"YT( a = <98>; a.set(52, 10); exit(a[52]); )YT" );
 	REQUIRE( ret.code == 10 );
 
-	ret = Run( R"YT( a = <98>; a.set(52, 10); exit(a[52]); )YT" );
-	REQUIRE( ret.code == 10 );
+	ret = Run( R"YT( a = <98>; a.set(52, 256); )YT" );
+	REQUIRE( ret.code != 0 );
+	ret = Run( R"YT( a = <98>; a.set(52, -1); )YT" );
+	REQUIRE( ret.code != 0 );
+	ret = Run( R"YT( a = <98>; a[20] += 256; )YT" );
+	REQUIRE( ret.code != 0 );
+	ret = Run( R"YT( a = <98>; a[20] -= -9; )YT" );
+	REQUIRE( ret.code != 0 );
+	ret = Run( R"YT( a = <98>; a[20] = 1 + 255; )YT" );
+	REQUIRE( ret.code != 0 );
+	ret = Run( R"YT( a = <98>; a[20] = 0 - 1; )YT" );
+	REQUIRE( ret.code != 0 );
+
+	ret = Run( R"YT(
+		a = <9810>;
+		a[98] = 10;
+		a[20] = 52;
+		for(i=0; i<a.size(); i++)
+		{
+			if(a[i] == 10)
+				if(i != 98) exit(1);
+			if(a[i] == 52)
+				if(i != 20) exit(2);
+		}
+
+		a[10] = a[98] + a[20];
+		if(a[10] != 62) exit(3);
+		a[10] >>= 1;
+		if(a[10] != 31) exit(4);
+		a[10] <<= 2;
+		if(a[10] != 31 << 2) exit(5);
+		b = a[10] %= 255;
+		if(b != a[10]) exit(6);
+
+		a[9]++;
+		if(--a[9] != 0) exit(7);
+	)YT" );
+	REQUIRE( ret.code == 0 );
 
 	ret = Run( R"YT(
 		a = <10>;
@@ -1082,7 +1118,7 @@ int main(int argc, const char** argv)
 //    	cfg.testsOrTags.push_back("[incdec],");
 //    	cfg.testsOrTags.push_back("[logop],");
 //    	cfg.testsOrTags.push_back("[primstr],");
-	cfg.testsOrTags.push_back("[primlist],");
+	//cfg.testsOrTags.push_back("[primlist],");
 	cfg.testsOrTags.push_back("[primbytes],");
 //    	cfg.testsOrTags.push_back("[bltmath],");
 //    	cfg.testsOrTags.push_back("[bltrand],");

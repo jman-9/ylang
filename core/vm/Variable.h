@@ -52,13 +52,14 @@ struct Variable
 		INT,
 		FLOAT,
 		STR,
-		LVREF,
 		ATTR,
 		CLASS,
 		MODULE,
 		PROGRAM,
+		BYTEREF,
 
 		OBJ,
+		LVREF,
 		LIST,
 		DICT,
 		BYTES,
@@ -84,6 +85,7 @@ struct Variable
 		const Class* _cls;
 		const Program* _prg;
 		//ymod::ModuleDesc* _mod; //TODO to separate module and moduleobj
+		uint8_t* _bref;
 	} _u;
 
 
@@ -101,6 +103,7 @@ struct Variable
 	void SetVarLVRef(Variable& lvref);
 	void SetAttr(Variable& owner, std::string name);
 	void SetAttr(Attribute& attr);
+	void SetByteRef(uint8_t& ref);
 	void SetList(const std::vector<Variable>& list = std::vector<Variable>());
 	void SetDict(const std::unordered_map<std::string, Variable>& dict = std::unordered_map<std::string, Variable>());
 	void SetBytes(size_t sz);
@@ -134,13 +137,15 @@ struct Variable
 	double float_() const;
 	const std::string& str() const;
 	std::string& str();
-	Variable& lvref();
-	const Variable& lvref() const;
 	const Attribute& attr() const;
 	Attribute& attr();
+	const uint8_t& bref() const;
+	uint8_t& bref();
 	const Class& cls() const;
 	const ymod::ModuleDesc& mod() const;
 	const Program& prg() const;
+	Variable& lvref();
+	const Variable& lvref() const;
 	const std::vector<Variable>& list() const;
 	std::vector<Variable>& list();
 	const std::unordered_map<std::string, Variable>& dict() const;
