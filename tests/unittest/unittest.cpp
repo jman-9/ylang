@@ -654,6 +654,18 @@ TEST_CASE( "Primitive Bytes Test", "[primbytes]" )
 		b.push_back(10);
 		if(b[0] != 98) exit(9);
 		if(b[101] != 10) exit(10);
+
+		a = <3>; a[0] = 1; a[1] = 2; a[2] = 3;
+		b = <5>; b[0] = 5; b[1] = 4; b[2] = 3; b[3] = 2; b[4] = 1;
+		if(!a.cmp(b)) exit(11);
+		if(a.cmp(b) > 0) exit(12);
+		if(a.cmp(b, 2) > 0) exit(13);
+		if(a.cmp(b, 2, 3) < 0) exit(14);
+		if(a.cmp(b, 1, 4) < 0) exit(15);
+		if(a.cmp(b, 2, 1) > 0) exit(16);
+		if(a.cmp(b, 2, 2, 1)) exit(17);
+		if(a.cmp(b, 2, 2, 10)) exit(18);
+		if(!a.cmp(b, 0, 0, 100)) exit(19);
 	)YT" );
 	REQUIRE( ret.code == 0 );
 }
@@ -752,8 +764,7 @@ TEST_CASE( "Builtin File Test", "[bltfile]" )
 		a.close();
 		println("{buf} {buf.size()}");
 		println("{r} {r.size()}");
-		for(i=0; i<10; i++)
-			if(buf[i] != r[i]) exit(2);
+		if(buf.cmp(r)) exit(2);
 	)YT" );
 	REQUIRE( ret.code == 0 );
 
@@ -1135,11 +1146,11 @@ int main(int argc, const char** argv)
 //    	cfg.testsOrTags.push_back("[logop],");
 //    	cfg.testsOrTags.push_back("[primstr],");
 	//cfg.testsOrTags.push_back("[primlist],");
-//	cfg.testsOrTags.push_back("[primbytes],");
+	cfg.testsOrTags.push_back("[primbytes],");
 //    	cfg.testsOrTags.push_back("[bltmath],");
 //    	cfg.testsOrTags.push_back("[bltrand],");
 //    	cfg.testsOrTags.push_back("[bltsys],");
-    	cfg.testsOrTags.push_back("[bltfile],");
+//    	cfg.testsOrTags.push_back("[bltfile],");
 //    	cfg.testsOrTags.push_back("[bltjson],");
 //    	cfg.testsOrTags.push_back("[blttime],");
 //    	cfg.testsOrTags.push_back("[bltshell],");

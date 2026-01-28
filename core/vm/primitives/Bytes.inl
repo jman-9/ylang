@@ -258,6 +258,61 @@ inline YRet Copy(YArgs* args)
 	return {};
 }
 
+inline YRet Cmp(YArgs* args)
+{
+	auto& self = *(Variable*)args->args[0].o;
+	MODARG_VAR(1, cmp, Variable::BYTES);
+
+	int64_t selfStart = 0;
+	int64_t cmpStart = 0;
+	int64_t cmpSize = INTMAX_MAX;
+
+	if(args->numArgs > 2)
+	{
+		MODARG_VAR(2, vselfStart, Variable::INT);
+		selfStart = vselfStart.int_();
+
+		if(selfStart < 0 || selfStart >= self.bytes().size())
+		{//qaz TODO
+			throw RuntimeError::OutOfRange(self._type, "selfStart", 2, self.bytes().size());
+		}
+	}
+
+	if(args->numArgs > 3)
+	{
+		MODARG_VAR(3, vcmpStart, Variable::INT);
+		cmpStart = vcmpStart.int_();
+
+		if(cmpStart < 0 || cmpStart >= cmp.bytes().size())
+		{//qaz TODO
+			throw RuntimeError::OutOfRange(cmp._type, "cmpStart", 3, cmp.bytes().size());
+		}
+	}
+
+	if(args->numArgs > 4)
+	{
+		MODARG_VAR(4, vcmpSize, Variable::INT);
+		cmpSize = vcmpSize.int_();
+
+		if(cmpSize < 0)
+		{//qaz TODO
+			throw RuntimeError::OutOfRange(self._type, "cmpSize", 4, 0);
+		}
+	}
+
+	int64_t s1 = (int64_t)self.bytes().size() - selfStart;
+	int64_t s2 = (int64_t)cmp.bytes().size() - cmpStart;
+	cmpSize = min(min(s1, s2), cmpSize);
+
+	int result = memcmp(self.bytes().data() + selfStart, cmp.bytes().data() + cmpStart, cmpSize);
+
+	auto v = (Variable*)args->retBuff.o;
+	v->SetInt(result);
+	YRet yr;
+	yr.single.SetYVar(v);
+	return yr;
+}
+
 
 const ymod::ModuleDesc& GetModuleDesc()
 {
@@ -279,6 +334,7 @@ const ymod::ModuleDesc& GetModuleDesc()
 		m.memberTbl[ "get" ] = { "get", ymod::ModuleMemberDesc::FUNC, true, 1, Get };
 		m.memberTbl[ "set" ] = { "set", ymod::ModuleMemberDesc::FUNC, true, 2, Set };
 		m.memberTbl[ "copy" ] = { "copy", ymod::ModuleMemberDesc::FUNC, true, 1, Copy };
+		m.memberTbl[ "cmp" ] = { "cmp", ymod::ModuleMemberDesc::FUNC, true, 1, Cmp };
 	}
 	return m;
 }
