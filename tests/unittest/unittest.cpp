@@ -738,6 +738,22 @@ TEST_CASE( "Builtin File Test", "[bltfile]" )
 		println("{w} {w.size()}");
 		println("{r} {r.size()}");
 		if(r != w) exit(1);
+
+		buf = <10>;
+		for(i=0; i<10; i++)
+			buf[i] = i;
+
+		a = file.open("test-ab4Nxq.txt", "wb+");
+		a.write(buf);
+		a.close();
+
+		a.open("test-ab4Nxq.txt", "rb");
+		r = a.read(100);
+		a.close();
+		println("{buf} {buf.size()}");
+		println("{r} {r.size()}");
+		for(i=0; i<10; i++)
+			if(buf[i] != r[i]) exit(2);
 	)YT" );
 	REQUIRE( ret.code == 0 );
 
@@ -1119,11 +1135,11 @@ int main(int argc, const char** argv)
 //    	cfg.testsOrTags.push_back("[logop],");
 //    	cfg.testsOrTags.push_back("[primstr],");
 	//cfg.testsOrTags.push_back("[primlist],");
-	cfg.testsOrTags.push_back("[primbytes],");
+//	cfg.testsOrTags.push_back("[primbytes],");
 //    	cfg.testsOrTags.push_back("[bltmath],");
 //    	cfg.testsOrTags.push_back("[bltrand],");
 //    	cfg.testsOrTags.push_back("[bltsys],");
-//    	cfg.testsOrTags.push_back("[bltfile],");
+    	cfg.testsOrTags.push_back("[bltfile],");
 //    	cfg.testsOrTags.push_back("[bltjson],");
 //    	cfg.testsOrTags.push_back("[blttime],");
 //    	cfg.testsOrTags.push_back("[bltshell],");

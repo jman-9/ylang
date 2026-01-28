@@ -29,6 +29,14 @@ RuntimeError RuntimeError::Internal(std::string msg)
 	return e;
 }
 
+RuntimeError RuntimeError::Error(std::string msg)
+{
+	RuntimeError e;
+	e._type = CLASS_NONE;
+	e._msg = msg;
+	return e;
+}
+
 RuntimeError RuntimeError::NotFound(Variable::Type varType, std::string varName, std::string index)
 {
 	RuntimeError e;
@@ -152,7 +160,7 @@ RuntimeError RuntimeError::NotMatchedNumParams(Variable::Type ownerType, std::st
 
 string RuntimeError::ToStr() const
 {
-	string stp = "UnknownError";
+	string stp = "Error";
 	switch(_type)
 	{
 	case CLASS_NONE: break;

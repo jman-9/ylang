@@ -29,6 +29,7 @@ struct RuntimeError
 	enum Code
 	{
 		CODE_NONE,
+		ERROR,
 		INTERNAL,
 		NOT_FOUND,
 		OUT_OF_RANGE,
@@ -57,6 +58,7 @@ struct RuntimeError
 	std::string ToStr() const;
 
 	static RuntimeError Internal(std::string msg);
+	static RuntimeError Error(std::string msg);
 	static RuntimeError NotFound(Variable::Type varType, std::string varName, std::string index);
 	static RuntimeError OutOfRange(Variable::Type varType, std::string varName, int index, int len);
 	static RuntimeError OutOfRangeValue(Variable::Type varType, std::string varName, int64_t value, int64_t min, int64_t max);
