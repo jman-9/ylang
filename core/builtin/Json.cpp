@@ -105,6 +105,8 @@ YRet Parse(YArgs* args)
 				{
 					newV->SetBool(v);
 				}
+				else if(v.is_null())
+					newV->SetNull();
 				else
 					newV->SetStr(v);
 
