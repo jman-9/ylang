@@ -61,9 +61,9 @@ inline YRet Insert(YArgs* args)
 	MODARG_VAR(1, i, Variable::INT);
 	auto v = (Variable*)args->args[2].o;
 
-	if(i.int_() < 0 || i.int_() >= self->bytes().size())
+	if(i.int_() < 0 || i.int_() >= self->list().size())
 	{//qaz TODO
-		throw RuntimeError::OutOfRange(self->_type, "bytes", i.int_(), self->bytes().size());
+		throw RuntimeError::OutOfRange(self->_type, "list", i.int_(), self->list().size());
 	}
 
 	self->list().insert(self->list().begin() + i.int_(), *v);
@@ -78,9 +78,9 @@ inline YRet Pop(YArgs* args)
 	auto self = (Variable*)args->args[0].o;
 	MODARG_VAR(1, idx, Variable::INT);
 
-	if(idx.int_() < 0 || idx.int_() >= self->bytes().size())
+	if(idx.int_() < 0 || idx.int_() >= self->list().size())
 	{//qaz TODO
-		throw RuntimeError::OutOfRange(self->_type, "bytes", idx.int_(), self->bytes().size());
+		throw RuntimeError::OutOfRange(self->_type, "list", idx.int_(), self->list().size());
 	}
 
 	Variable popped = self->list()[idx.int_()];
