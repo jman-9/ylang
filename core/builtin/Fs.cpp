@@ -104,6 +104,34 @@ YRet ReadDir(YArgs* args)
 	return yr;
 }
 
+YRet MkDirs(YArgs* args)
+{
+	MODARG_VAR(0, path, Variable::STR);
+
+	error_code ec;
+	auto rv = (Variable*)args->retBuff.o;
+	rv->SetBool(filesystem::create_directories(path.str(), ec));
+	YRet yr;
+	if(ec.value())
+		yr.code = ec.value();
+	yr.single.SetYVar(rv);
+	return yr;
+}
+
+YRet Remove(YArgs* args)
+{
+	MODARG_VAR(0, path, Variable::STR);
+
+	error_code ec;
+	auto rv = (Variable*)args->retBuff.o;
+	rv->SetBool(filesystem::remove(path.str(), ec));
+	YRet yr;
+	if(ec.value())
+		yr.code = ec.value();
+	yr.single.SetYVar(rv);
+	return yr;
+}
+
 
 Module Init()
 {//TODO memory leak
@@ -125,8 +153,10 @@ const ModuleDesc& GetModuleDesc()
 		m.builtin = true;
 		m.memberTbl[ "exists" ] = { "exists", ymod::ModuleMemberDesc::FUNC, false, 1, Exists };
 		m.memberTbl[ "cwd" ] = { "cwd", ymod::ModuleMemberDesc::FUNC, false, 0, Cwd };
-		m.memberTbl[ "abspath" ] = { "abs", ymod::ModuleMemberDesc::FUNC, false, 1, AbsPath };
-		m.memberTbl[ "readdir" ] = { "abs", ymod::ModuleMemberDesc::FUNC, false, 1, ReadDir };
+		m.memberTbl[ "abspath" ] = { "abspath", ymod::ModuleMemberDesc::FUNC, false, 1, AbsPath };
+		m.memberTbl[ "readdir" ] = { "readdir", ymod::ModuleMemberDesc::FUNC, false, 1, ReadDir };
+		m.memberTbl[ "mkdirs" ] = { "mkdirs", ymod::ModuleMemberDesc::FUNC, false, 1, MkDirs };
+		m.memberTbl[ "remove" ] = { "remove", ymod::ModuleMemberDesc::FUNC, false, 1, Remove };
 	}
 	return m;
 }
