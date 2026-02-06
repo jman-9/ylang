@@ -15,7 +15,7 @@ int main(int argc, const char** argv)
 	//auto errs = cmplr.CompileFile("../../examples/rpg_sim.y", prg);
 	//auto errs = cmplr.CompileFile("../../examples/langton_ant.y", prg);
 	//auto errs = cmplr.CompileFile("../../examples/city_sim.y", prg);
-	auto errs = cmplr.CompileFile("../../examples/grand_strategy/main.y", prg);
+	//auto errs = cmplr.CompileFile("../../examples/grand_strategy/main.y", prg);
 	//auto errs = cmplr.CompileFile("ys/app.y", prg);
 	//auto errs = cmplr.CompileFile("ys/ss.y", prg);
 //	auto errs = cmplr.CompileFile("ys/cst.y", prg);
@@ -23,6 +23,8 @@ int main(int argc, const char** argv)
 	//auto errs = cmplr.CompileFile("ys/ai_dungeon_fixed/main.y", prg);
 	//auto errs = cmplr.CompileFile("ys/vm_runtime_game_ops_extra/main.y", prg);
 	//auto errs = cmplr.CompileFile("ys/project_line_counter.y", prg);
+	auto errs = cmplr.CompileFile("ys/app2.y", prg);
+
 
 	if(!errs.empty())
 		return 1;

@@ -7,13 +7,17 @@ using namespace std;
 
 const char* testcode1 =
 R"TEST(
-a = <>;
-println(a);
-a = <502>;
+
+fn test()
+{
+	return 10;
+}
+
+a = test;
+
 println(a);
 
-println(a[500]);
-println(a[503]);
+
 
 )TEST";
 const char* testcode2 = R"TEST(

@@ -565,13 +565,27 @@ bool BytecodeBuilder::BuildInvokeExp(Bytecode& retCtx, const TreeNode& stmt)
 		}
 		else
 		{
-			Op::Call cal;
-			cal.numPrms = (uint8_t)(stmt.childs.size()-1);
-			cal.dstKind = (uint8_t)ERefKind::Reg;
-			cal.dst = _reg;
-			cal.seg = 0;
-			cal.pos = (uint32_t)_scopeMgr.GetSymbol(stmt.childs[0]->self.val).pos;
-			retCtx.PushBytecode(cal, stmt.self.line);
+			auto sym = _scopeMgr.GetSymbol(stmt.childs[0]->self.val);
+			if(sym == ESymbol::Fn)
+			{
+				Op::Call cal;
+				cal.numPrms = (uint8_t)(stmt.childs.size()-1);
+				cal.dstKind = (uint8_t)ERefKind::Reg;
+				cal.dst = _reg;
+				cal.seg = 0;
+				cal.pos = (uint32_t)sym.pos;
+				retCtx.PushBytecode(cal, stmt.self.line);
+			}
+			else
+			{//TODO optimize
+				auto idx = _scopeMgr.GetIdx(stmt.childs[0]->self.val);
+
+				Op::Assign as{ .dstKind = (uint8_t)ERefKind::Reg, .src1Kind = TO_REF_KIND_U8(idx.kind), .dst = (uint16_t)_reg, .src1 = (uint16_t)idx.idx };
+				retCtx.PushBytecode(as, stmt.self.line);
+
+				Op::Invoke ivk{ .numArgs = (uint8_t)(stmt.childs.size()-1), .dstKind = (uint8_t)ERefKind::Reg, .dst = (uint16_t)_reg };
+				retCtx.PushBytecode(ivk, stmt.self.line);
+			}
 		}
 	}
 	return true;
