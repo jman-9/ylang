@@ -41,6 +41,16 @@ private:
 	friend struct Variable;
 	std::vector<Variable> _owner;
 };
+struct ClosureObject
+{
+	std::vector<Variable> _captures;
+	const Closure* _clsr;
+	Variable* _prgObj;
+
+private:
+	friend struct Variable;
+	std::vector<Variable> _prgObjP;
+};
 
 
 struct Variable
@@ -57,6 +67,7 @@ struct Variable
 		MODULE,
 		PROGRAM,
 		BYTEREF,
+		CLOSURE,
 
 		OBJ,
 		LVREF,
@@ -66,6 +77,7 @@ struct Variable
 		CLASSOBJ,
 		MODULEOBJ,
 		PROGRAMOBJ,
+		CLOSUREOBJ,
 
 		_NULL_,
 		_TRUE_,
@@ -86,6 +98,7 @@ struct Variable
 		const Program* _prg;
 		//ymod::ModuleDesc* _mod; //TODO to separate module and moduleobj
 		uint8_t* _bref;
+		Closure* _clsr;
 	} _u;
 
 
@@ -111,6 +124,7 @@ struct Variable
 	void SetClass(const Class& cls, bool makeInstance, Variable* prgObj = nullptr);
 	void SetModule(const ymod::ModuleDesc& mod, bool makeInstance);
 	void SetProgram(const Program& prg, bool makeInstance);
+	void SetClosure(const Closure& closure, bool makeInstance, Variable* prgObj = nullptr);
 	void SetNull();
 	void SetTrue();
 	void SetFalse();
@@ -144,6 +158,7 @@ struct Variable
 	const Class& cls() const;
 	const ymod::ModuleDesc& mod() const;
 	const Program& prg() const;
+	const Closure& clsr() const;
 	Variable& lvref();
 	const Variable& lvref() const;
 	const std::vector<Variable>& list() const;
@@ -158,6 +173,8 @@ struct Variable
 	ModuleObject& modObj();
 	const ProgramObject& prgObj() const;
 	ProgramObject& prgObj();
+	const ClosureObject& clsrObj() const;
+	ClosureObject& clsrObj();
 
 	void SetValueFromContract(YArg o);
 	YArg ToContract() const;
@@ -176,6 +193,7 @@ struct Variable
 		ModuleObject _modo;
 		ProgramObject _prgo;
 		LVRefObject _lvro;
+		ClosureObject _clsro;
 
 		Object();
 		~Object();

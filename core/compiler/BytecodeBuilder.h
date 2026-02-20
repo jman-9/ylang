@@ -20,19 +20,40 @@ class ConstTable
 	int AddOrNot(const Token& tok);
 	int GetIdx(const Token& tok) const;
 
-	struct TokenHash {
-		std::size_t operator()(const Token& t) const noexcept {
-			return std::hash<std::string>()(t.val) ^ (static_cast<std::size_t>(t.kind) << 1);
+	int AddOrNot(const Constant& con);
+	int GetIdx(const Constant& con) const;
+
+	Constant TokenToConstant(const Token& tok) const;
+
+	struct ConstHash {
+		std::size_t operator()(const Constant& c) const {
+			std::string val;
+			switch(c._type) {
+			case Constant::INT: val = std::to_string(c._int); break;
+			case Constant::FLOAT: val = std::to_string(c._float); break;
+			case Constant::STR: val = c._str; break;
+			case Constant::CLOSURE: val = c._closure._uniqueName; break;
+			default: throw std::logic_error("not implemented");
+			}
+			return std::hash<std::string>()(val) ^ (static_cast<std::size_t>(c._type) << 1);
 		}
 	};
 
-	struct TokenEqual {
-		bool operator()(const Token& a, const Token& b) const noexcept {
-			return a.kind == b.kind && a.val == b.val;
+	struct ConstEqual {
+		bool operator()(const Constant& a, const Constant& b) const {
+			if(a._type != b._type) return false;
+
+			switch(a._type) {
+			case Constant::INT: return a._int == b._int;
+			case Constant::FLOAT: return a._float == b._float;
+			case Constant::STR: return a._str == b._str;
+			case Constant::CLOSURE: return a._closure._uniqueName == b._closure._uniqueName;
+			default: throw std::logic_error("not implemented");
+			}
 		}
 	};
 
-	std::unordered_map<Token, uint16_t, TokenHash, TokenEqual> _constMap;
+	std::unordered_map<Constant, uint16_t, ConstHash, ConstEqual> _constMap;
 };
 
 
@@ -81,7 +102,6 @@ protected:
 	bool BuildInclude(Bytecode& retCtx, const TreeNode& stmt);
 	bool BuildFor(Bytecode& retCtx, const TreeNode& stmt);
 	bool BuildIf(Bytecode& retCtx, const TreeNode& stmt);
-	bool BuildFn(Bytecode& retCtx, const TreeNode& stmt);
 	bool BuildCompound(Bytecode& retCtx, const TreeNode& stmt);
 	bool BuildReturn(Bytecode& retCtx, const TreeNode& stmt);
 	bool BuildContinue(Bytecode& retCtx, const TreeNode& stmt);
@@ -96,6 +116,12 @@ protected:
 	bool BuildLValueFieldExp(Bytecode& retCtx, const TreeNode& stmt);
 	bool BuildTernaryExp(Bytecode& retCtx, const TreeNode& stmt);
 	bool BuildExp(Bytecode& retCtx, const TreeNode& stmt, bool root);
+
+	bool BuildFnReal(Bytecode& retCtx, const TreeNode& stmt);
+	bool BuildClosure(Bytecode& retCtx, const TreeNode& stmt);
+	bool BuildFn(Bytecode& retCtx, const TreeNode& stmt);
+
+	void DetectCaptures(std::vector<ScopeManager::SymbolData>& retCaptures, const TreeNode& stmt) const;
 };
 
 }

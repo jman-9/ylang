@@ -1,4 +1,5 @@
 #include "ScopeManager.h"
+#include <stdexcept>
 using namespace std;
 
 namespace ycom
@@ -6,57 +7,54 @@ namespace ycom
 
 ScopeManager::ScopeManager()
 {
-	_localIdxOffset = 0;
-	AddGlobalScope();
+	_scopeTbl.push_back({});
+	_scopeTbl.back().type = SCOPE_GLOBAL;
 }
 ScopeManager::~ScopeManager()
 {
 }
 
-void ScopeManager::AddGlobalScope()
-{
-	Scope scope;
-	scope.startLocalIdx = 0;
-	scope.type = SCOPE_GLOBAL;
-	_scopeTbl.push_back(scope);
-}
 void ScopeManager::AddLocalScope()
 {
-	int start = 0;
-	if(!_scopeTbl.empty() && _scopeTbl.back().type == SCOPE_LOCAL)
-	{
-		start = _scopeTbl.back().startLocalIdx + _localIdxOffset;
-	}
-
-	Scope scope;
-	scope.startLocalIdx = start;
-	scope.type = SCOPE_LOCAL;
-	_scopeTbl.push_back(scope);
-	_localIdxOffset = 0;
+	_scopeTbl.back()._localScopes.push_back({});
 }
 void ScopeManager::AddClassScope()
 {
-	Scope scope;
-	scope.startLocalIdx = 0;
-	scope.type = SCOPE_CLASS;
-	_scopeTbl.push_back(scope);
-	_localIdxOffset = 0;
+	_scopeTbl.push_back({});
+	_scopeTbl.back().type = SCOPE_CLASS;
+}
+void ScopeManager::AddClosureScope()
+{
+	_scopeTbl.push_back({});
+	_scopeTbl.back().type = SCOPE_CLOSURE;
 }
 void ScopeManager::PopScope()
 {
+	if(!_scopeTbl.back()._localScopes.empty())
+	{
+		_scopeTbl.back()._localScopes.pop_back();
+		return;
+	}
+
+	if(_scopeTbl.size() == 1)
+		throw logic_error("unable to pop global scope");
+
 	_scopeTbl.pop_back();
-	_localIdxOffset = _scopeTbl.back().symTbl.size();
 }
 
 ScopeManager::ScopeType ScopeManager::GetCurScope() const
 {
+	if(!_scopeTbl.back()._localScopes.empty())
+		return SCOPE_LOCAL;
 	return _scopeTbl.back().type;
 }
 bool ScopeManager::IsUnderClassScope() const
 {
-	for(int i=(int)_scopeTbl.size()-1; i>=0; i--)
-		if(_scopeTbl[i].type == SCOPE_CLASS) return true;
-	return false;
+	return _scopeTbl.back().type == SCOPE_CLASS;
+}
+bool ScopeManager::IsUnderClosureScope() const
+{
+	return _scopeTbl.back().type == SCOPE_CLOSURE;
 }
 
 ScopeManager::Idx ScopeManager::AddOrNot(const Symbol& sym)
@@ -71,11 +69,17 @@ ScopeManager::Idx ScopeManager::AddOrNot(const Symbol& sym)
 ScopeManager::Idx ScopeManager::AddForce(const Symbol& sym)
 {
 	Idx idx;
-	switch(_scopeTbl.back().type)
+	auto scope = GetCurScope();
+	switch(scope)
 	{
 	case SCOPE_GLOBAL:
 		idx.kind = Idx::GLOBAL;
-		idx.idx = _scopeTbl.back().symTbl.size();
+		idx.idx = GetGlobalSymbolTable().size();
+		break;
+
+	case SCOPE_LOCAL:
+		idx.kind = Idx::LOCAL;
+		idx.idx = GetLastLocalIndex();
 		break;
 
 	case SCOPE_CLASS:
@@ -86,21 +90,20 @@ ScopeManager::Idx ScopeManager::AddForce(const Symbol& sym)
 		}
 		else if(sym.kind == ESymbol::Field)
 		{
-			idx.idx = _scopeTbl.back().startLocalIdx + _localIdxOffset++;
+			idx.idx = _scopeTbl.back()._symTbl.size();
 			idx.kind = Idx::FIELD;
 		}
 		else
 			return {};
 		break;
-
-	case SCOPE_LOCAL:
-		idx.kind = Idx::LOCAL;
-		idx.idx = _scopeTbl.back().startLocalIdx + _localIdxOffset++;
-		break;
 	}
 
 	SymbolKey sk = { sym.name };
-	_scopeTbl.back().symTbl[sk] = SymbolData{ sym, idx };
+	if(_scopeTbl.back()._localScopes.empty())
+		_scopeTbl.back()._symTbl[sk] = SymbolData{ sym, idx };
+	else
+		_scopeTbl.back()._localScopes.back()[sk] = SymbolData{ sym, idx };
+
 	//TODO nested func proc
 	return idx;
 }
@@ -114,15 +117,23 @@ ScopeManager::Idx ScopeManager::AddOrReplace(const Symbol& sym)
 
 ScopeManager::SymbolData ScopeManager::Erase(const string& name)
 {
-	for(int i=(int)_scopeTbl.size()-1; i>=0; i--)
+	for(auto& localTbl : _scopeTbl.back()._localScopes)
 	{
-		auto found = _scopeTbl[i].symTbl.find( { .name = name } );
-		if(found != _scopeTbl[i].symTbl.end())
+		auto found = localTbl.find( { .name = name } );
+		if(found != localTbl.end())
 		{
 			SymbolData t = found->second;
-			_scopeTbl[i].symTbl.erase(found);
+			localTbl.erase(found);
 			return t;
 		}
+	}
+
+	auto found = _scopeTbl.back()._symTbl.find( { .name = name } );
+	if(found != _scopeTbl.back()._symTbl.end())
+	{
+		SymbolData t = found->second;
+		_scopeTbl.back()._symTbl.erase(found);
+		return t;
 	}
 	return {};
 }
@@ -137,6 +148,15 @@ Symbol ScopeManager::GetSymbol(const string& name) const
 	return GetSymbolData(name).sym;
 }
 
+ycom::ScopeManager::SymbolMap& ScopeManager::GetGlobalSymbolTable()
+{
+	return _scopeTbl.front()._symTbl;
+}
+const ycom::ScopeManager::SymbolMap& ScopeManager::GetGlobalSymbolTable() const
+{
+	return _scopeTbl.front()._symTbl;
+}
+
 ScopeManager::SymbolData ScopeManager::GetSymbolData(const string& name) const
 {
 	auto r = GetSymbolDataRef(name);
@@ -145,15 +165,44 @@ ScopeManager::SymbolData ScopeManager::GetSymbolData(const string& name) const
 
 const ScopeManager::SymbolData* ScopeManager::GetSymbolDataRef(const string& name) const
 {
-	for(int i=(int)_scopeTbl.size()-1; i>=0; i--)
+	auto found = GetGlobalSymbolTable().find( { .name = name } );
+	if(found != GetGlobalSymbolTable().end())
 	{
-		auto found = _scopeTbl[i].symTbl.find( { .name = name } );
-		if(found != _scopeTbl[i].symTbl.end())
+		return &found->second;
+	}
+
+	for(auto& localTbl : _scopeTbl.back()._localScopes)
+	{
+		auto found = localTbl.find( { .name = name } );
+		if(found != localTbl.end())
 		{
 			return &found->second;
 		}
 	}
-	return nullptr;
+
+	if(&GetGlobalSymbolTable() == &_scopeTbl.back()._symTbl)
+	{
+		return nullptr;
+	}
+	else
+	{
+		auto found = _scopeTbl.back()._symTbl.find( { .name = name } );
+		if(found != _scopeTbl.back()._symTbl.end())
+		{
+			return &found->second;
+		}
+		return nullptr;
+	}
+}
+
+int ScopeManager::GetLastLocalIndex() const
+{
+	int last = 0;
+	for(auto& localTbl : _scopeTbl.back()._localScopes)
+	{
+		last += localTbl.size();
+	}
+	return last;
 }
 
 }

@@ -17,6 +17,7 @@ public:
 		SCOPE_GLOBAL,
 		SCOPE_LOCAL,
 		SCOPE_CLASS,
+		SCOPE_CLOSURE,
 	};
 
 	struct Idx
@@ -46,26 +47,6 @@ public:
 		Idx idx;
 	};
 
-public:
-	ScopeManager();
-	~ScopeManager();
-
-	void AddGlobalScope();
-	void AddLocalScope();
-	void AddClassScope();
-	void PopScope();
-
-	ScopeType GetCurScope() const;
-	bool IsUnderClassScope() const;
-
-	Idx AddOrNot(const Symbol& sym);
-	Idx AddOrReplace(const Symbol& sym);
-	Idx AddForce(const Symbol& sym);
-	SymbolData Erase(const std::string& name);
-	Idx GetIdx(const std::string& name) const;
-	Symbol GetSymbol(const std::string& name) const;
-
-protected:
 	struct SymKeyHash {
 		std::size_t operator()(const SymbolKey& t) const noexcept {
 			return std::hash<std::string>()(t.name);
@@ -78,19 +59,45 @@ protected:
 		}
 	};
 
+	using SymbolMap = std::unordered_map<SymbolKey, SymbolData, SymKeyHash, SymKeyEqual>;
+
 	struct Scope
 	{
 		ScopeType type;
-		int startLocalIdx;
-		std::unordered_map<SymbolKey, SymbolData, SymKeyHash, SymKeyEqual> symTbl;
+		SymbolMap _symTbl;
+		std::vector<SymbolMap> _localScopes;
 	};
 
-	std::vector<Scope> _scopeTbl;
+public:
+	ScopeManager();
+	~ScopeManager();
 
-	int _localIdxOffset;
+	void AddLocalScope();
+	void AddClassScope();
+	void AddClosureScope();
+	void PopScope();
+
+	ScopeType GetCurScope() const;
+	bool IsUnderClassScope() const;
+	bool IsUnderClosureScope() const;
+
+	Idx AddOrNot(const Symbol& sym);
+	Idx AddOrReplace(const Symbol& sym);
+	Idx AddForce(const Symbol& sym);
+	SymbolData Erase(const std::string& name);
+	Idx GetIdx(const std::string& name) const;
+	Symbol GetSymbol(const std::string& name) const;
+
+	SymbolMap& GetGlobalSymbolTable();
+	const SymbolMap& GetGlobalSymbolTable() const;
+
+protected:
+	std::vector<Scope> _scopeTbl;
 
 	SymbolData GetSymbolData(const std::string& name) const;
 	const SymbolData* GetSymbolDataRef(const std::string& name) const;
+
+	int GetLastLocalIndex() const;
 };
 
 }

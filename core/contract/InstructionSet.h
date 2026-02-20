@@ -26,6 +26,8 @@ enum class EOpcode : uint16_t
 	NewMod,
 	NewCls,
 	LValueField,
+	ClosureSet,
+	CaptureAdd,
 };
 
 enum class ERefKind : uint8_t
@@ -186,10 +188,21 @@ struct LValueField
 	uint16_t field = 0;
 };
 
-struct IncPrg
+struct ClosureSet
 {
-	std::string nm;
-	std::string path;
+	uint8_t dstKind = (uint8_t)ERefKind::None;
+	uint8_t srcKind = (uint8_t)ERefKind::None;
+	uint16_t dst = 0;
+	uint16_t src = 0;
 };
+
+struct CaptureAdd
+{
+	uint8_t dstKind = (uint8_t)ERefKind::None;
+	uint8_t srcKind = (uint8_t)ERefKind::None;
+	uint16_t dst = 0;
+	uint16_t src = 0;
+};
+
 
 }

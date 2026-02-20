@@ -5,6 +5,13 @@
 #include <unordered_map>
 
 
+struct Closure
+{
+	std::string _uniqueName;
+	std::string _realName;
+	Bytecode _code;
+};
+
 struct Constant
 {
 	enum Type
@@ -14,6 +21,7 @@ struct Constant
 		INT,
 		FLOAT,
 		STR,
+		CLOSURE,
 	};
 
 	Type _type;
@@ -21,6 +29,7 @@ struct Constant
 	int64_t _int;
 	std::string _str;
 	double _float;
+	Closure _closure;
 };
 
 

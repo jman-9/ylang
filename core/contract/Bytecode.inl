@@ -156,6 +156,14 @@ void Bytecode::FillBytecode(int ln, const OpType& inst, int srcLine /* = -1 */)
 	{
 		_codeStrs[ln] = std::format("lvaluefield {}{}.{}{}", ValKindChar(inst.dstKind), inst.dst, ValKindChar(inst.fieldKind), inst.field);
 	}
+	else if constexpr (std::is_same_v<Op::ClosureSet, OpType>)
+	{
+		_codeStrs[ln] = std::format("closureset {}{}, {}{}", ValKindChar(inst.dstKind), inst.dst, ValKindChar(inst.srcKind), inst.src);
+	}
+	else if constexpr (std::is_same_v<Op::CaptureAdd, OpType>)
+	{
+		_codeStrs[ln] = std::format("captureadd {}{}, {}{}", ValKindChar(inst.dstKind), inst.dst, ValKindChar(inst.srcKind), inst.src);
+	}
 	else
 	{
 		throw std::logic_error(std::format("FillBytecode - line:{} srcLine:{} op:unknown", ln, srcLine));

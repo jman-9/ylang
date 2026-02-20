@@ -67,6 +67,7 @@ Variable* Machine::ResolveVar(ERefKind k, int idx)
 				case Constant::INT:		cv->SetInt(c._int); break;
 				case Constant::FLOAT:	cv->SetFloat(c._float); break;
 				case Constant::STR:		cv->SetStr(c._str); break;
+				case Constant::CLOSURE:	cv->SetClosure(c._closure, false); break;
 				default: //TODO
 					INTERNALERR(format("{}: unsupported constant type", (int)c._type));
 				}
@@ -227,6 +228,8 @@ bool Machine::Exec(const Bytecode& code, int start /*= 0*/)
 			case EOpcode::NewMod: NewMod(*(Op::NewMod*)inst.code.data()); break;
 			case EOpcode::NewCls: NewCls(*(Op::NewCls*)inst.code.data()); break;
 			case EOpcode::LValueField: LValueField(*(Op::LValueField*)inst.code.data()); break;
+			case EOpcode::ClosureSet: ClosureSet(*(Op::ClosureSet*)inst.code.data()); break;
+			case EOpcode::CaptureAdd: CaptureAdd(*(Op::CaptureAdd*)inst.code.data()); break;
 			default:
 				INTERNALERR(format("'{}': unknown opcode", inst.kind));//TODO
 			}
@@ -709,15 +712,37 @@ bool Machine::Invoke(const Op::Invoke& ivk)
 	Variable* dst = ResolveVar((ERefKind)ivk.dstKind, ivk.dst);
 	if(*dst == Variable::STR)
 	{//TODO dynamic resolution
-		//TBD
+	 //TBD
 		INTERNALERR(format("'{}': not implemented", dst->str()));
 	}
-	if(*dst != Variable::ATTR)
+	if(*dst != Variable::ATTR && *dst != Variable::CLOSUREOBJ)
 	{
-		INTERNALERR(format("'{}': requires ATTR({}) for invocation target resolution", dst->TypeStr(), (int)Variable::ATTR));
+		INTERNALERR(format("'{}': requires ATTR or CLOSUREOBJ for invocation target resolution", dst->TypeStr()));
 	}
 
 	_roff = ivk.dst + 1;
+
+	if(*dst == Variable::CLOSUREOBJ)
+	{
+		auto& clsr = dst->clsrObj();
+
+		if(!clsr._captures.empty())
+		{
+			int spBackup = _sp;
+			int idx = _sp - _spStack.top();
+			for(auto& cap : clsr._captures)
+			{
+				*ResolveVar(ERefKind::LocalVar, idx++) = cap;
+			}
+			_sp = spBackup;
+		}
+
+		GoSub(dst->clsrObj()._prgObj, &dst->clsrObj()._clsr->_code, 1);
+		auto vs = ResolveVar(ERefKind::Reg, ivk.dst + 1);
+		auto vt = ResolveVar(ERefKind::Reg, ivk.dst);
+		vt->SetVar(*vs);
+		return true;
+	}
 
 	auto& owner = dst->attr().owner;
 	if(owner == Variable::CLASSOBJ)
@@ -1027,6 +1052,32 @@ bool Machine::LValueField(const Op::LValueField& lvf)
 		INTERNALERR(format("'{}': unsupported owner type for '{}'", dst->TypeStr(), fld->str()));
 	}
 
+	return true;
+}
+
+bool Machine::ClosureSet(const Op::ClosureSet& cs)
+{
+	Variable* clsr = ResolveVar((ERefKind)cs.srcKind, cs.src);
+	if(*clsr != Variable::CLOSURE)
+	{//TODO
+		INTERNALERR(format("'{}': incorrect closure type", clsr->TypeStr()));
+	}
+
+	Variable* dst = ResolveVar((ERefKind)cs.dstKind, cs.dst);
+	dst->SetClosure(clsr->clsr(), true, _prgStack.top());
+	return true;
+}
+
+bool Machine::CaptureAdd(const Op::CaptureAdd& ca)
+{
+	Variable* clsro = ResolveVar((ERefKind)ca.dstKind, ca.dst);
+	if(*clsro != Variable::CLOSUREOBJ)
+	{//TODO
+		INTERNALERR(format("'{}': incorrect closure object type", clsro->TypeStr()));
+	}
+
+	Variable* capture = ResolveVar((ERefKind)ca.srcKind, ca.src);
+	clsro->clsrObj()._captures.push_back(*capture);
 	return true;
 }
 

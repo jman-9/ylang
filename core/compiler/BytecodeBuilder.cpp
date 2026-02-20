@@ -29,18 +29,51 @@ inline ERefKind ToRefKind(ScopeManager::Idx::Kind idxKind)
 
 int ConstTable::AddOrNot(const Token& tok)
 {
-	auto found = _constMap.find(tok);
-	if(found != _constMap.end())
-		return found->second;
-
-	_constMap[tok] = (uint16_t)_constMap.size();
-	return (int)_constMap.size() - 1;
+	auto con = TokenToConstant(tok);
+	return AddOrNot(con);
 }
 
 int ConstTable::GetIdx(const Token& tok) const
 {
-	auto found = _constMap.find(tok);
+	auto con = TokenToConstant(tok);
+	return GetIdx(con);
+}
+
+int ConstTable::AddOrNot(const Constant& con)
+{
+	auto found = _constMap.find(con);
+	if(found != _constMap.end())
+		return found->second;
+
+	_constMap[con] = (uint16_t)_constMap.size();
+	return (int)_constMap.size() - 1;
+}
+
+int ConstTable::GetIdx(const Constant& con) const
+{
+	auto found = _constMap.find(con);
 	return found == _constMap.end() ? -1 : (int)found->second;
+}
+
+Constant ConstTable::TokenToConstant(const Token& tok) const
+{
+	Constant c;
+	if(tok == EToken::Int)
+	{
+		c._type = Constant::INT;
+		c._int = stoll(tok.val, nullptr, 0);
+	}
+	else if(tok == EToken::Float)
+	{
+		c._type = Constant::FLOAT;
+		c._float = stod(tok.val);
+	}
+	else
+	{
+		c._type = Constant::STR;
+		c._str = tok.val;
+	}
+	return c;
 }
 
 
@@ -79,29 +112,12 @@ bool BytecodeBuilder::Build(const TreeNode& code, Program& retProgram, const std
 	}
 
 	_prg._consts.resize(_constTbl._constMap.size());
-	for(auto& [tok, idx] : _constTbl._constMap)
+	for(auto& [con, idx] : _constTbl._constMap)
 	{
-		Constant c;
-		if(tok == EToken::Int)
-		{
-			c._type = Constant::INT;
-			c._int = stoll(tok.val, nullptr, 0);
-		}
-		else if(tok == EToken::Float)
-		{
-			c._type = Constant::FLOAT;
-			c._float = stod(tok.val);
-		}
-		else
-		{
-			c._type = Constant::STR;
-			c._str = tok.val;
-		}
-
-		_prg._consts[idx] = c;
+		_prg._consts[idx] = con;
 	}
 
-	for(auto& [_, v] : _scopeMgr._scopeTbl.front().symTbl)
+	for(auto& [_, v] : _scopeMgr.GetGlobalSymbolTable())
 	{//global
 		auto& s = v.sym;
 		auto& i = v.idx;
@@ -293,14 +309,14 @@ bool BytecodeBuilder::BuildClass(Bytecode& retCtx, const TreeNode& stmt)
 	{
 		if(substmt->self.val == cls.name)
 		{//ctor
-			if(!BuildFn(cls._ctor, *substmt))
+			if(!BuildFnReal(cls._ctor, *substmt))
 			{//TODO cleanup
 				return false;
 			}
 		}
 		else if(substmt->self == EToken::Fn)
 		{//fn
-			if(!BuildFn(cls._funcs[cls._funcMap[ substmt->self.val ]], *substmt))
+			if(!BuildFnReal(cls._funcs[cls._funcMap[ substmt->self.val ]], *substmt))
 			{//TODO cleanup
 				return false;
 			}
@@ -404,74 +420,6 @@ bool BytecodeBuilder::BuildIf(Bytecode& retCtx, const TreeNode& stmt)
 	return true;
 }
 
-bool BytecodeBuilder::BuildFn(Bytecode& retCtx, const TreeNode& stmt)
-{
-	uint32_t regStack = _reg;
-	_reg = 0;
-
-	size_t skipLine = retCtx.nextCodeSlot();
-	retCtx.PushBytecode<EOpcode::Noop>();
-
-	auto& name = stmt.self.val;
-	auto& params = stmt.childs[0]->childs;
-	auto& block = *stmt.childs[1];
-
-	Symbol sym;
-	sym.name = name;
-	sym.pos = retCtx.nextCodeSlot();
-	sym.kind = ESymbol::Fn;
-	_scopeMgr.AddOrNot(sym);
-
-	_fnStack.push(FnControl());
-	BuildBlockOpen(retCtx);
-
-	for(auto& p : params)
-	{
-		Param prm;
-		prm.name = p->self.val;
-		sym.params.push_back(prm);
-
-		auto idx = _scopeMgr.AddOrNot( { .name = prm.name, .kind = ESymbol::Var } );
-	}
-
-	_reg += params.size() - 1;
-	for(int i=params.size() - 1; i>=0; i--)
-	{
-		auto& p = params[i];
-		auto idx = _scopeMgr.GetIdx(p->self.val);
-
-		Op::Assign as;
-		as.dstKind = (uint8_t)ERefKind::LocalVar;
-		as.dst = idx.idx;
-		as.src1Kind = (uint8_t)ERefKind::Reg;
-		as.src1 = _reg--;
-		retCtx.PushBytecode(as, p->self.line);
-	}
-
-	_reg = 0;
-	if(block.self == EToken::LBrace)
-	{
-		if(!BuildCompound(retCtx, block))
-		{//TODO log
-			return false;
-		}
-	}
-	else if(!BuildStmt(retCtx, block))
-	{//TODO log
-		return false;
-	}
-
-	_reg = regStack;
-
-	BuildBlockClose(retCtx);
-	_fnStack.pop();
-	retCtx.PushBytecode<EOpcode::Ret>();
-
-	Op::Jmp jmp{ .pos = (uint32_t)retCtx.nextCodeSlot() };
-	retCtx.FillBytecode((int)skipLine, jmp, stmt.self.line);
-	return true;
-}
-
 bool BytecodeBuilder::BuildCompound(Bytecode& retCtx, const TreeNode& stmt)
 {
 	BuildBlockOpen(retCtx);
@@ -490,6 +438,21 @@ bool BytecodeBuilder::BuildInvokeExp(Bytecode& retCtx, const TreeNode& stmt)
 {
 	uint32_t regStack = _reg;
 	const Token& ivkType = stmt.childs[0]->self;
+
+	{//TODO qaz
+		int constIdx = _constTbl.GetIdx(ivkType);
+		if(constIdx < 0)
+		{
+			if(_clsStack.empty() || !_clsStack.top()->_funcMap.contains(stmt.childs.front()->self.val))
+			{
+				auto sym = _scopeMgr.GetSymbol(stmt.childs[0]->self.val);
+				if(sym != ESymbol::None && sym != ESymbol::Fn)
+				{
+					_reg++;
+				}
+			}
+		}
+	}
 
 	if(ivkType == EToken::Dot)
 	{	//TODO generalize
@@ -566,7 +529,11 @@ bool BytecodeBuilder::BuildInvokeExp(Bytecode& retCtx, const TreeNode& stmt)
 		else
 		{
 			auto sym = _scopeMgr.GetSymbol(stmt.childs[0]->self.val);
-			if(sym == ESymbol::Fn)
+			if(sym == ESymbol::None)
+			{//TODO qaz
+				throw 'n';
+			}
+			else if(sym == ESymbol::Fn)
 			{
 				Op::Call cal;
 				cal.numPrms = (uint8_t)(stmt.childs.size()-1);
@@ -1089,5 +1056,157 @@ bool BytecodeBuilder::BuildExp(Bytecode& retCtx, const TreeNode& stmt, bool root
 	}
 	return true;
 }
+
+bool BytecodeBuilder::BuildFnReal(Bytecode& retCtx, const TreeNode& stmt)
+{
+	uint32_t regStack = _reg;
+	_reg = 0;
+
+	size_t skipLine = retCtx.nextCodeSlot();
+	retCtx.PushBytecode<EOpcode::Noop>();
+
+	auto& name = stmt.self.val;
+	auto& params = stmt.childs[0]->childs;
+	auto& block = *stmt.childs[1];
+
+	Symbol sym;
+	sym.name = name;
+	sym.pos = retCtx.nextCodeSlot();
+	sym.kind = ESymbol::Fn;
+	_scopeMgr.AddOrNot(sym);
+
+	_fnStack.push(FnControl());
+	BuildBlockOpen(retCtx);
+
+	for(auto& p : params)
+	{
+		Param prm;
+		prm.name = p->self.val;
+		sym.params.push_back(prm);
+
+		auto idx = _scopeMgr.AddOrNot( { .name = prm.name, .kind = ESymbol::Var } );
+	}
+
+	_reg += params.size() - 1;
+	for(int i=params.size() - 1; i>=0; i--)
+	{
+		auto& p = params[i];
+		auto idx = _scopeMgr.GetIdx(p->self.val);
+
+		Op::Assign as;
+		as.dstKind = (uint8_t)ERefKind::LocalVar;
+		as.dst = idx.idx;
+		as.src1Kind = (uint8_t)ERefKind::Reg;
+		as.src1 = _reg--;
+		retCtx.PushBytecode(as, p->self.line);
+	}
+
+	_reg = 0;
+	if(block.self == EToken::LBrace)
+	{
+		if(!BuildCompound(retCtx, block))
+		{//TODO log
+			return false;
+		}
+	}
+	else if(!BuildStmt(retCtx, block))
+	{//TODO log
+		return false;
+	}
+
+	_reg = regStack;
+
+	BuildBlockClose(retCtx);
+	_fnStack.pop();
+	retCtx.PushBytecode<EOpcode::Ret>();
+
+	Op::Jmp jmp{ .pos = (uint32_t)retCtx.nextCodeSlot() };
+	retCtx.FillBytecode((int)skipLine, jmp, stmt.self.line);
+	return true;
+}
+
+bool BytecodeBuilder::BuildClosure(Bytecode& retCtx, const TreeNode& stmt)
+{
+	vector<ScopeManager::SymbolData> captures;
+	DetectCaptures(captures, stmt);
+
+	_scopeMgr.AddClosureScope();
+	_scopeMgr.AddLocalScope();
+	for(auto& cap : captures)
+	{
+		_scopeMgr.AddOrNot(cap.sym);
+	}
+
+	Constant con;
+	con._type = Constant::CLOSURE;
+	bool r = BuildFnReal(con._closure._code, stmt);
+	if(!r) return r;
+
+	int srcIdx;
+	con._closure._realName = stmt.self.val;
+	while(1)
+	{
+		con._closure._uniqueName = stmt.self.val; //TODO qaz unique
+		if(_constTbl.GetIdx(con) < 0)
+		{
+			srcIdx = _constTbl.AddOrNot(con);
+			break;
+		}
+	}
+	_scopeMgr.PopScope();
+	_scopeMgr.PopScope();
+
+	Symbol sym;
+	sym.name = con._closure._realName;
+	sym.pos = 0;
+	sym.kind = ESymbol::Fn;
+	auto dstIdx = _scopeMgr.AddOrNot(sym);
+
+	Op::ClosureSet cs{ .dstKind = TO_REF_KIND_U8(dstIdx.kind), .srcKind = (uint8_t)ERefKind::Const, .dst = (uint16_t)dstIdx.idx, .src = (uint16_t)srcIdx };
+	retCtx.PushBytecode(cs, stmt.self.line);
+
+	Op::CaptureAdd ca{ .dstKind = TO_REF_KIND_U8(dstIdx.kind), .dst = (uint16_t)dstIdx.idx };
+	for(auto& cap : captures)
+	{
+		ca.srcKind = TO_REF_KIND_U8(cap.idx.kind);
+		ca.src = (uint16_t)cap.idx.idx;
+		retCtx.PushBytecode(ca, stmt.self.line);
+	}
+
+	return true;
+}
+
+bool BytecodeBuilder::BuildFn(Bytecode& retCtx, const TreeNode& stmt)
+{
+	if(stmt.parent && stmt.parent->self == EToken::LBrace)
+	{//TODO qaz need to clarify
+	 //build closure
+		return BuildClosure(retCtx, stmt);
+	}
+	else
+	{
+		return BuildFnReal(retCtx, stmt);
+	}
+}
+
+
+void BytecodeBuilder::DetectCaptures(vector<ScopeManager::SymbolData>& retCaptures, const TreeNode& stmt) const
+{
+	if(stmt.self == EToken::Id)
+	{
+		auto sym = _scopeMgr.GetSymbolData(stmt.self.val);
+		if(!sym.idx.IsNone() && sym.idx.kind == ScopeManager::Idx::LOCAL)
+			retCaptures.push_back(sym);
+		return;
+	}
+
+	for(auto& c : stmt.childs)
+	{
+		DetectCaptures(retCaptures, *c);
+	}
+
+	return;
+}
+
 
 }

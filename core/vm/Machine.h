@@ -76,6 +76,8 @@ protected:
 	inline bool NewMod(const Op::NewMod& nm);
 	inline bool NewCls(const Op::NewCls& nc);
 	inline bool LValueField(const Op::LValueField& lvf);
+	inline bool ClosureSet(const Op::ClosureSet& cs);
+	inline bool CaptureAdd(const Op::CaptureAdd& ca);
 
 	inline bool CallBuiltinFunc(const Op::Call& cal);
 

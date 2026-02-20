@@ -43,6 +43,10 @@ void Variable::Clear()
 		if(_u._attr) { delete _u._attr; _u._attr = nullptr; }
 		break;
 
+	case CLOSURE:
+		if(_u._clsr) { delete _u._clsr; _u._clsr = nullptr; }
+		break;
+
 	case OBJ:
 	case LVREF:
 	case LIST:
@@ -52,6 +56,7 @@ void Variable::Clear()
 	case CLASSOBJ:
 	case MODULEOBJ:
 	case PROGRAMOBJ:
+	case CLOSUREOBJ:
 		if(_u._o) { _u._o->ReleaseRef(); _u._o = nullptr; }
 		break;
 	}
@@ -98,7 +103,7 @@ bool Variable::IsBool() const
 
 bool Variable::IsObject() const
 {
-	return _type == OBJ || _type == CLASSOBJ || _type == MODULEOBJ || _type == PROGRAMOBJ;
+	return _type == OBJ || _type == CLASSOBJ || _type == MODULEOBJ || _type == PROGRAMOBJ || _type == CLOSUREOBJ;
 }
 
 void Variable::SetVarLVRef(Variable& lvref, Variable owner)
@@ -231,6 +236,31 @@ void Variable::SetProgram(const Program& prg, bool makeInstance)
 		_type = PROGRAM;
 	}
 }
+void Variable::SetClosure(const Closure& closure, bool makeInstance, Variable* prgObj /* = nullptr */)
+{
+	if(makeInstance)
+	{
+		if(prgObj == nullptr)
+		{
+			INTERNALERR(format("{}: must have program object to make an instance", closure._realName));
+		}
+
+		ResetNewObj();
+
+		_u._o->_clsro._clsr = &closure;
+		_u._o->_clsro._prgObjP.push_back(*prgObj);
+		_u._o->_clsro._prgObj = &(_u._o->_clsro._prgObjP[0]);
+		_u._o->_type = CLOSUREOBJ;
+		_type = CLOSUREOBJ;
+	}
+	else
+	{
+		Clear();
+		_u._clsr = new Closure;
+		*_u._clsr = closure;
+		_type = CLOSURE;
+	}
+}
 void Variable::SetNull() { Clear(); _type = _NULL_; }
 void Variable::SetTrue() { Clear(); _type = _TRUE_; }
 void Variable::SetFalse(){ Clear(); _type = _FALSE_; }
@@ -263,7 +293,8 @@ void Variable::SetVar(Variable& var)
 	case CLASSOBJ:
 	case MODULE:
 	case MODULEOBJ:
-	case PROGRAMOBJ: SetObj(var._u._o); break;
+	case PROGRAMOBJ:
+	case CLOSUREOBJ: SetObj(var._u._o); break;
 
 	case _NULL_:
 	case _TRUE_:
@@ -657,8 +688,11 @@ bool Variable::CalcUnaryAndAssign(EToken unaryOp, Variable& rhs)
 	case LIST:
 	case DICT:
 	case BYTES:
+	case CLOSURE:
 	case CLASSOBJ:
 	case MODULEOBJ:
+	case PROGRAMOBJ:
+	case CLOSUREOBJ:
 	case _TRUE_:
 		switch(unaryOp)
 		{
@@ -766,6 +800,8 @@ string Variable::ToStr() const
 		return "program: (WIP)";
 	case BYTEREF:
 		return "byte_ref";
+	case CLOSURE:
+		return "closure: " + clsr()._realName;
 
 	case OBJ:
 		return "obj: (uninitialized)";
@@ -813,6 +849,8 @@ string Variable::ToStr() const
 		return "moduleobj: " + modObj()._mod.modDesc->name;
 	case PROGRAMOBJ:
 		return "programobj: (WIP)";
+	case CLOSUREOBJ:
+		return "closureobj: " + clsr()._realName;
 
 	case _NULL_:
 		return "null";
@@ -843,13 +881,15 @@ bool Variable::IsNullOrFalse() const
 	case CLASS:		return !_u._cls || cls().name.empty();
 	case MODULE:	return mod().IsNull(); //TODO qaz !_u._mod ||
 	case PROGRAM:	return !_u._prg || prg()._mainCode.empty(); //TODO
+	case CLOSURE:	return !_u._clsr || clsr()._realName.empty();
 	case LVREF:		return lvref().IsNullOrFalse();
 	case LIST:		return list().empty();
 	case DICT:		return dict().empty();
 	case BYTES:		return bytes().empty();
 	case CLASSOBJ:	return !clsObj()._cls;
 	case MODULEOBJ:	return !modObj()._mod.modDesc;
-	case PROGRAMOBJ:	return !prgObj()._prg;
+	case PROGRAMOBJ:return !prgObj()._prg;
+	case CLOSUREOBJ:return !clsrObj()._clsr;
 	}
 	return false;
 }
@@ -940,6 +980,16 @@ const Program& Variable::prg() const
 		INTERNALERR(format("{}: incorrect type", TypeStr()));
 }
 
+const Closure& Variable::clsr() const
+{
+	if(_type == CLOSURE)
+		return *_u._clsr;
+	else if(_type == CLOSUREOBJ)
+		return *_u._o->_clsro._clsr;
+	else
+		INTERNALERR(format("{}: incorrect type", TypeStr()));
+}
+
 const Variable& Variable::lvref() const
 {
 	if(_type != LVREF) INTERNALERR(format("{}: incorrect type", TypeStr()));
@@ -980,6 +1030,7 @@ vector<uint8_t>& Variable::bytes()
 	if(_type != BYTES) INTERNALERR(format("{}: incorrect type", TypeStr()));
 	return _u._o->_bytes;
 }
+
 const ClassObject& Variable::clsObj() const
 {
 	if(_type != CLASSOBJ) INTERNALERR(format("{}: incorrect type", TypeStr()));
@@ -1011,6 +1062,16 @@ ProgramObject& Variable::prgObj()
 {
 	if(_type != PROGRAMOBJ) INTERNALERR(format("{}: incorrect type", TypeStr()));
 	return _u._o->_prgo;
+}
+const ClosureObject& Variable::clsrObj() const
+{
+	if(_type != CLOSUREOBJ) INTERNALERR(format("{}: incorrect type", TypeStr()));
+	return _u._o->_clsro;
+}
+ClosureObject& Variable::clsrObj()
+{
+	if(_type != CLOSUREOBJ) INTERNALERR(format("{}: incorrect type", TypeStr()));
+	return _u._o->_clsro;
 }
 
 void Variable::SetValueFromContract(YArg o)
@@ -1104,6 +1165,7 @@ string_view Variable::TypeStr(Type t)
 	case CLASS: return "class";
 	case MODULE: return "module";
 	case PROGRAM: return "program";
+	case CLOSURE: return "closure";
 	case BYTEREF: return "byte_reference";
 	case OBJ: return "object";
 	case LVREF: return "lvalue_reference";
@@ -1113,6 +1175,7 @@ string_view Variable::TypeStr(Type t)
 	case CLASSOBJ: return "class_instance";
 	case MODULEOBJ: return "module_instance";
 	case PROGRAMOBJ: return "program_instance";
+	case CLOSUREOBJ: return "closure_instance";
 	case _NULL_: return "null";
 	case _TRUE_: return "boolean_true";
 	case _FALSE_: return "boolean_false";

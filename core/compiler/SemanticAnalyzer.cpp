@@ -40,7 +40,6 @@ void SemanticAnalyzer::OpenScope(ScopeManager::ScopeType type)
 	switch(type)
 	{
 	case ScopeManager::SCOPE_LOCAL:	_scopeMgr.AddLocalScope(); break;
-	case ScopeManager::SCOPE_GLOBAL:_scopeMgr.AddGlobalScope(); break;
 	case ScopeManager::SCOPE_CLASS:	_scopeMgr.AddClassScope(); break;
 	}
 }
@@ -233,9 +232,9 @@ bool SemanticAnalyzer::AnalyzeIf(const TreeNode& stmt, const unordered_set<EToke
 bool SemanticAnalyzer::AnalyzeFn(const TreeNode& stmt)
 {
 	if(_scopeMgr.GetCurScope() == ScopeManager::SCOPE_LOCAL)
-	{//TODO
-		_errors.push_back(ErrorBuilder::Default(stmt.self.line, "nested function: currently not supported"));
-		return false;
+	{//TODO qaz
+		//_errors.push_back(ErrorBuilder::Default(stmt.self.line, "nested function: currently not supported"));
+		//return false;
 	}
 
 

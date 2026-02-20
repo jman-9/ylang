@@ -112,6 +112,14 @@ void Instruction::Fill(const OpType& inst)
 	{
 		kind = (uint8_t)EOpcode::LValueField;
 	}
+	else if constexpr (std::is_same_v<Op::ClosureSet, OpType>)
+	{
+		kind = (uint8_t)EOpcode::ClosureSet;
+	}
+	else if constexpr (std::is_same_v<Op::CaptureAdd, OpType>)
+	{
+		kind = (uint8_t)EOpcode::CaptureAdd;
+	}
 	else
 	{
 		throw std::logic_error(std::format("Fill - unknown op"));
