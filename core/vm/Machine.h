@@ -39,6 +39,7 @@ protected:
 	VariableList _regs;
 	VariableList _stack;
 	std::stack<uint16_t> _spStack;
+	std::stack<std::vector<Variable*>> _spCaptureStack;
 	std::stack<uint16_t> _rpStack;
 	std::stack<uint16_t> _roffStack;
 	std::stack<uint32_t> _retStack;

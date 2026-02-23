@@ -1057,7 +1057,7 @@ bool BytecodeBuilder::BuildExp(Bytecode& retCtx, const TreeNode& stmt, bool root
 	return true;
 }
 
-bool BytecodeBuilder::BuildFnReal(Bytecode& retCtx, const TreeNode& stmt)
+bool BytecodeBuilder::BuildFnReal(Bytecode& retCtx, const TreeNode& stmt, ESymbol fnType /* = ESymbol::Fn */)
 {
 	uint32_t regStack = _reg;
 	_reg = 0;
@@ -1072,7 +1072,7 @@ bool BytecodeBuilder::BuildFnReal(Bytecode& retCtx, const TreeNode& stmt)
 	Symbol sym;
 	sym.name = name;
 	sym.pos = retCtx.nextCodeSlot();
-	sym.kind = ESymbol::Fn;
+	sym.kind = fnType;
 	_scopeMgr.AddOrNot(sym);
 
 	_fnStack.push(FnControl());
@@ -1127,26 +1127,36 @@ bool BytecodeBuilder::BuildFnReal(Bytecode& retCtx, const TreeNode& stmt)
 
 bool BytecodeBuilder::BuildClosure(Bytecode& retCtx, const TreeNode& stmt)
 {
-	vector<ScopeManager::SymbolData> captures;
+	unordered_map<string, ScopeManager::SymbolData> captures;
 	DetectCaptures(captures, stmt);
+
+	const auto& closureName = stmt.self.val;
+
+	Constant con;
+	con._type = Constant::CLOSURE;
+
+	Symbol sym;
+	sym.name = closureName;
+	sym.pos = 0;
+	sym.kind = ESymbol::Var;
+	auto dstIdx = _scopeMgr.AddOrNot(sym);
+	captures[closureName] = _scopeMgr.GetSymbolData(closureName);
 
 	_scopeMgr.AddClosureScope();
 	_scopeMgr.AddLocalScope();
-	for(auto& cap : captures)
+	for(auto& [_, cap] : captures)
 	{
 		_scopeMgr.AddOrNot(cap.sym);
 	}
 
-	Constant con;
-	con._type = Constant::CLOSURE;
-	bool r = BuildFnReal(con._closure._code, stmt);
+	bool r = BuildFnReal(con._closure._code, stmt, ESymbol::Var);
 	if(!r) return r;
 
 	int srcIdx;
-	con._closure._realName = stmt.self.val;
+	con._closure._realName = closureName;
 	while(1)
 	{
-		con._closure._uniqueName = stmt.self.val; //TODO qaz unique
+		con._closure._uniqueName = closureName; //TODO qaz unique
 		if(_constTbl.GetIdx(con) < 0)
 		{
 			srcIdx = _constTbl.AddOrNot(con);
@@ -1156,17 +1166,11 @@ bool BytecodeBuilder::BuildClosure(Bytecode& retCtx, const TreeNode& stmt)
 	_scopeMgr.PopScope();
 	_scopeMgr.PopScope();
 
-	Symbol sym;
-	sym.name = con._closure._realName;
-	sym.pos = 0;
-	sym.kind = ESymbol::Fn;
-	auto dstIdx = _scopeMgr.AddOrNot(sym);
-
 	Op::ClosureSet cs{ .dstKind = TO_REF_KIND_U8(dstIdx.kind), .srcKind = (uint8_t)ERefKind::Const, .dst = (uint16_t)dstIdx.idx, .src = (uint16_t)srcIdx };
 	retCtx.PushBytecode(cs, stmt.self.line);
 
 	Op::CaptureAdd ca{ .dstKind = TO_REF_KIND_U8(dstIdx.kind), .dst = (uint16_t)dstIdx.idx };
-	for(auto& cap : captures)
+	for(auto& [_, cap] : captures)
 	{
 		ca.srcKind = TO_REF_KIND_U8(cap.idx.kind);
 		ca.src = (uint16_t)cap.idx.idx;
@@ -1178,9 +1182,10 @@ bool BytecodeBuilder::BuildClosure(Bytecode& retCtx, const TreeNode& stmt)
 
 bool BytecodeBuilder::BuildFn(Bytecode& retCtx, const TreeNode& stmt)
 {
-	if(stmt.parent && stmt.parent->self == EToken::LBrace)
-	{//TODO qaz need to clarify
-	 //build closure
+	if(_scopeMgr.GetCurScope() == ScopeManager::SCOPE_LOCAL)
+	{
+		if(stmt.self.val == "test3")
+			int a = 1;
 		return BuildClosure(retCtx, stmt);
 	}
 	else
@@ -1190,13 +1195,13 @@ bool BytecodeBuilder::BuildFn(Bytecode& retCtx, const TreeNode& stmt)
 }
 
 
-void BytecodeBuilder::DetectCaptures(vector<ScopeManager::SymbolData>& retCaptures, const TreeNode& stmt) const
+void BytecodeBuilder::DetectCaptures(std::unordered_map<std::string, ScopeManager::SymbolData>& retCaptures, const TreeNode& stmt) const
 {
-	if(stmt.self == EToken::Id)
+	if(stmt.self == EToken::Id && !retCaptures.contains(stmt.self.val))
 	{
 		auto sym = _scopeMgr.GetSymbolData(stmt.self.val);
 		if(!sym.idx.IsNone() && sym.idx.kind == ScopeManager::Idx::LOCAL)
-			retCaptures.push_back(sym);
+			retCaptures[stmt.self.val] = sym;
 		return;
 	}
 

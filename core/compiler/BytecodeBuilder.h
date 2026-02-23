@@ -117,11 +117,11 @@ protected:
 	bool BuildTernaryExp(Bytecode& retCtx, const TreeNode& stmt);
 	bool BuildExp(Bytecode& retCtx, const TreeNode& stmt, bool root);
 
-	bool BuildFnReal(Bytecode& retCtx, const TreeNode& stmt);
+	bool BuildFnReal(Bytecode& retCtx, const TreeNode& stmt, ESymbol fnType = ESymbol::Fn);
 	bool BuildClosure(Bytecode& retCtx, const TreeNode& stmt);
 	bool BuildFn(Bytecode& retCtx, const TreeNode& stmt);
 
-	void DetectCaptures(std::vector<ScopeManager::SymbolData>& retCaptures, const TreeNode& stmt) const;
+	void DetectCaptures(std::unordered_map<std::string, ScopeManager::SymbolData>& retCaptures, const TreeNode& stmt) const;
 };
 
 }

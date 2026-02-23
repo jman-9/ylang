@@ -35,6 +35,14 @@ void Variable::Clear()
 {
 	switch(_type)
 	{
+	case NONE:
+	case INT:
+	case FLOAT:
+	case CLASS:
+	case PROGRAM:
+	case BYTEREF:
+		break;
+
 	case STR:
 		if(_u._s) { delete _u._s; _u._s = nullptr; }
 		break;
@@ -43,22 +51,31 @@ void Variable::Clear()
 		if(_u._attr) { delete _u._attr; _u._attr = nullptr; }
 		break;
 
-	case CLOSURE:
+	case CLOSURE://TODO qaz ... not need CLOSURE itself
 		if(_u._clsr) { delete _u._clsr; _u._clsr = nullptr; }
 		break;
 
+	case MODULE:
 	case OBJ:
 	case LVREF:
 	case LIST:
 	case DICT:
 	case BYTES:
-	case CLASS:
 	case CLASSOBJ:
 	case MODULEOBJ:
 	case PROGRAMOBJ:
 	case CLOSUREOBJ:
+	case CAPTUREDVAR:
 		if(_u._o) { _u._o->ReleaseRef(); _u._o = nullptr; }
 		break;
+
+	case _NULL_:
+	case _TRUE_:
+	case _FALSE_:
+		break;
+
+	default:
+		INTERNALERR(format("{}: invalid type", (int)_type));
 	}
 
 	_type = NONE;
@@ -103,7 +120,7 @@ bool Variable::IsBool() const
 
 bool Variable::IsObject() const
 {
-	return _type == OBJ || _type == CLASSOBJ || _type == MODULEOBJ || _type == PROGRAMOBJ || _type == CLOSUREOBJ;
+	return _type == OBJ || _type == CLASSOBJ || _type == MODULEOBJ || _type == PROGRAMOBJ || _type == CLOSUREOBJ || _type == CAPTUREDVAR;
 }
 
 void Variable::SetVarLVRef(Variable& lvref, Variable owner)
@@ -261,6 +278,22 @@ void Variable::SetClosure(const Closure& closure, bool makeInstance, Variable* p
 		_type = CLOSURE;
 	}
 }
+void Variable::SetCapturedVar(const Variable& var)
+{
+	if(var == Variable::CAPTUREDVAR)
+	{
+		SetVar((Variable&)var);
+	}
+	else
+	{
+		ResetNewObj();
+		_u._o->_captured.reset(new Variable);
+		*_u._o->_captured = var;
+		_u._o->_type = CAPTUREDVAR;
+		_type = CAPTUREDVAR;
+	}
+}
+
 void Variable::SetNull() { Clear(); _type = _NULL_; }
 void Variable::SetTrue() { Clear(); _type = _TRUE_; }
 void Variable::SetFalse(){ Clear(); _type = _FALSE_; }
@@ -294,7 +327,8 @@ void Variable::SetVar(Variable& var)
 	case MODULE:
 	case MODULEOBJ:
 	case PROGRAMOBJ:
-	case CLOSUREOBJ: SetObj(var._u._o); break;
+	case CLOSUREOBJ:
+	case CAPTUREDVAR: SetObj(var._u._o); break;
 
 	case _NULL_:
 	case _TRUE_:
@@ -693,6 +727,7 @@ bool Variable::CalcUnaryAndAssign(EToken unaryOp, Variable& rhs)
 	case MODULEOBJ:
 	case PROGRAMOBJ:
 	case CLOSUREOBJ:
+	case CAPTUREDVAR:
 	case _TRUE_:
 		switch(unaryOp)
 		{
@@ -851,6 +886,8 @@ string Variable::ToStr() const
 		return "programobj: (WIP)";
 	case CLOSUREOBJ:
 		return "closureobj: " + clsr()._realName;
+	case CAPTUREDVAR:
+		return "capturedvar: " + captured().ToStr();
 
 	case _NULL_:
 		return "null";
@@ -873,23 +910,24 @@ bool Variable::IsNullOrFalse() const
 	case _FALSE_:
 		return true;
 
-	case INT:		return !int_();
-	case FLOAT:		return !float_();
-	case STR:		return str().empty();
-	case ATTR:		return attr().name.empty();
-	case BYTEREF:	return !bref();
-	case CLASS:		return !_u._cls || cls().name.empty();
-	case MODULE:	return mod().IsNull(); //TODO qaz !_u._mod ||
-	case PROGRAM:	return !_u._prg || prg()._mainCode.empty(); //TODO
-	case CLOSURE:	return !_u._clsr || clsr()._realName.empty();
-	case LVREF:		return lvref().IsNullOrFalse();
-	case LIST:		return list().empty();
-	case DICT:		return dict().empty();
-	case BYTES:		return bytes().empty();
-	case CLASSOBJ:	return !clsObj()._cls;
-	case MODULEOBJ:	return !modObj()._mod.modDesc;
-	case PROGRAMOBJ:return !prgObj()._prg;
-	case CLOSUREOBJ:return !clsrObj()._clsr;
+	case INT:			return !int_();
+	case FLOAT:			return !float_();
+	case STR:			return str().empty();
+	case ATTR:			return attr().name.empty();
+	case BYTEREF:		return !bref();
+	case CLASS:			return !_u._cls || cls().name.empty();
+	case MODULE:		return mod().IsNull(); //TODO qaz !_u._mod ||
+	case PROGRAM:		return !_u._prg || prg()._mainCode.empty(); //TODO
+	case CLOSURE:		return !_u._clsr || clsr()._realName.empty();
+	case LVREF:			return lvref().IsNullOrFalse();
+	case LIST:			return list().empty();
+	case DICT:			return dict().empty();
+	case BYTES:			return bytes().empty();
+	case CLASSOBJ:		return !clsObj()._cls;
+	case MODULEOBJ:		return !modObj()._mod.modDesc;
+	case PROGRAMOBJ:	return !prgObj()._prg;
+	case CLOSUREOBJ:	return !clsrObj()._clsr;
+	case CAPTUREDVAR:	return captured().IsNullOrFalse();
 	}
 	return false;
 }
@@ -1073,6 +1111,16 @@ ClosureObject& Variable::clsrObj()
 	if(_type != CLOSUREOBJ) INTERNALERR(format("{}: incorrect type", TypeStr()));
 	return _u._o->_clsro;
 }
+const Variable& Variable::captured() const
+{
+	if(_type != CAPTUREDVAR) INTERNALERR(format("{}: incorrect type", TypeStr()));
+	return *_u._o->_captured;
+}
+Variable& Variable::captured()
+{
+	if(_type != CAPTUREDVAR) INTERNALERR(format("{}: incorrect type", TypeStr()));
+	return *_u._o->_captured;
+}
 
 void Variable::SetValueFromContract(YArg o)
 {
@@ -1176,6 +1224,7 @@ string_view Variable::TypeStr(Type t)
 	case MODULEOBJ: return "module_instance";
 	case PROGRAMOBJ: return "program_instance";
 	case CLOSUREOBJ: return "closure_instance";
+	case CAPTUREDVAR: return "captured_variable";
 	case _NULL_: return "null";
 	case _TRUE_: return "boolean_true";
 	case _FALSE_: return "boolean_false";

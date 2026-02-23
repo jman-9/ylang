@@ -912,6 +912,7 @@ TEST_CASE( "Builtin FileSystem Test", "[bltfs]" )
 TEST_CASE( "Class Test", "[class]" )
 {
 	Result ret;
+
 	ret = Run( R"YT(
 		class Hello {
 			front = "hello";
@@ -941,7 +942,7 @@ TEST_CASE( "Class Test", "[class]" )
 	REQUIRE( !ret.build );
 
 	ret = Run( R"YT(
-		class Ctor { _test = 15; fn Ctor(test) _test = 9; }
+		class Ctor { _test = 15; fn Ctor() _test = 9; }
 		exit(Ctor()._test);
 	)YT" );
 	REQUIRE( ret.code == 9 );
@@ -1123,6 +1124,146 @@ if(d2.mod3.mod3v != "mod3") exit(8);
 	filesystem::remove_all("ylangd1");
 }
 
+TEST_CASE( "Closure Test", "[closure]" )
+{
+	Result ret;
+
+	ret = Run( R"YT(
+		fn test(t1, t2)
+		{
+			a = t1;
+			b = t2;
+
+			fn test2(c, d) {
+				return a + b + c + d;
+			}
+			return test2;
+		}
+		a = test(98, 10);
+		exit(a(20, 52));
+	)YT" );
+	REQUIRE( ret.code == 98+10+20+52 );
+
+	ret = Run( R"YT(
+		fn test(t1)
+		{
+			a = t1;
+
+			fn test2() {
+				a--;
+				if(a <= 3)
+					return a;
+				else
+					return test2();
+			}
+			return test2;
+		}
+		a = test(7);
+		exit(a());
+	)YT" );
+	REQUIRE( ret.code == 3 );
+
+	ret = Run( R"YT(
+		fn test(t1)
+		{
+			a = t1;
+
+			fn test2(t2) {
+				b = t2;
+
+				fn test3(t3) {
+					return a + b + t3;
+				}
+				return test3;
+			}
+			return test2;
+		}
+		a = test(9);
+		b = a(8);
+		c = b(1);
+		exit(c);
+	)YT" );
+	REQUIRE( ret.code == 9 + 8 + 1 );
+
+	ret = Run( R"YT(
+		fn test(t1)
+		{
+			a = t1;
+
+			fn test2(t2) {
+				b = t2;
+
+				fn test3(t3) {
+					return a + b + t3;
+				}
+				return test3;
+			}
+			return test2;
+		}
+		a = test(9);
+		b = a(8);
+		c = b(1);
+		exit(c);
+	)YT" );
+	REQUIRE( ret.code == 9 + 8 + 1 );
+
+	string mod2y =
+R"YT(fn test(t1)
+{
+	a = t1;
+
+	fn test2(t2) {
+		b = t2;
+
+		fn test3(t3) {
+			return a + b + t3;
+		}
+		return test3;
+	}
+	return test2;
+}
+)YT";
+
+	string mod1y =
+		R"YT(
+include mod2;
+fn test4(x) { return mod2.test(x); }
+)YT";
+
+	string appy =
+		R"YT(include mod1;
+a = mod1.test4(2);
+b = a(0);
+c = b(5);
+exit(c);
+)YT";
+
+	ofstream fout("app.y");
+	fout.write(appy.c_str(), appy.size());
+	fout.close();
+
+	fout.open("mod1.y");
+	fout.write(mod1y.c_str(), mod1y.size());
+	fout.close();
+
+	fout.open("mod2.y");
+	fout.write(mod2y.c_str(), mod2y.size());
+	fout.close();
+
+	Compiler com;
+	Program prg;
+	auto errs = com.CompileFile("app.y", prg);
+	REQUIRE(errs.empty());
+
+	yvm::Machine m;
+	int code = m.Run(prg);
+	REQUIRE(2+0+5);
+
+	filesystem::remove("app.y");
+	filesystem::remove("mod1.y");
+	filesystem::remove("mod2.y");
+}
+
 
 static const Catch::LeakDetector leakDetector;
 
@@ -1138,25 +1279,26 @@ int main(int argc, const char** argv)
 	Catch::ConfigData& cfg = _session.configData();
 
 	cfg.showSuccessfulTests = true;
-//    	cfg.testsOrTags.push_back("[scanner],");
-//    	cfg.testsOrTags.push_back("[exp],");
-//    	cfg.testsOrTags.push_back("[forif],");
-//    	cfg.testsOrTags.push_back("[func],");
-//    	cfg.testsOrTags.push_back("[incdec],");
-//    	cfg.testsOrTags.push_back("[logop],");
-//    	cfg.testsOrTags.push_back("[primstr],");
-	//cfg.testsOrTags.push_back("[primlist],");
+	cfg.testsOrTags.push_back("[scanner],");
+	cfg.testsOrTags.push_back("[exp],");
+	cfg.testsOrTags.push_back("[forif],");
+	cfg.testsOrTags.push_back("[func],");
+	cfg.testsOrTags.push_back("[incdec],");
+	cfg.testsOrTags.push_back("[logop],");
+	cfg.testsOrTags.push_back("[primstr],");
+	cfg.testsOrTags.push_back("[primlist],");
 	cfg.testsOrTags.push_back("[primbytes],");
-//    	cfg.testsOrTags.push_back("[bltmath],");
-//    	cfg.testsOrTags.push_back("[bltrand],");
-//    	cfg.testsOrTags.push_back("[bltsys],");
-//    	cfg.testsOrTags.push_back("[bltfile],");
-//    	cfg.testsOrTags.push_back("[bltjson],");
-//    	cfg.testsOrTags.push_back("[blttime],");
-//    	cfg.testsOrTags.push_back("[bltshell],");
-//   	cfg.testsOrTags.push_back("[bltfs],");
-//    	cfg.testsOrTags.push_back("[class],");
-//    	cfg.testsOrTags.push_back("[includes],");
+	cfg.testsOrTags.push_back("[bltmath],");
+	cfg.testsOrTags.push_back("[bltrand],");
+	cfg.testsOrTags.push_back("[bltsys],");
+	cfg.testsOrTags.push_back("[bltfile],");
+	cfg.testsOrTags.push_back("[bltjson],");
+	cfg.testsOrTags.push_back("[blttime],");
+	cfg.testsOrTags.push_back("[bltshell],");
+	cfg.testsOrTags.push_back("[bltfs],");
+	cfg.testsOrTags.push_back("[class],");
+	cfg.testsOrTags.push_back("[includes],");
+	cfg.testsOrTags.push_back("[closure],");
 
 	int numFailed = _session.run();
 };

@@ -6,6 +6,7 @@
 #include <string>
 #include <vector>
 #include <unordered_map>
+#include <memory>
 
 
 namespace yvm
@@ -78,6 +79,7 @@ struct Variable
 		MODULEOBJ,
 		PROGRAMOBJ,
 		CLOSUREOBJ,
+		CAPTUREDVAR,
 
 		_NULL_,
 		_TRUE_,
@@ -125,6 +127,7 @@ struct Variable
 	void SetModule(const ymod::ModuleDesc& mod, bool makeInstance);
 	void SetProgram(const Program& prg, bool makeInstance);
 	void SetClosure(const Closure& closure, bool makeInstance, Variable* prgObj = nullptr);
+	void SetCapturedVar(const Variable& var);
 	void SetNull();
 	void SetTrue();
 	void SetFalse();
@@ -175,6 +178,8 @@ struct Variable
 	ProgramObject& prgObj();
 	const ClosureObject& clsrObj() const;
 	ClosureObject& clsrObj();
+	const Variable& captured() const;
+	Variable& captured();
 
 	void SetValueFromContract(YArg o);
 	YArg ToContract() const;
@@ -194,6 +199,7 @@ struct Variable
 		ProgramObject _prgo;
 		LVRefObject _lvro;
 		ClosureObject _clsro;
+		std::unique_ptr<Variable> _captured;
 
 		Object();
 		~Object();
