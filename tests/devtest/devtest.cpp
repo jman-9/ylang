@@ -7,18 +7,17 @@ using namespace std;
 
 const char* testcode1 =
 R"TEST(
+t = 10;
 
-fn test()
-{
-	return 10;
-}
+fn test(t1, t2)
+		{
+			a = t1;
+			b = t2;
 
-a = test;
-
-println(a);
-
-
-
+			return a * b;
+		}
+		a = test;
+		println(a(98, 10));
 )TEST";
 const char* testcode2 = R"TEST(
 )TEST";

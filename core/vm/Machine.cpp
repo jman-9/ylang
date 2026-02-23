@@ -55,7 +55,8 @@ Variable* Machine::ResolveVar(ERefKind k, int idx)
 
 	case ERefKind::Const:
 		{
-			auto& prgObj = _prgStack.top()->prgObj();
+			auto& vprgObj = *_prgStack.top();
+			auto& prgObj = vprgObj.prgObj();
 			auto& consts = prgObj._consts;
 
 			auto cv = consts.Get(idx);
@@ -65,10 +66,11 @@ Variable* Machine::ResolveVar(ERefKind k, int idx)
 				auto c = prgObj._prg->_consts[idx];
 				switch(c._type)
 				{
-				case Constant::INT:		cv->SetInt(c._int); break;
-				case Constant::FLOAT:	cv->SetFloat(c._float); break;
-				case Constant::STR:		cv->SetStr(c._str); break;
-				case Constant::CLOSURE:	cv->SetClosure(c._closure, false); break;
+				case Constant::INT:			cv->SetInt(c._int); break;
+				case Constant::FLOAT:		cv->SetFloat(c._float); break;
+				case Constant::STR:			cv->SetStr(c._str); break;
+				case Constant::CLOSURE:		cv->SetClosure(c._closure, false); break;
+				case Constant::GLOBAL_FN:	cv->SetAttr(vprgObj, c._str); break;
 				default: //TODO
 					INTERNALERR(format("{}: unsupported constant type", (int)c._type));
 				}

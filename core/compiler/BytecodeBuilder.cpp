@@ -1207,7 +1207,19 @@ bool BytecodeBuilder::BuildFn(Bytecode& retCtx, const TreeNode& stmt)
 	}
 	else
 	{
-		return BuildFnReal(retCtx, stmt);
+		if(!BuildFnReal(retCtx, stmt))
+			return false;
+
+		Constant c;
+		c._type = Constant::GLOBAL_FN;
+		c._str = stmt.self.val;
+		auto cidx = _constTbl.AddOrNot(c);
+
+		auto gidx = _scopeMgr.GetIdx(stmt.self.val);
+
+		Op::Assign as{ .dstKind = TO_REF_KIND_U8(gidx.kind), .src1Kind = (uint8_t)ERefKind::Const, .dst = (uint16_t)gidx.idx, .src1 = (uint16_t)cidx };
+		retCtx.PushBytecode(as, stmt.self.line);
+		return true;
 	}
 }
 

@@ -48,6 +48,10 @@ ScopeManager::ScopeType ScopeManager::GetCurScope() const
 		return SCOPE_LOCAL;
 	return _scopeTbl.back().type;
 }
+bool ScopeManager::IsUnderGlobalScope() const
+{
+	return _scopeTbl.back().type == SCOPE_GLOBAL;
+}
 bool ScopeManager::IsUnderClassScope() const
 {
 	return _scopeTbl.back().type == SCOPE_CLASS;

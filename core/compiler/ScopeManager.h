@@ -78,6 +78,7 @@ public:
 	void PopScope();
 
 	ScopeType GetCurScope() const;
+	bool IsUnderGlobalScope() const;
 	bool IsUnderClassScope() const;
 	bool IsUnderClosureScope() const;
 

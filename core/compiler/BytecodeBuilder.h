@@ -33,6 +33,7 @@ class ConstTable
 			case Constant::FLOAT: val = std::to_string(c._float); break;
 			case Constant::STR: val = c._str; break;
 			case Constant::CLOSURE: val = c._closure._uniqueName; break;
+			case Constant::GLOBAL_FN: val = c._str; break;
 			default: throw std::logic_error("not implemented");
 			}
 			return std::hash<std::string>()(val) ^ (static_cast<std::size_t>(c._type) << 1);
@@ -48,6 +49,7 @@ class ConstTable
 			case Constant::FLOAT: return a._float == b._float;
 			case Constant::STR: return a._str == b._str;
 			case Constant::CLOSURE: return a._closure._uniqueName == b._closure._uniqueName;
+			case Constant::GLOBAL_FN: return a._str == b._str;
 			default: throw std::logic_error("not implemented");
 			}
 		}

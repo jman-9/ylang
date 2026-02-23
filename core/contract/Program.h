@@ -22,6 +22,7 @@ struct Constant
 		FLOAT,
 		STR,
 		CLOSURE,
+		GLOBAL_FN,
 	};
 
 	Type _type;

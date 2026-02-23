@@ -1200,10 +1200,7 @@ TEST_CASE( "Closure Test", "[closure]" )
 			}
 			return test2;
 		}
-		a = test(9);
-		b = a(8);
-		c = b(1);
-		exit(c);
+		exit( test(9)(8)(1) );
 	)YT" );
 	REQUIRE( ret.code == 9 + 8 + 1 );
 
@@ -1257,7 +1254,136 @@ exit(c);
 
 	yvm::Machine m;
 	int code = m.Run(prg);
-	REQUIRE(2+0+5);
+	REQUIRE(code == 2+0+5);
+
+	filesystem::remove("app.y");
+	filesystem::remove("mod1.y");
+	filesystem::remove("mod2.y");
+}
+
+TEST_CASE( "Indirect Calls Test", "[indirectcalls]" )
+{
+	Result ret;
+
+	ret = Run( R"YT(
+		fn test(t1, t2)
+		{
+			a = t1;
+			b = t2;
+
+			return a * b;
+		}
+		a = test;
+		exit(a(98, 10));
+	)YT" );
+	REQUIRE( ret.code == 98*10 );
+
+	ret = Run( R"YT(
+		fn test(t1, t2)
+		{
+			a = t1;
+			b = t2;
+
+			return a * b;
+		}
+
+		fn wrapper(f)
+		{
+			return f(10, 20);
+		}
+
+		exit(wrapper(test));
+	)YT" );
+	REQUIRE( ret.code == 10 * 20 );
+
+	ret = Run( R"YT(
+		fn callback(result)
+		{
+			return result;
+		}
+
+		fn work(complete)
+		{
+			return complete(false);
+		}
+
+		exit(work(callback) == true);
+	)YT" );
+	REQUIRE( ret.code == 0 );
+
+	ret = Run( R"YT(
+		fn test(t1)
+		{
+			a = t1;
+
+			fn test2(t2) {
+				b = t2;
+
+				fn test3(t3) {
+					return a + b + t3;
+				}
+				return test3;
+			}
+			return test2;
+		}
+
+		fn runner(f)
+		{
+			return f(9)(8)(1);
+		}
+
+		exit(runner(test));
+	)YT" );
+	REQUIRE( ret.code == 9 + 8 + 1 );
+
+	string mod2y =
+		R"YT(fn test(t1)
+		{
+			a = t1;
+
+			fn test2(t2) {
+				b = t2;
+
+				fn test3(t3) {
+					return a + b + t3;
+				}
+				return test3;
+			}
+			return test2;
+		})YT";
+
+	string mod1y =
+		R"YT(
+		include mod2;
+		fn test4() return mod2.test;)YT";
+
+	string appy =
+		R"YT(include mod1;
+		a = mod1.test4;
+		b = a()(2);
+		c = b(0)(5);
+		exit(c);)YT";
+
+	ofstream fout("app.y");
+	fout.write(appy.c_str(), appy.size());
+	fout.close();
+
+	fout.open("mod1.y");
+	fout.write(mod1y.c_str(), mod1y.size());
+	fout.close();
+
+	fout.open("mod2.y");
+	fout.write(mod2y.c_str(), mod2y.size());
+	fout.close();
+
+	Compiler com;
+	Program prg;
+	auto errs = com.CompileFile("app.y", prg);
+	REQUIRE(errs.empty());
+
+	yvm::Machine m;
+	int code = m.Run(prg);
+	REQUIRE(code == 2+0+5);
 
 	filesystem::remove("app.y");
 	filesystem::remove("mod1.y");
@@ -1279,26 +1405,27 @@ int main(int argc, const char** argv)
 	Catch::ConfigData& cfg = _session.configData();
 
 	cfg.showSuccessfulTests = true;
-	cfg.testsOrTags.push_back("[scanner],");
-	cfg.testsOrTags.push_back("[exp],");
-	cfg.testsOrTags.push_back("[forif],");
-	cfg.testsOrTags.push_back("[func],");
-	cfg.testsOrTags.push_back("[incdec],");
-	cfg.testsOrTags.push_back("[logop],");
-	cfg.testsOrTags.push_back("[primstr],");
-	cfg.testsOrTags.push_back("[primlist],");
-	cfg.testsOrTags.push_back("[primbytes],");
-	cfg.testsOrTags.push_back("[bltmath],");
-	cfg.testsOrTags.push_back("[bltrand],");
-	cfg.testsOrTags.push_back("[bltsys],");
-	cfg.testsOrTags.push_back("[bltfile],");
-	cfg.testsOrTags.push_back("[bltjson],");
-	cfg.testsOrTags.push_back("[blttime],");
-	cfg.testsOrTags.push_back("[bltshell],");
-	cfg.testsOrTags.push_back("[bltfs],");
-	cfg.testsOrTags.push_back("[class],");
-	cfg.testsOrTags.push_back("[includes],");
-	cfg.testsOrTags.push_back("[closure],");
+// 	cfg.testsOrTags.push_back("[scanner],");
+// 	cfg.testsOrTags.push_back("[exp],");
+// 	cfg.testsOrTags.push_back("[forif],");
+// 	cfg.testsOrTags.push_back("[func],");
+// 	cfg.testsOrTags.push_back("[incdec],");
+// 	cfg.testsOrTags.push_back("[logop],");
+// 	cfg.testsOrTags.push_back("[primstr],");
+// 	cfg.testsOrTags.push_back("[primlist],");
+// 	cfg.testsOrTags.push_back("[primbytes],");
+// 	cfg.testsOrTags.push_back("[bltmath],");
+// 	cfg.testsOrTags.push_back("[bltrand],");
+// 	cfg.testsOrTags.push_back("[bltsys],");
+// 	cfg.testsOrTags.push_back("[bltfile],");
+// 	cfg.testsOrTags.push_back("[bltjson],");
+// 	cfg.testsOrTags.push_back("[blttime],");
+// 	cfg.testsOrTags.push_back("[bltshell],");
+// 	cfg.testsOrTags.push_back("[bltfs],");
+// 	cfg.testsOrTags.push_back("[class],");
+// 	cfg.testsOrTags.push_back("[includes],");
+//	cfg.testsOrTags.push_back("[closure],");
+	cfg.testsOrTags.push_back("[indirectcalls],");
 
 	int numFailed = _session.run();
 };
