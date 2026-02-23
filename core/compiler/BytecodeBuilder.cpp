@@ -454,6 +454,16 @@ bool BytecodeBuilder::BuildInvokeExp(Bytecode& retCtx, const TreeNode& stmt)
 		}
 	}
 
+	if(ivkType == EToken::Invoke)
+	{
+		int a = 1;
+		if(!BuildExp(retCtx, *stmt.childs[0], false))
+		{//TODO log
+			return false;
+		}
+		_reg++;
+	}
+
 	if(ivkType == EToken::Dot)
 	{	//TODO generalize
 		if(!BuildExp(retCtx, *stmt.childs[0], false))
@@ -479,6 +489,13 @@ bool BytecodeBuilder::BuildInvokeExp(Bytecode& retCtx, const TreeNode& stmt)
 	}
 
 	if(ivkType == EToken::Dot)
+	{	//TODO generalize
+		Op::Invoke ivk{ .numArgs = (uint8_t)(stmt.childs.size()-1), .dstKind = (uint8_t)ERefKind::Reg, .dst = (uint16_t)_reg };
+		retCtx.PushBytecode(ivk, stmt.self.line);
+		return true;
+	}
+
+	if(ivkType == EToken::Invoke)
 	{	//TODO generalize
 		Op::Invoke ivk{ .numArgs = (uint8_t)(stmt.childs.size()-1), .dstKind = (uint8_t)ERefKind::Reg, .dst = (uint16_t)_reg };
 		retCtx.PushBytecode(ivk, stmt.self.line);
