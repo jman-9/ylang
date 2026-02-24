@@ -10,3 +10,6 @@
 | [07_string.y](07_string.y)       | string example                  |
 | [08_perfect.y](08_perfect.y)     | perfect number calculation demo |
 | [09_builtins.y](09_builtins.y)   | builtin module showcase |
+| [10_bytes.y](10_bytes.y)         | bytes primitive example |
+| [11_function_reference.y](11_function_reference.y) | function reference (first-class functions) |
+| [12_closures.y](12_closures.y)   | closures example |

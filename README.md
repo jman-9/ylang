@@ -1,10 +1,14 @@
 <img src="ylang_logo.png" height="100">
 
-# ylang 0.1.4
+# ylang 0.2.0
 
 yet another programming language — retro, C-like, and Pythonic
 
 ---
+
+## News
+* Now supports closures and the function reference system
+* Adds 'bytes' primitive type
 
 ## Overview
 
@@ -29,12 +33,12 @@ It implements a complete compilation pipeline — from scanning to bytecode gene
 ### Pythonic
 * Supports both top-level statements and `main()` entry function
 * Dynamic typing (number, string, collection, object)
-* Built-in collections: list, dictionary
+* Built-in collections: list, dictionary, bytes
 * f-string style interpolation — `"value = {value}"` (but no prefix!)
-* User-defined functions
 * Dot(`.`) operator for dynamic member access
-* Primitive modules: string, list, dictionary
+* Primitive modules: string, list, dictionary, bytes
 * Useful built-in modules: json, math, file, rand, sys
+* Closures
 
 ### My own style
 * Supports lightweight class system
@@ -42,6 +46,7 @@ It implements a complete compilation pipeline — from scanning to bytecode gene
   - Constructor defined with the class name (C++ style)
   - `this` or `self` keyword not required inside member functions
 * Module include with automatic namespace extraction
+* <> syntax for initializing 'bytes' type
 * (more to come)
 
 
@@ -231,7 +236,7 @@ ylang/
 │   ├─ module/        # Module loader
 │   ├─ util/          # utility for core
 │   ├─ vm/            # yvm engine
-│   └─ primitives/    # Base types (list, dict, string)
+│   └─ primitives/    # Base types (list, dict, string, bytes, ...)
 ├─ doc/               # Documents
 ├─ examples/          # Example scripts (.y)
 ├─ tests/             # test programs
@@ -279,5 +284,6 @@ This project is licensed under the **MIT License** — see the [LICENSE](LICENSE
 | **0.1.1** | Fixed critical bugs, Refactored code, class field declaration using chained assignments, backward declarations in classes |
 | **0.1.2** | Runtime error handling, added readln(), module-level global variable sharing, 'this' support |
 | **0.1.4** | Call stack tracing, ternary operator (?:), additional builtin functions |
+| **0.2.0** | Closure system, function reference system, 'bytes' primitive type |
 
 ---
