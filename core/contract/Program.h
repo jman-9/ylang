@@ -43,6 +43,7 @@ struct Class
 	Bytecode _ctor;
 	std::unordered_map<std::string, int> _funcMap;
 	std::vector<Bytecode> _funcs;
+	std::vector<std::string> _funcNames;
 };
 
 

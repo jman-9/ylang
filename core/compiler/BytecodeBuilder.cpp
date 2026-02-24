@@ -1,6 +1,7 @@
 #include "BytecodeBuilder.h"
 #include "BuiltinFuncTable.h"
 #include "NamespaceUtil.h"
+#include "util/RandUtil.h"
 #include <stdexcept>
 #include <filesystem>
 #include <iostream>
@@ -302,6 +303,7 @@ bool BytecodeBuilder::BuildClass(Bytecode& retCtx, const TreeNode& stmt)
 		{//fn
 			cls._funcMap[ substmt->self.val ] = cls._funcs.size();
 			cls._funcs.push_back({});
+			cls._funcNames.push_back(substmt->self.val);
 		}
 	}
 
@@ -535,7 +537,14 @@ bool BytecodeBuilder::BuildInvokeExp(Bytecode& retCtx, const TreeNode& stmt)
 	}
 	else
 	{
-		if(!_clsStack.empty() && _clsStack.top()->_funcMap.contains(stmt.childs.front()->self.val))
+		auto symData = _scopeMgr.GetSymbolData(stmt.childs[0]->self.val);
+		if(symData.sym == ESymbol::None)
+		{//TODO qaz
+			throw 'n';
+		}
+
+		auto sym = symData.sym;
+		if(symData.scope == ScopeManager::SCOPE_CLASS)
 		{
 			auto& fmap = _clsStack.top()->_funcMap;
 			uint16_t idx = (uint16_t)fmap[stmt.childs.front()->self.val];
@@ -545,12 +554,7 @@ bool BytecodeBuilder::BuildInvokeExp(Bytecode& retCtx, const TreeNode& stmt)
 		}
 		else
 		{
-			auto sym = _scopeMgr.GetSymbol(stmt.childs[0]->self.val);
-			if(sym == ESymbol::None)
-			{//TODO qaz
-				throw 'n';
-			}
-			else if(sym == ESymbol::Fn)
+			if(sym == ESymbol::Fn)
 			{
 				Op::Call cal;
 				cal.numPrms = (uint8_t)(stmt.childs.size()-1);
@@ -1161,27 +1165,29 @@ bool BytecodeBuilder::BuildClosure(Bytecode& retCtx, const TreeNode& stmt)
 
 	_scopeMgr.AddClosureScope();
 	_scopeMgr.AddLocalScope();
-	for(auto& [_, cap] : captures)
+	for(auto [_, cap] : captures)
 	{
+		if(cap.sym.kind != ESymbol::Var)
+			cap.sym.kind = ESymbol::Var;
 		_scopeMgr.AddOrNot(cap.sym);
 	}
 
 	bool r = BuildFnReal(con._closure._code, stmt, ESymbol::Var);
 	if(!r) return r;
+	_scopeMgr.PopScope();
+	_scopeMgr.PopScope();
 
 	int srcIdx;
 	con._closure._realName = closureName;
 	while(1)
 	{
-		con._closure._uniqueName = closureName; //TODO qaz unique
+		con._closure._uniqueName = closureName + "_" + RandUtil::GetRandBase64Str(5);
 		if(_constTbl.GetIdx(con) < 0)
 		{
 			srcIdx = _constTbl.AddOrNot(con);
 			break;
 		}
 	}
-	_scopeMgr.PopScope();
-	_scopeMgr.PopScope();
 
 	Op::ClosureSet cs{ .dstKind = TO_REF_KIND_U8(dstIdx.kind), .srcKind = (uint8_t)ERefKind::Const, .dst = (uint16_t)dstIdx.idx, .src = (uint16_t)srcIdx };
 	retCtx.PushBytecode(cs, stmt.self.line);
@@ -1189,8 +1195,16 @@ bool BytecodeBuilder::BuildClosure(Bytecode& retCtx, const TreeNode& stmt)
 	Op::CaptureAdd ca{ .dstKind = TO_REF_KIND_U8(dstIdx.kind), .dst = (uint16_t)dstIdx.idx };
 	for(auto& [_, cap] : captures)
 	{
-		ca.srcKind = TO_REF_KIND_U8(cap.idx.kind);
-		ca.src = (uint16_t)cap.idx.idx;
+		if(cap.scope == ScopeManager::SCOPE_CLASS && cap.sym == ESymbol::Fn)
+		{
+			ca.srcKind = (uint8_t)ERefKind::MemberFunc;
+			ca.src = (uint16_t)_clsStack.top()->_funcMap[cap.sym.name];
+		}
+		else
+		{
+			ca.srcKind = TO_REF_KIND_U8(cap.idx.kind);
+			ca.src = (uint16_t)cap.idx.idx;
+		}
 		retCtx.PushBytecode(ca, stmt.self.line);
 	}
 
@@ -1201,8 +1215,6 @@ bool BytecodeBuilder::BuildFn(Bytecode& retCtx, const TreeNode& stmt)
 {
 	if(_scopeMgr.GetCurScope() == ScopeManager::SCOPE_LOCAL)
 	{
-		if(stmt.self.val == "test3")
-			int a = 1;
 		return BuildClosure(retCtx, stmt);
 	}
 	else
@@ -1229,8 +1241,11 @@ void BytecodeBuilder::DetectCaptures(std::unordered_map<std::string, ScopeManage
 	if(stmt.self == EToken::Id && !retCaptures.contains(stmt.self.val))
 	{
 		auto sym = _scopeMgr.GetSymbolData(stmt.self.val);
-		if(!sym.idx.IsNone() && sym.idx.kind == ScopeManager::Idx::LOCAL)
-			retCaptures[stmt.self.val] = sym;
+		if(!sym.idx.IsNone())
+		{
+			if(sym.idx.kind == ScopeManager::Idx::LOCAL || sym.idx.kind == ScopeManager::Idx::FIELD)
+				retCaptures[stmt.self.val] = sym;
+		}
 		return;
 	}
 

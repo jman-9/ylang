@@ -7,17 +7,34 @@ using namespace std;
 
 const char* testcode1 =
 R"TEST(
-t = 10;
 
-fn test(t1, t2)
+fn outer_through(z) return z;
+
+class Test
+{
+	f = 15;
+	fn Test(fv) { f = fv; }
+
+	fn ttt() { return f; }
+
+	fn test(t1)
+	{
+		fn inner_through(tt) { return tt; }
+
+		fn cap(d)
 		{
-			a = t1;
-			b = t2;
-
-			return a * b;
+			return outer_through( inner_through( ttt() ) ) + d;
 		}
-		a = test;
-		println(a(98, 10));
+
+		return cap;
+	}
+}
+
+t = Test(98);
+c = t.test(9);
+d = c(2);
+println(d);
+
 )TEST";
 const char* testcode2 = R"TEST(
 )TEST";

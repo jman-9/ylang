@@ -14,6 +14,7 @@ class ScopeManager
 public:
 	enum ScopeType
 	{
+		SCOPE_NONE,
 		SCOPE_GLOBAL,
 		SCOPE_LOCAL,
 		SCOPE_CLASS,
@@ -45,6 +46,7 @@ public:
 	{
 		Symbol sym;
 		Idx idx;
+		ScopeType scope;
 	};
 
 	struct SymKeyHash {

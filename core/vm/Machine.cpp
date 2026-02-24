@@ -108,7 +108,13 @@ Variable* Machine::ResolveVar(ERefKind k, int idx)
 			if(_clsStack.empty())
 				INTERNALERR("no class object for field variable");
 
-			return &_clsStack.top()->clsObj()._fields[idx];
+			auto v = &_clsStack.top()->clsObj()._fields[idx];
+			if(*v == Variable::CAPTUREDVAR)
+			{	//TODO qaz performance
+				while(*v == Variable::CAPTUREDVAR)
+					v = &v->captured();
+			}
+			return v;
 		}
 
 	default: return nullptr;
@@ -122,6 +128,8 @@ int64_t Machine::GoSub(Variable* callee, const Bytecode* sub, int start /* = 0 *
 	caller.prgPath = _prgStack.top()->prg()._path;
 	caller.line = _codeStack.top()->_srcLines[_pc];
 	_callStack.push(caller);
+
+	_spCaptureStack.push({});
 
 	bool pushedClsObj = false;
 	bool pushedPrgObj = false;
@@ -163,7 +171,9 @@ int64_t Machine::GoSub(Variable* callee, const Bytecode* sub, int start /* = 0 *
 					int idx = _sp - _spStack.top();
 					for(auto& cap : clsr._captures)
 					{
-						*ResolveVar(ERefKind::LocalVar, idx++) = cap;
+						auto v = ResolveVar(ERefKind::LocalVar, idx++);
+						_spCaptureStack.top().push_back(v);
+						*v = cap;
 					}
 					_sp = spBackup;
 				}
@@ -198,7 +208,6 @@ int64_t Machine::GoSub(Variable* callee, const Bytecode* sub, int start /* = 0 *
 	_roff = 0;
 	_retStack.push((uint32_t)_pc);
 	_spStack.push(_sp);
-	_spCaptureStack.push({});
 
 
 	Exec(*sub, start);
@@ -206,12 +215,6 @@ int64_t Machine::GoSub(Variable* callee, const Bytecode* sub, int start /* = 0 *
 
 	_sp = _spStack.top();
 	_spStack.pop();
-	for(auto& cap : _spCaptureStack.top())
-	{
-		if(*cap == Variable::CAPTUREDVAR)
-			cap->Clear();
-	}
-	_spCaptureStack.pop();
 
 	_rpStack.pop();
 	_roff = _roffStack.top();
@@ -222,6 +225,13 @@ int64_t Machine::GoSub(Variable* callee, const Bytecode* sub, int start /* = 0 *
 	if(pushedSub) _codeStack.pop();
 	if(pushedClsObj) _clsStack.pop();
 	if(pushedPrgObj) _prgStack.pop();
+
+	for(auto& cap : _spCaptureStack.top())
+	{
+		if(*cap == Variable::CAPTUREDVAR)
+			cap->Clear();
+	}
+	_spCaptureStack.pop();
 
 	_callStack.pop();
 	return 0;
@@ -470,7 +480,7 @@ bool Machine::Call(const Op::Call& cal)
 
 	if(cal.seg == 0)
 	{//TODO
-		GoSub(nullptr, _codeStack.top(), cal.pos);
+		GoSub(nullptr, &_prgStack.top()->prg()._mainCode, cal.pos);
 	}
 	else
 	{//TODO
@@ -1096,12 +1106,29 @@ bool Machine::CaptureAdd(const Op::CaptureAdd& ca)
 	}
 	auto& clsro = vclsro->clsrObj();
 
-	Variable* capture = ResolveVar((ERefKind)ca.srcKind, ca.src);
-	_spCaptureStack.top().push_back(capture);
-
 	Variable v;
-	v.SetCapturedVar(*capture);
-	*capture = v;
+
+	auto srcKind = (ERefKind)ca.srcKind;
+	if(srcKind == ERefKind::MemberFunc)
+	{
+		if(_clsStack.empty())
+			INTERNALERR(format("'{}': incorrect capture type", (int)srcKind));
+
+		auto& cls = _clsStack.top()->cls();
+		if(ca.src >= cls._funcNames.size())
+			INTERNALERR(format("idx:{}, sz:{} out of range", ca.src, cls._funcNames.size()));
+
+		v.SetAttr(*_clsStack.top(), cls._funcNames[ca.src]);
+	}
+	else
+	{
+		Variable* capture = ResolveVar((ERefKind)ca.srcKind, ca.src);
+		if((ERefKind)ca.srcKind == ERefKind::LocalVar)
+			_spCaptureStack.top().push_back(capture);
+		v.SetCapturedVar(*capture);
+		*capture = v;
+	}
+
 	clsro._captures.push_back(v);
 	return true;
 }

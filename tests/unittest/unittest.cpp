@@ -1178,62 +1178,81 @@ TEST_CASE( "Closure Test", "[closure]" )
 			}
 			return test2;
 		}
-		a = test(9);
-		b = a(8);
-		c = b(1);
-		exit(c);
+		if( test(9)(8)(1) != 9 + 8 + 1 ) exit(1);
+		if( test(0)(2)(0) != 0 + 2 + 0 ) exit(2);
+		if( test(5)(2)(0) != 5 + 2 + 0 ) exit(3);
+		if( test(0)(7)(3) != 0 + 7 + 3 ) exit(4);
+		if( test(0)(1)(9) != 0 + 1 + 9 ) exit(5);
+		if( test(2)(8)(3) != 2 + 8 + 3 ) exit(6);
 	)YT" );
-	REQUIRE( ret.code == 9 + 8 + 1 );
+	REQUIRE( ret.code == 0 );
 
 	ret = Run( R"YT(
+		fn outer_through(z) return z;
+
+		class Test
+		{
+			f = 15;
+			fn Test(fv) { f = fv; }
+
+			fn getF() return f;
+
+			fn test(t1)
+			{
+				inst = Test(t1);
+
+				fn inner_through(tt) { return tt; }
+
+				fn cap(d)
+				{
+					return getF() + outer_through( inner_through( inst.f ) ) + d;
+				}
+
+				return cap;
+			}
+		}
+
+		t = Test(1);
+		c = t.test(9);
+		d = c(2);
+		exit( d );
+	)YT" );
+	REQUIRE( ret.code == 1 + 9 + 2 );
+
+
+	string mod2y =
+		R"YT(class ModClass
+		{
+			_mv = "";
+			fn ModClass(mv) { _mv = mv; }
+		}
+
 		fn test(t1)
 		{
-			a = t1;
+			mc = ModClass(t1);
 
 			fn test2(t2) {
 				b = t2;
 
 				fn test3(t3) {
-					return a + b + t3;
+					return mc._mv + b + t3;
 				}
 				return test3;
 			}
 			return test2;
-		}
-		exit( test(9)(8)(1) );
-	)YT" );
-	REQUIRE( ret.code == 9 + 8 + 1 );
-
-	string mod2y =
-R"YT(fn test(t1)
-{
-	a = t1;
-
-	fn test2(t2) {
-		b = t2;
-
-		fn test3(t3) {
-			return a + b + t3;
-		}
-		return test3;
-	}
-	return test2;
-}
-)YT";
+		})YT";
 
 	string mod1y =
-		R"YT(
-include mod2;
-fn test4(x) { return mod2.test(x); }
-)YT";
+		R"YT(include mod2;
+		fn test4(x) { return mod2.test(x); }
+		)YT";
 
 	string appy =
 		R"YT(include mod1;
-a = mod1.test4(2);
-b = a(0);
-c = b(5);
-exit(c);
-)YT";
+		a = mod1.test4(2);
+		b = a(0);
+		c = b(5);
+		exit(c);)YT";
 
 	ofstream fout("app.y");
 	fout.write(appy.c_str(), appy.size());
@@ -1336,6 +1355,25 @@ TEST_CASE( "Indirect Calls Test", "[indirectcalls]" )
 	)YT" );
 	REQUIRE( ret.code == 9 + 8 + 1 );
 
+	ret = Run( R"YT(
+		class Test
+		{
+			_x = 0;
+			fn Test(x) _x = x;
+			fn check(y)
+			{
+				return _x * y;
+			}
+		}
+
+		a = Test(9);
+		v = a.check;
+		exit(v(4));
+	)YT" );
+	REQUIRE( ret.code == 9 * 4 );
+
+
+
 	string mod2y =
 		R"YT(fn test(t1)
 		{
@@ -1405,26 +1443,26 @@ int main(int argc, const char** argv)
 	Catch::ConfigData& cfg = _session.configData();
 
 	cfg.showSuccessfulTests = true;
-// 	cfg.testsOrTags.push_back("[scanner],");
-// 	cfg.testsOrTags.push_back("[exp],");
-// 	cfg.testsOrTags.push_back("[forif],");
-// 	cfg.testsOrTags.push_back("[func],");
-// 	cfg.testsOrTags.push_back("[incdec],");
-// 	cfg.testsOrTags.push_back("[logop],");
-// 	cfg.testsOrTags.push_back("[primstr],");
-// 	cfg.testsOrTags.push_back("[primlist],");
-// 	cfg.testsOrTags.push_back("[primbytes],");
-// 	cfg.testsOrTags.push_back("[bltmath],");
-// 	cfg.testsOrTags.push_back("[bltrand],");
-// 	cfg.testsOrTags.push_back("[bltsys],");
-// 	cfg.testsOrTags.push_back("[bltfile],");
-// 	cfg.testsOrTags.push_back("[bltjson],");
-// 	cfg.testsOrTags.push_back("[blttime],");
-// 	cfg.testsOrTags.push_back("[bltshell],");
-// 	cfg.testsOrTags.push_back("[bltfs],");
-// 	cfg.testsOrTags.push_back("[class],");
-// 	cfg.testsOrTags.push_back("[includes],");
-//	cfg.testsOrTags.push_back("[closure],");
+	cfg.testsOrTags.push_back("[scanner],");
+	cfg.testsOrTags.push_back("[exp],");
+	cfg.testsOrTags.push_back("[forif],");
+	cfg.testsOrTags.push_back("[func],");
+	cfg.testsOrTags.push_back("[incdec],");
+	cfg.testsOrTags.push_back("[logop],");
+	cfg.testsOrTags.push_back("[primstr],");
+	cfg.testsOrTags.push_back("[primlist],");
+	cfg.testsOrTags.push_back("[primbytes],");
+	cfg.testsOrTags.push_back("[bltmath],");
+	cfg.testsOrTags.push_back("[bltrand],");
+	cfg.testsOrTags.push_back("[bltsys],");
+	cfg.testsOrTags.push_back("[bltfile],");
+	cfg.testsOrTags.push_back("[bltjson],");
+	cfg.testsOrTags.push_back("[blttime],");
+	cfg.testsOrTags.push_back("[bltshell],");
+	cfg.testsOrTags.push_back("[bltfs],");
+	cfg.testsOrTags.push_back("[class],");
+	cfg.testsOrTags.push_back("[includes],");
+	cfg.testsOrTags.push_back("[closure],");
 	cfg.testsOrTags.push_back("[indirectcalls],");
 
 	int numFailed = _session.run();

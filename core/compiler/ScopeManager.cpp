@@ -104,9 +104,9 @@ ScopeManager::Idx ScopeManager::AddForce(const Symbol& sym)
 
 	SymbolKey sk = { sym.name };
 	if(_scopeTbl.back()._localScopes.empty())
-		_scopeTbl.back()._symTbl[sk] = SymbolData{ sym, idx };
+		_scopeTbl.back()._symTbl[sk] = SymbolData{ sym, idx, scope };
 	else
-		_scopeTbl.back()._localScopes.back()[sk] = SymbolData{ sym, idx };
+		_scopeTbl.back()._localScopes.back()[sk] = SymbolData{ sym, idx, scope };
 
 	//TODO nested func proc
 	return idx;
