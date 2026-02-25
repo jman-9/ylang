@@ -7,7 +7,7 @@ yet another programming language — retro, C-like, and Pythonic
 ---
 
 ## News
-* Now supports closures and the function reference system
+* Now supports closures and the function reference system (first-class function)
 * Adds 'bytes' primitive type
 
 ## Overview
